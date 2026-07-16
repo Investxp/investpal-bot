@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set +e
 
 export PORT=${PORT:-8080}
 export NEXT_PORT=3000
@@ -19,7 +19,14 @@ cd /app
 PORT=$NEXT_PORT npm start &
 NEXT_PID=$!
 
-sleep 1
+# Wait for Next.js to be ready before starting nginx (avoids 502)
+for i in $(seq 1 15); do
+  if curl -s http://localhost:3000 > /dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
 nginx -g 'daemon off;' &
 NGINX_PID=$!
 
