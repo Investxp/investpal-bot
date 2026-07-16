@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
   { key: 'X-Frame-Options',        value: 'SAMEORIGIN' },
@@ -19,7 +21,10 @@ const nextConfig = {
       },
     ];
   },
-
+  webpack: (config) => {
+    config.resolve.alias['@deriv/core'] = path.join(__dirname, 'packages/core/src');
+    return config;
+  },
 }
 
 module.exports = nextConfig
