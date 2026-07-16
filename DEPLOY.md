@@ -1,55 +1,58 @@
-# Deploy InvestPal Bot to Vercel (Free)
+# Deploy InvestPal Bot
 
-## Prerequisites
-- A [GitHub](https://github.com) account
-- A [Vercel](https://vercel.com) account (sign up with GitHub)
+## Option 1: Docker / Fly.io (Recommended — Unified)
 
-## Steps
+Deploys Next.js + Python backend in one container behind nginx.
 
-### 1. Create a GitHub repo
-- Go to **https://github.com/new**
-- Repo name: `investpal-bot` (or any name)
-- Keep it **Public** (free Vercel tier)
-- **Do not** initialize with README/.gitignore/license
-- Click **Create repository**
-
-### 2. Upload the code
-On the empty repo page, click **"uploading an existing file"**, then drag & drop:
-
+### Local Docker test
+```bash
+docker build -t investpal-bot .
+docker run -p 8080:8080 -e POLYMARKET_PRIVATE_KEY=0x... investpal-bot
 ```
-accumulators-app/
-├── .gitignore
-├── vercel.json
-├── next.config.js
-├── package.json
-├── tsconfig.json
-├── postcss.config.js
-├── tailwind.config.ts
-├── app/
-├── components/
-├── hooks/
-├── lib/
-├── scripts/
-├── public/
-├── styles/
-├── types/
+Open http://localhost:8080 — both tabs work.
+
+### Deploy to Fly.io
+```bash
+# Install flyctl: https://fly.io/docs/hands-on/install-flyctl/
+fly launch --no-deploy
+fly secrets set POLYMARKET_PRIVATE_KEY=0x... POLYMARKET_FUNDER_ADDRESS=0x...
+fly deploy
 ```
+Edit `fly.toml` to change the app name and region first.
 
-**DO NOT** include: `node_modules/`, `.next/`, `public/chart/`
+### Environment variables
+| Variable | Required | Description |
+|---|---|---|
+| `POLYMARKET_PRIVATE_KEY` | For Polymarket | Wallet private key or seed phrase |
+| `POLYMARKET_FUNDER_ADDRESS` | Optional | Address for position funding |
+| `PORT` | Optional | Container port (default 8080) |
 
-After uploading, click **Commit changes**.
+---
 
-### 3. Connect to Vercel
-- Go to **https://vercel.com/new**
-- Import your GitHub repo (e.g. `Investxp/investpal-bot`)
-- Vercel auto-detects Next.js — defaults are fine
-- Click **Deploy**
+## Option 2: Vercel (Frontend Only)
 
-### 4. Done
-You'll get a URL like `investpal-bot.vercel.app`.
+Bot Builder tab only — Polymarket tab needs a separate Python backend host.
 
-## Notes
-- The **Bot Builder** tab works fully on Vercel
-- The **Polymarket** tab (Python backend) needs a separate host (Railway, Render) — not included here
-- CSP in `next.config.js` already allows `*.vercel.app` domains
-- To use a custom domain, update the CSP and add it in Vercel dashboard
+### Steps
+1. Create a GitHub repo at **https://github.com/new** (name: `investpal-bot`, public)
+2. Upload files (drag & drop) — exclude `node_modules/`, `.next/`, `polymarket-backend/`, `cloudflared.exe`
+3. Go to **https://vercel.com/new**, import the repo, click Deploy
+4. You'll get a URL like `investpal-bot.vercel.app`
+
+### Polymarket tab
+To also serve Polymarket on Vercel, deploy the Python backend separately:
+- [Render](https://render.com) — Web Service, start command `cd polymarket-backend && python server.py`
+- [Railway](https://railway.app) — same config
+- Then update the iframe src in `components/custom/polymarket-view.tsx` to point to that URL
+
+---
+
+## Files included
+| File | Purpose |
+|---|---|
+| `Dockerfile` | Multi-stage build: Next.js + Python + nginx |
+| `nginx.conf` | Reverse proxy: `/polymarket/*` → Python, `/*` → Next.js |
+| `start.sh` | Entrypoint — starts all three processes |
+| `fly.toml` | Fly.io configuration |
+| `.dockerignore` | Excludes build artifacts |
+| `polymarket-backend/` | Python Polymarket trade engine (copied from betika_backend) |

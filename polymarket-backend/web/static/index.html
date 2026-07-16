@@ -1,0 +1,2545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="/polymarket/">
+<title>InvestPal — Polymarket Sports Engine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+:root{
+  --bg:#05070f;--surface:#0b0e17;--card:rgba(15,22,38,0.7);
+  --border:rgba(40,56,88,0.45);--border-b:rgba(0,230,118,0.4);
+  --green:#00e676;--green-b:#69f0ae;--green-d:#00c853;
+  --gold:#ffd600;--gold-d:#ffab00;
+  --red:#ff1744;--red-b:#ff5252;--blue:#2979ff;
+  --text:#fff;--text-dim:#a0aec0;--text-muted:#4a5568;
+  --radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);background-image:radial-gradient(circle at 50% 0%,#0d162d 0%,var(--bg) 70%);color:var(--text);min-height:100vh;letter-spacing:-0.1px}
+body.dim{--bg:#000;--surface:#050505;--card:rgba(10,10,10,0.85);--border:rgba(60,60,60,0.4)}
+header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2px solid var(--green);box-shadow:0 4px 30px rgba(0,230,118,0.12);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:18px;font-weight:800;color:var(--green-b);letter-spacing:-0.5px;text-shadow:0 0 10px rgba(0,230,118,0.3)}
+.logo span{color:var(--text-dim);font-weight:400;font-size:12px}
+.hdr-mid{display:flex;align-items:center;gap:20px;font-size:12px}
+.hdr-mid .lbl{color:var(--text-dim);font-weight:600;margin-right:4px}
+.hdr-mid .val{font-weight:800}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase}
+.badge-green{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.3)}
+.badge-gold{background:rgba(255,214,0,0.12);color:var(--gold);border:1px solid rgba(255,214,0,0.3)}
+.badge-red{background:rgba(255,23,68,0.12);color:var(--red-b);border:1px solid rgba(255,23,68,0.3)}
+.badge-blue{background:rgba(41,121,255,0.12);color:var(--blue);border:1px solid rgba(41,121,255,0.3)}
+.container{max-width:1320px;margin:0 auto;padding:14px 18px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:14px;backdrop-filter:blur(10px);box-shadow:0 8px 32px rgba(0,0,0,0.4);transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:rgba(42,58,90,0.6)}
+/* MODE TOGGLES */
+.mode-toggle{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);cursor:pointer;user-select:none}
+.mode-toggle .sw{width:30px;height:16px;border-radius:10px;background:rgba(255,255,255,0.1);position:relative;transition:.2s}
+.mode-toggle .sw::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:var(--green);top:2px;left:2px;transition:.2s}
+.mode-toggle.on .sw::after{left:16px;background:var(--gold)}
+/* CONN STATUS */
+.conn-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.conn-on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.conn-off{background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.2s infinite}
+/* SESSION STATS STRIP */
+.stats-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;text-align:center}
+.stat-box .sv{font-size:16px;font-weight:800}
+.stat-box .sl{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.spark{height:24px;margin-top:4px;width:100%}
+/* MAIN TABS */
+.main-tabs{display:flex;gap:4px;margin-bottom:14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:6px;backdrop-filter:blur(10px);flex-wrap:wrap}
+.mtab{flex:1;min-width:120px;padding:10px 14px;border-radius:8px;border:none;background:transparent;color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px}
+.mtab:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+.mtab.on{background:linear-gradient(135deg,rgba(0,230,118,0.18),rgba(0,230,118,0.05));color:var(--green-b);box-shadow:inset 0 0 0 1px rgba(0,230,118,0.35)}
+.tab-panel{display:none}
+.tab-panel.on{display:block;animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+/* SETTINGS */
+.settings-row{display:flex;gap:12px;align-items:end;flex-wrap:wrap;background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:12px 18px;margin-bottom:14px;backdrop-filter:blur(10px)}
+.sg{display:flex;flex-direction:column;gap:4px}
+.sg label{font-size:10px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.sg input,.sg select{padding:6px 10px;background:rgba(10,14,26,0.8);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;width:90px;font-family:inherit;transition:border-color .2s}
+.sg select{width:auto}
+.sg input:focus,.sg select:focus{border-color:var(--green)}
+.settings-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+/* BUTTONS */
+.btn{padding:6px 14px;border-radius:6px;border:none;font-size:11px;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:inherit}
+.btn:active{transform:scale(0.97)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn-green{background:linear-gradient(135deg,var(--green),var(--green-d));color:#000;box-shadow:0 0 10px rgba(0,230,118,0.2)}
+.btn-green:hover{box-shadow:0 0 20px rgba(0,230,118,0.45);transform:translateY(-1px)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-d));color:#000;box-shadow:0 0 10px rgba(255,214,0,0.2)}
+.btn-gold:hover{box-shadow:0 0 20px rgba(255,214,0,0.45);transform:translateY(-1px)}
+.btn-red{background:linear-gradient(135deg,var(--red),#d50000);color:#fff;box-shadow:0 0 10px rgba(255,23,68,0.2)}
+.btn-red:hover{box-shadow:0 0 20px rgba(255,23,68,0.45);transform:translateY(-1px)}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#1565c0);color:#fff;box-shadow:0 0 10px rgba(41,121,255,0.2)}
+.btn-blue:hover{box-shadow:0 0 20px rgba(41,121,255,0.45);transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--text-dim);border:1px solid var(--border)}
+.btn-outline:hover{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.2);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:10px;border-radius:4px}
+/* GRID LAYOUT */
+.main-grid{display:grid;grid-template-columns:400px 1fr;gap:14px;align-items:start}
+@media(max-width:960px){.main-grid{grid-template-columns:1fr}}
+.left-col,.right-col{display:flex;flex-direction:column;gap:14px}
+/* ENGINE PICK */
+.sug-card{border:2px solid var(--gold);background:linear-gradient(135deg,rgba(255,214,0,0.06),rgba(255,214,0,0.01));position:relative;padding:16px;border-radius:var(--radius);box-shadow:0 0 20px rgba(255,214,0,0.1)}
+.sug-badge{position:absolute;top:-10px;right:16px;background:var(--gold);color:#000;font-size:9px;font-weight:900;padding:2px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:0.8px}
+.sug-grid{display:grid;grid-template-columns:1fr 88px 88px;gap:8px;align-items:center}
+.teams{font-weight:700;font-size:13px}
+.teams .vs{color:var(--text-dim);font-size:11px;font-weight:400}
+.oc{border-radius:6px;padding:8px;text-align:center;backdrop-filter:blur(4px)}
+.oc .o{font-size:20px;font-weight:800}
+.oc .o.green{color:var(--green-b)}.oc .o.gold{color:var(--gold)}
+.oc .d{font-size:9px;color:var(--text-dim);font-weight:600;margin-top:2px}
+.sug-actions{display:flex;gap:5px;grid-column:1/-1;margin-top:10px;flex-wrap:wrap}
+.sug-meta{font-size:10px;color:var(--text-dim);padding-top:10px;margin-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+/* MG BAR */
+.mg-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:var(--radius-sm);font-size:11px;backdrop-filter:blur(8px)}
+.mg-bar.normal{background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.2)}
+.mg-bar.active{background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.3);animation:borderGlow 2s infinite alternate}
+@keyframes borderGlow{from{border-color:rgba(255,214,0,0.3)}to{border-color:rgba(255,214,0,0.7)}}
+/* AB PANEL */
+.ab-grid{display:grid;grid-template-columns:1fr 32px 1fr}
+.ab-side{background:rgba(16,22,38,0.65);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden;backdrop-filter:blur(10px)}
+.ab-side::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--green),#00b0ff)}
+.ab-side.b::before{background:linear-gradient(90deg,var(--gold),var(--gold-d))}
+.ab-divider{display:flex;align-items:center;justify-content:center;flex-direction:column}
+.ab-divider .ln{width:2px;height:40%;background:linear-gradient(to bottom,transparent,var(--border),transparent)}
+.ab-divider .vs{background:var(--surface);border:2px solid var(--border);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--text-dim)}
+.ab-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700}
+.ab-head .accent{color:var(--green)}.ab-side.b .ab-head .accent{color:var(--gold)}
+.ab-odds{font-size:26px;font-weight:800;letter-spacing:-0.8px;margin:4px 0}
+.ab-odds .dec{font-size:13px;font-weight:400;color:var(--text-dim)}
+.ab-label{font-size:10px;color:var(--text-dim);margin:4px 0 10px}
+.ab-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.ab-stat{background:rgba(10,14,26,0.8);border-radius:6px;padding:7px 9px;border:1px solid rgba(255,255,255,0.02)}
+.ab-stat .lbl{font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:0.5px;font-weight:600}
+.ab-stat .val{font-size:13px;font-weight:800;margin-top:2px}
+.val.green{color:var(--green)}.val.gold{color:var(--gold)}
+.ab-btn{width:100%;padding:8px;border-radius:6px;border:none;font-size:11px;font-weight:800;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:0.8px;font-family:inherit}
+.ab-btn:active{transform:scale(0.97)}
+.ab-btn.green{background:linear-gradient(135deg,var(--green),var(--green-d));color:#000}
+.ab-btn.green:hover{box-shadow:0 0 15px rgba(0,230,118,0.4)}
+.ab-btn.red{background:linear-gradient(135deg,var(--red),#b71c1c);color:#fff}
+.ab-btn.red:hover{box-shadow:0 0 15px rgba(255,23,68,0.4)}
+.ab-btn:disabled{opacity:0.25;cursor:default;box-shadow:none!important}
+/* MANUAL */
+.me-inp{width:100%;padding:6px 9px;background:rgba(10,14,26,0.8);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;outline:none;font-family:inherit}
+.me-inp:focus{border-color:var(--green)}
+.me-lbl{font-size:10px;color:var(--text-dim);display:block;margin-bottom:3px}
+/* SPORT TABS */
+.sport-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.stab{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);font-family:inherit;transition:all .18s}
+.stab:hover{border-color:var(--green);color:var(--green)}
+.stab.on{background:rgba(0,230,118,0.12);color:var(--green);border-color:rgba(0,230,118,0.4)}
+/* TABLES */
+.et,.rt,.tt{width:100%;border-collapse:collapse;font-size:11px}
+.et th,.rt th,.tt th{padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;background:rgba(10,14,26,0.6)}
+.et td,.rt td,.tt td{padding:7px 10px;border-bottom:1px solid rgba(40,56,88,0.18);vertical-align:middle}
+.et tr:hover,.rt tr:hover,.tt tr:hover{background:rgba(255,255,255,0.02)}
+.et tr.sug-row{background:rgba(255,214,0,0.04);border-left:3px solid var(--gold)}
+.et tr.hot-row{background:rgba(255,23,68,0.04);border-left:3px solid var(--red-b)}
+.tt tr.mg-rec{background:rgba(0,230,118,0.03);border-left:3px solid var(--green)}
+.cp{width:16px;height:16px;cursor:pointer;accent-color:var(--green)}
+.sbl{color:#fff;text-decoration:none;border-bottom:1px dashed var(--border);font-weight:600;transition:color .2s,border-color .2s}
+.sbl:hover{color:var(--green-b);border-bottom-color:var(--green)}
+.rb{display:inline-flex;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:0.5px}
+.rb.win{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.3)}
+.rb.loss{background:rgba(255,23,68,0.12);color:var(--red-b);border:1px solid rgba(255,23,68,0.3)}
+.rb.pend{background:rgba(255,214,0,0.12);color:var(--gold);border:1px solid rgba(255,214,0,0.3)}
+.sb{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase}
+.sb.tt{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.2)}
+.sb.tennis{background:rgba(41,121,255,0.12);color:var(--blue);border:1px solid rgba(41,121,255,0.2)}
+.sb.fb{background:rgba(255,214,0,0.12);color:var(--gold);border:1px solid rgba(255,214,0,0.2)}
+.sb.vb{background:rgba(255,23,68,0.12);color:var(--red-b);border:1px solid rgba(255,23,68,0.2)}
+.sb.bb{background:rgba(255,255,255,0.08);color:var(--text-dim);border:1px solid rgba(255,255,255,0.1)}
+.sb.badm{background:rgba(0,229,255,0.12);color:#00e5ff;border:1px solid rgba(0,229,255,0.2)}
+.sb.darts{background:rgba(224,64,251,0.12);color:#e040fb;border:1px solid rgba(224,64,251,0.2)}
+.fv{font-weight:800;font-size:12px}
+.fv.green{color:var(--green)}.fv.gold{color:var(--gold)}
+/* REC PILL */
+.rec-p{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:9px;white-space:nowrap}
+.rp-fire{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid rgba(0,230,118,0.3)}
+.rp-good{background:rgba(41,121,255,0.15);color:var(--blue);border:1px solid rgba(41,121,255,0.3)}
+.rp-fair{background:rgba(255,214,0,0.12);color:var(--gold);border:1px solid rgba(255,214,0,0.3)}
+.rp-skip{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+/* SIGNAL */
+.sig-pill{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:9px}
+.sp-now{background:rgba(255,23,68,0.15);color:#ff6b6b;border:1px solid rgba(255,23,68,0.3);animation:pu 1.5s infinite}
+.sp-soon{background:rgba(255,214,0,0.12);color:var(--gold);border:1px solid rgba(255,214,0,0.3)}
+.sp-wait{background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border)}
+@keyframes pu{0%{opacity:.7}50%{opacity:1}100%{opacity:.7}}
+/* LIVE PILL */
+.live-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,23,68,0.15);color:#ff6b6b;border:1px solid rgba(255,23,68,0.3);font-size:8px;font-weight:800;padding:1px 6px;border-radius:8px;animation:pulse 1.3s infinite}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#ff6b6b}
+/* DEEP LINK */
+.deep-link{color:var(--green-b);text-decoration:none;font-size:9px;border-bottom:1px dashed rgba(0,230,118,0.4)}
+.deep-link:hover{color:var(--green)}
+/* RECOVERY SUGGEST */
+.recov-suggest{background:rgba(255,214,0,0.06);border:1px solid rgba(255,214,0,0.25);border-radius:var(--radius-sm);padding:9px 13px;font-size:11px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+/* RESULTS */
+.re-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-weight:700}
+.re-scroll{max-height:420px;overflow-y:auto;border-radius:var(--radius);border:1px solid var(--border)}
+.re-scroll::-webkit-scrollbar{width:6px}
+.re-scroll::-webkit-scrollbar-track{background:var(--bg)}
+.re-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.empty-state{text-align:center;padding:28px;color:var(--text-dim);font-size:12px}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.tw{border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.toast{position:fixed;bottom:22px;right:22px;padding:12px 20px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;z-index:9999;animation:su .25s cubic-bezier(.175,.885,.32,1.275);box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+@keyframes su{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast-success{background:var(--green);color:#000}
+.toast-error{background:var(--red);color:#fff}
+.toast-info{background:var(--blue);color:#fff}
+@keyframes pulse{0%{opacity:.6}50%{opacity:1}100%{opacity:.6}}
+/* ═══════ MARTINGALE DEMO TAB ═══════ */
+.mg-demo-table{width:100%;border-collapse:collapse;font-size:12px}
+.mg-demo-table th{padding:9px 12px;text-align:left;border-bottom:2px solid var(--border);color:var(--text-dim);font-size:9px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;background:rgba(10,14,26,0.6)}
+.mg-demo-table td{padding:9px 12px;border-bottom:1px solid rgba(40,56,88,0.18)}
+.mg-demo-table tr:hover{background:rgba(255,255,255,0.02)}
+.mg-level-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:rgba(255,214,0,0.12);color:var(--gold);font-weight:800;font-size:11px;border:1px solid rgba(255,214,0,0.3)}
+/* ═══════ AUTO REPORTS TAB ═══════ */
+.report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.report-grid{grid-template-columns:repeat(2,1fr)}}
+.report-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center}
+.report-card .rv{font-size:24px;font-weight:800;margin-bottom:4px}
+.report-card .rl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.bar-chart{display:flex;align-items:flex-end;gap:3px;height:140px;padding-top:10px}
+.bar-chart .bar{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s ease;position:relative}
+.bar-chart .bar:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#000;color:#fff;font-size:9px;padding:3px 6px;border-radius:4px;white-space:nowrap;margin-bottom:4px}
+/* ═══════ VIRTUAL BOT TAB ═══════ */
+.bot-status-bar{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.bot-status-bar.running{border-color:rgba(0,230,118,0.4);box-shadow:0 0 20px rgba(0,230,118,0.08)}
+.bot-pulse-dot{width:10px;height:10px;border-radius:50%;background:var(--text-muted)}
+.bot-pulse-dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.2s infinite}
+.bot-log{background:#000;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:'Courier New',monospace;font-size:11px;max-height:260px;overflow-y:auto;line-height:1.6}
+.bot-log::-webkit-scrollbar{width:6px}
+.bot-log::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.log-line{margin-bottom:2px}
+.log-info{color:#69f0ae}
+.log-warn{color:var(--gold)}
+.log-error{color:var(--red-b)}
+.log-time{color:var(--text-muted);margin-right:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">INVESTPAL <span>| POLYMARKET TRADE ENGINE</span></div>
+  <div class="hdr-mid">
+    <span><span class="conn-dot conn-off" id="connDot"></span><span style="font-size:10px;color:var(--text-dim)" id="connText">Connecting...</span></span>
+    <span><span class="lbl" style="color:var(--blue)">DEMO </span><span class="val" id="hdrBal">KES 0.00</span></span>
+    <span style="border-left:1px solid var(--border);padding-left:10px"><span class="lbl" style="color:var(--green)">REAL USDC </span><span class="val" id="hdrRealBal">$0.00</span></span>
+    <span><span class="lbl">W </span><span class="val" style="color:var(--green)" id="hdrW">0</span></span>
+    <span><span class="lbl">L </span><span class="val" style="color:var(--red-b)" id="hdrL">0</span></span>
+    <span><span class="lbl">P/L </span><span class="val" id="hdrPL">KES 0</span></span>
+    <span style="font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums" id="hdrClock">--:--:--</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="mode-toggle on" id="soundToggle" onclick="toggleSound()" title="Toggle sound alerts">
+      <span id="soundIcon">🔔</span><div class="sw"></div>
+    </div>
+    <div class="mode-toggle" id="dimToggle" onclick="toggleDim()" title="Toggle dim mode">
+      <span>🌙</span><div class="sw"></div>
+    </div>
+    <div class="mode-toggle" id="headerAutoTradeToggle" onclick="toggleAutoTrade()" title="Toggle autonomous bot trading">
+      <span>🤖 AUTO</span><div class="sw"></div>
+    </div>
+    <div class="mode-toggle" id="headerLiveModeToggle" onclick="toggleLiveMode()" title="Switch between Virtual and Live trading">
+      <span>⚡ LIVE</span><div class="sw"></div>
+    </div>
+    <span class="badge badge-green" id="hdrMode">NORMAL</span>
+    <span class="badge badge-red" id="hdrWalletBadge" style="display:none;">🔑 OFFLINE</span>
+    <button class="btn btn-outline btn-sm" onclick="doReset()">RESET</button>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- SESSION STATS STRIP -->
+<div class="stats-strip">
+  <div class="stat-box"><div class="sv" id="statWinRate" style="color:var(--green)">0%</div><div class="sl">Win Rate</div></div>
+  <div class="stat-box"><div class="sv" id="statROI">0%</div><div class="sl">ROI</div></div>
+  <div class="stat-box"><div class="sv" id="statAvgOdds">—</div><div class="sl">Avg Odds</div></div>
+  <div class="stat-box"><div class="sv" id="statBestStreak" style="color:var(--gold)">0</div><div class="sl">Worst Streak</div></div>
+  <div class="stat-box">
+    <div class="sv" id="statBankrollTrend" style="color:var(--blue)">—</div>
+    <div class="sl">Bankroll Trend</div>
+    <svg class="spark" id="sparkSVG" viewBox="0 0 100 24" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+
+<!-- ═══════════════ 7 MAIN TABS ═══════════════ -->
+<div class="main-tabs">
+  <button class="mtab on" onclick="showMainTab('engine')">🎯 Trade Engine</button>
+  <button class="mtab" onclick="showMainTab('feed')">📡 Polymarket Feed</button>
+  <button class="mtab" onclick="showMainTab('tracker')">📋 Tracker</button>
+  <button class="mtab" onclick="showMainTab('results')">📊 Results</button>
+  <button class="mtab" onclick="showMainTab('martingale')">⚡ Martingale Demo</button>
+  <button class="mtab" onclick="showMainTab('reports')">📈 Auto Reports</button>
+  <button class="mtab" onclick="showMainTab('bot')">🤖 InvestPal Trade Bot</button>
+  <button class="mtab" onclick="showMainTab('wallet')">⚙ Wallet & Settings</button>
+</div>
+
+<!-- ═══════════════ TAB 1: TRADE ENGINE ═══════════════ -->
+<div id="tab-engine" class="tab-panel on">
+
+<div class="settings-row">
+  <div class="sg"><label>Base Stake (KES)</label><input id="cfgStake" type="number" value="100" step="1" min="1"></div>
+  <div class="sg"><label>Factor</label><input id="cfgFactor" type="number" value="2.1" step="0.1" min="1.1"></div>
+  <div class="sg"><label>Max Steps</label><input id="cfgSteps" type="number" value="6" step="1" min="1" max="10"></div>
+  <div class="sg"><label>Bankroll (KES)</label><input id="cfgBankroll" type="number" value="5000" step="100" style="width:100px"></div>
+  <div class="sg">
+    <label>Auto Trade</label>
+    <div style="display:flex;align-items:center;height:38px;">
+      <div class="mode-toggle" id="mainAutoTradeToggle" onclick="toggleAutoTrade()" title="Enable autonomous trading bot">
+        <span id="mainAutoTradeIcon">⏸</span><div class="sw"></div>
+      </div>
+      <span style="font-size:10px;font-weight:700;margin-left:6px;color:var(--text-dim)" id="mainAutoTradeLabel">OFF</span>
+    </div>
+  </div>
+  <div class="sg">
+    <label>Trading Mode</label>
+    <div style="display:flex;align-items:center;height:38px;">
+      <div class="mode-toggle" id="mainLiveModeToggle" onclick="toggleLiveMode()" title="Toggle Live/Virtual Trading Mode">
+        <span id="mainLiveModeIcon">⏸</span><div class="sw"></div>
+      </div>
+      <span style="font-size:10px;font-weight:700;margin-left:6px;color:var(--text-dim)" id="mainLiveModeLabel">VIRTUAL</span>
+    </div>
+  </div>
+  <div class="sg"><label>Balance Filter</label>
+    <select id="cfgBalance">
+      <option value="0.10">Tight (±0.10)</option>
+      <option value="0.20" selected>Balanced (±0.20)</option>
+      <option value="0.30">Moderate (±0.30)</option>
+      <option value="0.50">Wide (±0.50)</option>
+    </select>
+  </div>
+  <div class="sg"><label>Alert (mins)</label><input id="cfgAlert" type="number" value="45" min="5" max="180" style="width:65px"></div>
+  <div class="settings-actions">
+    <button class="btn btn-gold btn-sm" onclick="saveConfig()">Save Settings</button>
+    <button class="btn btn-red btn-sm" onclick="simulateLossStreak()">Simulate 6-Loss</button>
+    <button class="btn btn-outline btn-sm" onclick="loadFeed()">Refresh Markets</button>
+    <span style="font-size:10px;color:var(--text-muted)" id="lastScan">--:--:--</span>
+  </div>
+</div>
+
+<div class="main-grid">
+<div class="left-col">
+
+  <div id="sugSection" style="display:none">
+    <div class="sug-card">
+      <span class="sug-badge">ENGINE PICK</span>
+      <div class="sug-grid">
+        <div>
+          <div class="teams"><span id="sugH">--</span> <span class="vs">vs</span> <span id="sugA">--</span></div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:3px">
+            <span id="sugT">--</span> · <span id="sugSportLabel">--</span> · <span id="sugMkt">--</span>
+            <span id="sugTimer" style="margin-left:8px;font-weight:700;color:var(--gold)"></span>
+          </div>
+          <div style="margin-top:5px" id="sugRecBadge"></div>
+        </div>
+        <div class="oc" style="background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.15)">
+          <div class="o green" id="sugO1">—</div>
+          <div class="d" id="sugD1">Side A</div>
+        </div>
+        <div class="oc" style="background:rgba(255,214,0,0.06);border:1px solid rgba(255,214,0,0.15)">
+          <div class="o gold" id="sugO2">—</div>
+          <div class="d" id="sugD2">Side B</div>
+        </div>
+        <div class="sug-actions">
+          <button class="btn btn-green" onclick="recordOutcome(true,'A')" id="btnWonA">WON (A)</button>
+          <button class="btn btn-red" onclick="recordOutcome(false,'A')" id="btnLostA">LOST (A)</button>
+          <button class="btn btn-gold" onclick="recordOutcome(true,'B')" id="btnWonB" style="color:#000">WON (B)</button>
+          <button class="btn btn-outline" onclick="recordOutcome(false,'B')" id="btnLostB">LOST (B)</button>
+          <button class="btn btn-blue" onclick="openTradeModal(selectedTrade.id, 'A')" id="btnTradeLiveA" style="display:none;">⚡ Trade Live (A)</button>
+          <button class="btn btn-blue" onclick="openTradeModal(selectedTrade.id, 'B')" id="btnTradeLiveB" style="display:none;">⚡ Trade Live (B)</button>
+        </div>
+      </div>
+      <div class="sug-meta">
+        <span id="sugMetaLeft">—</span>
+        <span>A: <strong style="color:var(--gold)" id="sugStakeA">KES 100</strong> &nbsp;B: <strong style="color:var(--gold)" id="sugStakeB">KES 100</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="mgBar" class="mg-bar normal">
+    <span class="badge badge-green" id="mgBadge">NORMAL</span>
+    <span id="mgText" style="font-size:11px;color:var(--text-dim)">Ready — base stake KES 100</span>
+  </div>
+
+  <div style="border-radius:var(--radius);overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+    <div class="ab-grid">
+      <div class="ab-side">
+        <div class="ab-head">
+          <span><span class="accent" id="abALbl">SIDE A</span></span>
+          <span class="badge badge-green" style="font-size:8px;padding:1px 6px">SIDE A</span>
+        </div>
+        <div class="ab-odds" id="abAOdds">— <span class="dec">dec</span></div>
+        <div class="ab-label" id="abALabel">Select a market</div>
+        <div class="ab-stats">
+          <div class="ab-stat"><div class="lbl">Stake</div><div class="val" id="abAStake">KES —</div></div>
+          <div class="ab-stat"><div class="lbl">Win P/L</div><div class="val green" id="abAWin">+KES —</div></div>
+        </div>
+        <div class="ab-stat" style="margin-bottom:10px"><div class="lbl">Streak (A)</div><div class="val" id="abAStreak">0 losses</div></div>
+        <div style="display:flex;gap:4px">
+          <button class="ab-btn green" id="abBtnAWon" onclick="recordOutcome(true,'A')" disabled>WON</button>
+          <button class="ab-btn red" id="abBtnALost" onclick="recordOutcome(false,'A')" disabled>LOST</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button class="btn btn-blue btn-sm" style="width:100%; justify-content:center;" id="abBtnLiveA" onclick="openTradeModal(selectedTrade.id,'A')" disabled>⚡ Trade Live</button>
+        </div>
+      </div>
+      <div class="ab-divider"><div class="ln"></div><div class="vs">VS</div><div class="ln"></div></div>
+      <div class="ab-side b">
+        <div class="ab-head">
+          <span><span class="accent" id="abBLbl">SIDE B</span></span>
+          <span class="badge badge-gold" style="font-size:8px;padding:1px 6px">SIDE B</span>
+        </div>
+        <div class="ab-odds" id="abBOdds">— <span class="dec">dec</span></div>
+        <div class="ab-label" id="abBLabel">Select a market</div>
+        <div class="ab-stats">
+          <div class="ab-stat"><div class="lbl">Stake</div><div class="val" id="abBStake">KES —</div></div>
+          <div class="ab-stat"><div class="lbl">Win P/L</div><div class="val gold" id="abBWin">+KES —</div></div>
+        </div>
+        <div class="ab-stat" style="margin-bottom:10px"><div class="lbl">Streak (B)</div><div class="val" id="abBStreak">0 losses</div></div>
+        <div style="display:flex;gap:4px">
+          <button class="ab-btn green" id="abBtnBWon" onclick="recordOutcome(true,'B')" disabled>WON</button>
+          <button class="ab-btn red" id="abBtnBLost" onclick="recordOutcome(false,'B')" disabled>LOST</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button class="btn btn-blue btn-sm" style="width:100%; justify-content:center;" id="abBtnLiveB" onclick="openTradeModal(selectedTrade.id,'B')" disabled>⚡ Trade Live</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-lbl" style="margin-bottom:10px"><span>⚙ Manual Market Entry</span><span style="font-weight:400;color:var(--text-muted);font-size:9px">Paste odds from Polymarket</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div><label class="me-lbl">Match name</label><input class="me-inp" id="meName" type="text" placeholder="Home vs Away" style="width:100%"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label class="me-lbl">Odds A</label><input class="me-inp" id="meO1" type="number" step="0.01" value="1.90"></div>
+        <div><label class="me-lbl">Odds B</label><input class="me-inp" id="meO2" type="number" step="0.01" value="1.90"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <div><label class="me-lbl">Sport</label>
+        <select class="me-inp" id="meSport" style="width:100%">
+          <option>Football</option><option>Tennis</option><option>Table Tennis</option>
+          <option>Basketball</option><option>Volleyball</option><option>Badminton</option><option>Darts</option>
+        </select>
+      </div>
+      <div><label class="me-lbl">Market</label>
+        <select class="me-inp" id="meMkt" style="width:100%">
+          <option>Match Winner</option><option>Over / Under</option><option>Handicap</option>
+        </select>
+      </div>
+      <div><label class="me-lbl">Match time</label><input class="me-inp" id="meTime" type="time" value="20:00"></div>
+    </div>
+    <div style="display:flex;gap:7px">
+      <button class="btn btn-green btn-sm" onclick="loadManual()" style="flex:1">▶ Load to Panel</button>
+      <button class="btn btn-outline btn-sm" onclick="addManualToTracker()" style="flex:1">+ Add to Tracker</button>
+    </div>
+  </div>
+</div>
+
+<div class="right-col">
+  <div>
+    <div class="sec-lbl">
+      <span>Active Pending <span id="enginePendCount" style="font-weight:400;color:var(--text-muted)">(0)</span></span>
+    </div>
+    <div class="tw">
+      <table class="tt" id="enginePendTable" style="display:none">
+        <thead><tr><th>Match</th><th>Sport</th><th>Odds</th><th>Side</th><th>Stake</th><th>Status</th></tr></thead>
+        <tbody id="enginePendBody"></tbody>
+      </table>
+      <div class="empty-state" id="enginePendEmpty">No active picks. Track from Polymarket Feed tab.</div>
+    </div>
+  </div>
+  <div>
+    <div class="sec-lbl"><span>Recent Trades <span id="engineRecentCount" style="font-weight:400;color:var(--text-muted)">(0)</span></span></div>
+    <div class="re-scroll" style="max-height:260px">
+      <div class="card" style="padding:0">
+        <table class="rt" id="engineRecentTable" style="display:none">
+          <thead><tr><th>Match</th><th>Side</th><th>Odds</th><th>Result</th><th>P&amp;L</th></tr></thead>
+          <tbody id="engineRecentBody"></tbody>
+        </table>
+        <div class="empty-state" id="engineRecentEmpty">No trades yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</div><!-- /tab-engine -->
+
+<!-- ═══════════════ TAB 2: BETIKA FEED ═══════════════ -->
+<div id="tab-feed" class="tab-panel">
+  <div class="sec-lbl">
+    <span>📡 Polymarket Sports Feed — Live Markets <span id="cuCount" style="font-weight:400;color:var(--text-muted)"></span></span>
+    <span id="lastScan2" style="font-size:9px;color:var(--text-muted)">—</span>
+  </div>
+  <div class="sport-tabs" id="sportTabs">
+    <button class="stab on" onclick="filterSport('ALL')">All</button>
+    <button class="stab" onclick="filterSport('Football')">⚽ Football</button>
+    <button class="stab" onclick="filterSport('Tennis')">🎾 Tennis</button>
+    <button class="stab" onclick="filterSport('Basketball')">🏀 Basketball</button>
+    <button class="stab" onclick="filterSport('Cricket')">🏏 Cricket</button>
+    <button class="stab" onclick="filterSport('UFC/Boxing')">🥊 UFC/Boxing</button>
+    <button class="stab" onclick="filterSport('Racing')">🏎 Racing</button>
+    <button class="stab" onclick="filterSport('Golf')">⛳ Golf</button>
+    <button class="stab" onclick="filterSport('Baseball')">⚾ Baseball</button>
+    <button class="stab" onclick="filterSport('NFL')">🏈 NFL</button>
+    <button class="stab" onclick="filterSport('Prediction Market')">🔮 Other</button>
+  </div>
+  <div class="tw">
+    <table class="et" id="cuTable">
+      <thead><tr>
+        <th style="width:18px"></th>
+        <th>Closes</th><th>Signal</th><th>Rec</th>
+        <th>Sport</th><th>Question</th><th>Volume/24h</th>
+        <th>YES Odds</th><th>NO Odds</th><th>Spread</th>
+      </tr></thead>
+      <tbody id="cuBody"></tbody>
+    </table>
+    <div class="empty-state" id="cuLoading">Loading Polymarket sports markets...</div>
+    <div class="empty-state" id="cuEmpty" style="display:none">No events match current filter.</div>
+  </div>
+</div><!-- /tab-feed -->
+
+<!-- ═══════════════ TAB 3: TRACKER ═══════════════ -->
+<div id="tab-tracker" class="tab-panel">
+  <div class="sec-lbl">
+    <span>Recovery Tracker <span id="trCount" style="font-weight:400;color:var(--text-muted)">0 tracked</span></span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" style="padding:1px 6px;font-size:8px;background:rgba(255,23,68,0.08);border-color:rgba(255,23,68,0.3);color:#ff6b6b" onclick="refreshAllLiveScores()">🔴 Refresh Live</button>
+      <button class="btn btn-outline btn-sm" style="padding:1px 6px;font-size:8px" onclick="clearResolvedTracker()">Clear Finished</button>
+      <button class="btn btn-outline btn-sm" style="padding:1px 6px;font-size:8px" onclick="exportCSV()">Export CSV</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0">
+    <table class="tt" id="trTable" style="display:none">
+      <thead><tr>
+        <th>Match</th><th>Mkt</th><th>Odds</th><th>Side</th><th>Stake</th><th>Status</th><th>Action</th>
+      </tr></thead>
+      <tbody id="trBody"></tbody>
+    </table>
+    <div class="empty-state" id="trEmpty">No picks tracked. Check ☑ boxes in the Polymarket Feed tab.</div>
+  </div>
+</div><!-- /tab-tracker -->
+
+<!-- ═══════════════ TAB 4: RESULTS ═══════════════ -->
+<div id="tab-results" class="tab-panel">
+  <div class="re-header">
+    <span><strong>Results Engine</strong></span>
+    <span id="reCount" style="color:var(--text-dim);font-weight:400">0 trades</span>
+  </div>
+  <div class="re-scroll">
+    <div class="card" style="padding:0">
+      <table class="rt" id="reTable" style="display:none">
+        <thead><tr>
+          <th>#</th><th>Match</th><th>Side</th><th>Odds</th><th>Stake</th><th>Result</th><th>P&amp;L</th><th>Bal</th>
+        </tr></thead>
+        <tbody id="reBody"></tbody>
+      </table>
+      <div class="empty-state" id="reEmpty">No trades yet.</div>
+    </div>
+  </div>
+</div><!-- /tab-results -->
+
+<!-- ═══════════════ TAB 5: MARTINGALE DEMO ═══════════════ -->
+<div id="tab-martingale" class="tab-panel">
+  <div class="card" style="margin-bottom:14px">
+    <div class="sec-lbl" style="margin-bottom:10px"><span>⚡ 6-Level Martingale Visualizer</span><span style="font-weight:400;color:var(--text-muted);font-size:9px">Click Auto-Populate to set active stake</span></div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:end">
+      <div class="sg"><label>Demo Base Stake</label><input id="mgDemoBase" type="number" value="100" step="1"></div>
+      <div class="sg"><label>Demo Factor</label><input id="mgDemoFactor" type="number" value="2.1" step="0.1"></div>
+      <div class="sg"><label>Demo Odds</label><input id="mgDemoOdds" type="number" value="1.90" step="0.01"></div>
+      <button class="btn btn-blue btn-sm" onclick="renderMartingaleDemo()">↻ Recalculate</button>
+    </div>
+    <div class="tw">
+      <table class="mg-demo-table">
+        <thead><tr>
+          <th>Level</th><th>Stake (KES)</th><th>Cumulative Risk</th><th>Win Payout</th><th>Recovery P/L</th><th>Action</th>
+        </tr></thead>
+        <tbody id="mgDemoBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec-lbl" style="margin-bottom:8px"><span>How Martingale Recovery Works</span></div>
+    <p style="font-size:11px;color:var(--text-dim);line-height:1.7">
+      After each loss, the next stake = <strong style="color:var(--gold)">base × factor^level</strong>.
+      A win at any level recovers all previous losses plus the original base profit.
+      Side A and Side B streaks are tracked independently — losing on Side A does not affect Side B's stake level.
+      Use "Auto-Populate" on any row to instantly set your live Base Stake and Factor to match that recovery level.
+    </p>
+  </div>
+</div><!-- /tab-martingale -->
+
+<!-- ═══════════════ TAB 6: AUTO REPORTS ═══════════════ -->
+<div id="tab-reports" class="tab-panel">
+  <div class="report-grid">
+    <div class="report-card"><div class="rv" id="repTotalTrades" style="color:var(--blue)">0</div><div class="rl">Total Trades</div></div>
+    <div class="report-card"><div class="rv" id="repWinRate" style="color:var(--green)">0%</div><div class="rl">Win Rate</div></div>
+    <div class="report-card"><div class="rv" id="repNetPL" style="color:var(--gold)">KES 0</div><div class="rl">Net P/L</div></div>
+    <div class="report-card"><div class="rv" id="repROI" style="color:var(--green)">0%</div><div class="rl">ROI</div></div>
+  </div>
+  <div class="chart-wrap">
+    <div class="sec-lbl" style="margin-bottom:10px"><span>P/L Per Trade (Last 30)</span></div>
+    <div class="bar-chart" id="plBarChart"></div>
+  </div>
+  <div class="chart-wrap">
+    <div class="sec-lbl" style="margin-bottom:10px"><span>Bankroll Curve</span></div>
+    <svg id="bankrollCurveSVG" viewBox="0 0 600 140" preserveAspectRatio="none" style="width:100%;height:140px"></svg>
+  </div>
+  <div class="report-grid" style="margin-top:14px">
+    <div class="report-card"><div class="rv" id="repBestWin" style="color:var(--green)">KES 0</div><div class="rl">Best Single Win</div></div>
+    <div class="report-card"><div class="rv" id="repWorstLoss" style="color:var(--red-b)">KES 0</div><div class="rl">Worst Single Loss</div></div>
+    <div class="report-card"><div class="rv" id="repAvgStake" style="color:var(--text)">KES 0</div><div class="rl">Avg Stake</div></div>
+    <div class="report-card"><div class="rv" id="repWorstStreakRep" style="color:var(--gold)">0</div><div class="rl">Worst Loss Streak</div></div>
+  </div>
+</div><!-- /tab-reports -->
+
+<!-- ═══════════════ TAB 7: VIRTUAL BOT ═══════════════ -->
+<div id="tab-bot" class="tab-panel">
+  <div class="bot-status-bar" id="botStatusBar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="bot-pulse-dot" id="botPulseDot"></div>
+      <div>
+        <div style="font-weight:700;font-size:13px" id="botStatusText">Bot Idle</div>
+        <div style="font-size:10px;color:var(--text-muted)" id="botStatusSub">Configure and enable to start automated trading</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-green btn-sm" onclick="runBotNow()">▶ Run Cycle Now</button>
+      <button class="btn btn-red btn-sm" onclick="resetBot()">↺ Reset Bot</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="left-col">
+      <div class="card">
+        <div class="sec-lbl" style="margin-bottom:10px"><span>🤖 InvestPal Trade Bot Configuration</span></div>
+        <div class="alert-row" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div class="mode-toggle" id="botEnabledToggle" onclick="toggleBotEnabled()">
+            <span id="botEnabledIcon">⏸</span><div class="sw"></div>
+          </div>
+          <span style="font-size:12px;font-weight:600" id="botEnabledLabel">Bot Disabled</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label class="me-lbl">Base Stake (KES/USDC)</label><input class="me-inp" id="botBaseStake" type="number" value="50" step="1"></div>
+          <div><label class="me-lbl">Recovery Factor</label><input class="me-inp" id="botRecoveryFactor" type="number" value="2.0" step="0.1"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label class="me-lbl">Max Concurrent Bets</label><input class="me-inp" id="botMaxConcurrent" type="number" value="3" step="1" min="1"></div>
+          <div><label class="me-lbl">Bot Bankroll (KES/USDC)</label><input class="me-inp" id="botBankroll" type="number" value="2000" step="100"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="me-lbl">Bot Mode</label>
+            <select class="me-inp" id="botMode" style="width:100%">
+              <option value="simulation">Simulation (Virtual)</option>
+              <option value="live">Live (Real Trades)</option>
+            </select>
+          </div>
+          <div>
+            <label class="me-lbl">Cycle Interval</label>
+            <select class="me-inp" id="botInterval" style="width:100%">
+              <option value="60">1 min (Test)</option>
+              <option value="3600">1 hour</option>
+              <option value="14400">4 hours</option>
+              <option value="43200">12 hours</option>
+              <option value="86400">24 hours (Daily)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:6px">
+          <button class="btn btn-gold btn-sm" onclick="saveBotConfig()" style="flex:1">Save Bot Config</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec-lbl" style="margin-bottom:8px"><span>Bot Performance</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="ab-stat"><div class="lbl">Bot Bankroll</div><div class="val" id="botBankrollVal">KES 2,000</div></div>
+          <div class="ab-stat"><div class="lbl">Bot P/L</div><div class="val" id="botPLVal">KES 0</div></div>
+          <div class="ab-stat"><div class="lbl">Active Bets</div><div class="val" id="botActiveBetsVal">0</div></div>
+          <div class="ab-stat"><div class="lbl">Cycles Run</div><div class="val" id="botCyclesVal">0</div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="sec-lbl" style="margin-bottom:8px"><span>⚡ 24h Historical Backtest</span></div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px">
+          Simulates the double-sided hedged recovery strategy on closed Polymarket sports events from the past 24 hours.
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="runBacktest()" style="width:100%;margin-bottom:10px">Run 24h Backtest</button>
+        <div id="backtestResults" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;font-size:11px">
+            <div class="ab-stat"><div class="lbl">Trades Run</div><div class="val" id="btTrades">0</div></div>
+            <div class="ab-stat"><div class="lbl">Win Rate</div><div class="val" id="btWinRate">0%</div></div>
+            <div class="ab-stat"><div class="lbl">Total P/L</div><div class="val" style="color:var(--green)" id="btPL">+$0.00</div></div>
+            <div class="ab-stat"><div class="lbl">Final Bankroll</div><div class="val" id="btBankroll">$0.00</div></div>
+          </div>
+          <div style="font-size:10px;font-weight:700;margin-bottom:4px">Backtest Trade Log</div>
+          <div class="bot-log" id="backtestLog" style="max-height:120px;font-size:10px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="right-col">
+      <div>
+        <div class="sec-lbl"><span>Active Bot Bets <span id="botActiveBetsCount" style="font-weight:400;color:var(--text-muted)">(0)</span></span></div>
+        <div class="tw">
+          <table class="tt" id="botActiveBetsTable" style="display:none">
+            <thead><tr><th>Match</th><th>Sport</th><th>Side</th><th>Odds</th><th>Stake</th><th>Placed</th></tr></thead>
+            <tbody id="botActiveBetsBody"></tbody>
+          </table>
+          <div class="empty-state" id="botActiveBetsEmpty">No active bot bets.</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-lbl"><span>Live Bot Activity Log</span></div>
+        <div class="bot-log" id="botLog">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Bot initialized. Awaiting configuration.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /tab-bot -->
+
+<!-- ═══════════════ TAB 8: WALLET & SETTINGS ═══════════════ -->
+<div id="tab-wallet" class="tab-panel">
+  <div class="bot-status-bar" id="walletStatusBar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="bot-pulse-dot" id="walletPulseDot"></div>
+      <div>
+        <div style="font-weight:700;font-size:13px" id="walletStatusText">Wallet Offline</div>
+        <div style="font-size:10px;color:var(--text-muted)" id="walletStatusSub">Paste your Polygon private key to enable live trading</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="left-col">
+      <div class="card">
+        <div class="sec-lbl" style="margin-bottom:10px"><span>🔑 Wallet Credentials</span></div>
+        <div class="sg" style="margin-bottom:10px; width: 100%;">
+          <label>Polygon Private Key or Mnemonic (Seed Phrase)</label>
+          <div style="display:flex; gap:6px; width: 100%;">
+            <input class="me-inp" id="walletPrivateKey" type="password" placeholder="0x... or 12-word seed phrase" style="flex:1; width:auto;">
+            <button class="btn btn-outline btn-sm" onclick="togglePasswordVisibility('walletPrivateKey')">👁</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label class="me-lbl">Funder Address (Optional)</label><input class="me-inp" id="walletFunderAddress" type="text" placeholder="0x..." style="width:100%"></div>
+          <div>
+            <label class="me-lbl">Chain ID</label>
+            <select class="me-inp" id="walletChainId" style="width:100%">
+              <option value="137">137 (Polygon)</option>
+              <option value="80001">80001 (Mumbai)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:6px">
+          <button class="btn btn-green btn-sm" onclick="saveWalletConfig()" style="flex:1">Save Wallet Settings</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="right-col">
+      <div class="card">
+        <div class="sec-lbl" style="margin-bottom:10px"><span>📋 Wallet Information</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="ab-stat"><div class="lbl">Wallet Configured</div><div class="val" id="walletPreviewVal">No</div></div>
+          <div class="ab-stat"><div class="lbl">Trading Status</div><div class="val" id="tradingStatusVal" style="color:var(--red-b)">Disabled</div></div>
+          <div class="ab-stat" style="grid-column: span 2"><div class="lbl">Real USDC Balance</div><div class="val" id="walletRealUSDCVal">$0.00</div></div>
+          <div class="ab-stat" style="grid-column: span 2"><div class="lbl">Real MATIC Balance</div><div class="val" id="walletRealMATICVal">0.0000 MATIC</div></div>
+          <div class="ab-stat"><div class="lbl">Funder Address</div><div class="val" id="funderAddrVal">—</div></div>
+          <div class="ab-stat"><div class="lbl">Chain</div><div class="val" id="chainNameVal">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+    <div>
+      <div class="sec-lbl"><span>💼 Live Polymarket Positions <span id="posCount" style="font-weight:400;color:var(--text-muted)">(0)</span></span></div>
+      <div class="tw">
+        <table class="tt" id="posTable" style="display:none">
+          <thead><tr><th>Asset (Token ID)</th><th>Size</th><th>Avg Price</th></tr></thead>
+          <tbody id="posBody"></tbody>
+        </table>
+        <div class="empty-state" id="posEmpty">No active positions.</div>
+      </div>
+    </div>
+    
+    <div>
+      <div class="sec-lbl"><span>⚡ Open CLOB Orders <span id="openOrdersCount" style="font-weight:400;color:var(--text-muted)">(0)</span></span></div>
+      <div class="tw">
+        <table class="tt" id="openOrdersTable" style="display:none">
+          <thead><tr><th>Order ID</th><th>Token ID</th><th>Side</th><th>Price</th><th>Size</th><th>Action</th></tr></thead>
+          <tbody id="openOrdersBody"></tbody>
+        </table>
+        <div class="empty-state" id="openOrdersEmpty">No open orders.</div>
+      </div>
+    </div>
+  </div>
+</div><!-- /tab-wallet -->
+
+<!-- Live Trade Modal -->
+<div id="tradeModal" class="toast" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:var(--surface); border:2px solid var(--green); border-radius:var(--radius); padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.8); z-index:10000; width:340px; height:auto; animation: su 0.2s ease-out;">
+  <div class="sec-lbl" style="font-size:12px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:6px;">
+    <span>⚡ Place Live Polymarket Order</span>
+    <span style="cursor:pointer; font-weight:800; font-size:14px; color:var(--red);" onclick="closeTradeModal()">✕</span>
+  </div>
+  <div style="font-size:11px; margin-bottom:10px;">
+    <div style="margin-bottom:6px;"><span style="color:var(--text-dim)">Market:</span> <strong id="mktModalQuestion">—</strong></div>
+    <div style="margin-bottom:6px;"><span style="color:var(--text-dim)">Outcome:</span> <span id="mktModalOutcome" class="badge badge-green">—</span></div>
+    <div style="margin-bottom:6px;"><span style="color:var(--text-dim)">Price:</span> <strong id="mktModalPrice" class="fv green">—</strong> USDC</div>
+    <div style="margin-bottom:6px; font-family:monospace; font-size:9px; color:var(--text-muted)"><span style="color:var(--text-dim)">Token ID:</span> <span id="mktModalTokenId">—</span></div>
+  </div>
+  <div class="sg" style="margin-bottom:12px; width:100%;">
+    <label>Order Size (USDC)</label>
+    <input class="me-inp" id="tradeModalSize" type="number" value="10" step="1" min="1" style="width:100%">
+  </div>
+  <div style="font-size:11px; margin-bottom:12px; display:flex; justify-content:space-between;">
+    <span style="color:var(--text-dim)">Estimated Total Cost:</span>
+    <strong><span id="tradeModalCost" class="fv green">5.00</span> USDC</strong>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <button class="btn btn-outline" style="flex:1" onclick="closeTradeModal()">Cancel</button>
+    <button class="btn btn-green" style="flex:1" onclick="executeLiveOrder()">Confirm Trade</button>
+  </div>
+</div>
+
+</div><!-- /container -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// API CLIENT — Python backend sync (replaces localStorage)
+// ════════════════════════════════════════════════════════════════
+const API_BASE = window.location.origin + '/polymarket';
+let apiConnected = false;
+
+async function apiGet(path){
+  try{
+    const r = await fetch(API_BASE + path, {headers:{'Content-Type':'application/json'}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    setConnStatus(true);
+    return d;
+  }catch(e){
+    setConnStatus(false);
+    throw e;
+  }
+}
+async function apiPost(path, body){
+  try{
+    const r = await fetch(API_BASE + path, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body||{})
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    setConnStatus(true);
+    return d;
+  }catch(e){
+    setConnStatus(false);
+    throw e;
+  }
+}
+function setConnStatus(ok){
+  apiConnected = ok;
+  const dot = document.getElementById('connDot');
+  const txt = document.getElementById('connText');
+  if(ok){
+    dot.className='conn-dot conn-on';
+    txt.textContent='Backend connected';
+    txt.style.color='var(--green)';
+  }else{
+    dot.className='conn-dot conn-off';
+    txt.textContent='Backend offline — using fallback data';
+    txt.style.color='var(--red-b)';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+let state={bankroll:5000,base_stake:100,factor:2.1,max_steps:6,streak_a:0,streak_b:0,total_pnl:0,wins:0,losses:0};
+let trackedPicks={};
+let trades=[];
+let selectedTrade=null;
+let currentSportFilter='ALL';
+let feedData=[];
+let bankrollHistory=[5000];
+let soundOn=true;
+let dimOn=false;
+let lastHotIds=new Set();
+let botConfig={base_stake:50,recovery_factor:2.0,max_concurrent_bets:3,bankroll:2000,bot_enabled:false};
+let botState={bankroll:2000,pnl:0,active_bets:[],cycles:0,log:[]};
+
+// ── Fallback seed markets (used when backend /api/feed is unreachable) ──
+const FALLBACK_MARKETS = [
+{id:'wc1',sport:'Football',market:'Match Winner',date:'Mon 29 Jun',
+ name:'Brazil vs Japan',home:'Brazil',away:'Japan',time:'21:00',oA:1.40,oB:7.00,
+ lA:'Brazil',lB:'Japan',note:'WC R32 · Houston',rec:'A',why:'Brazil scored 7+ goals in group stage.'},
+{id:'wc3',sport:'Football',market:'Match Winner',date:'Tue 30 Jun',
+ name:'Netherlands vs Morocco',home:'Netherlands',away:'Morocco',time:'04:00',oA:1.72,oB:4.20,
+ lA:'Netherlands',lB:'Morocco',note:'WC R32 · Monterrey',rec:'VALUE',why:'Morocco upset potential.'},
+{id:'wim1',sport:'Tennis',market:'Match Winner',date:'Mon 29 Jun',
+ name:'Sinner vs Kecmanovic',home:'Sinner',away:'Kecmanovic',time:'14:30',oA:1.10,oB:7.00,
+ lA:'Sinner [1]',lB:'Kecmanovic',note:'Wimbledon R1 · Centre Court',rec:'A',why:'World No.1 defending champion.'},
+{id:'tt2',sport:'Table Tennis',market:'Over / Under',date:'Mon 29 Jun',
+ name:'WTT Contender O/U 10.5 games',home:'Over 10.5',away:'Under 10.5',time:'11:00',oA:1.88,oB:1.92,
+ lA:'Over 10.5',lB:'Under 10.5',note:'WTT · Near-perfect balance',rec:'VALUE',why:'Best margin in feed.'},
+{id:'bb1',sport:'Basketball',market:'Over / Under',date:'Mon 29 Jun',
+ name:'Lakers vs Warriors SL O/U 215.5',home:'Over 215.5',away:'Under 215.5',time:'20:00',oA:1.90,oB:1.90,
+ lA:'Over 215.5',lB:'Under 215.5',note:'NBA SL · Perfect 50/50',rec:'VALUE',why:'Zero edge differential.'},
+{id:'vb1',sport:'Volleyball',market:'Match Winner',date:'Mon 29 Jun',
+ name:'Brazil vs Poland VNL',home:'Brazil',away:'Poland',time:'16:00',oA:1.68,oB:2.15,
+ lA:'Brazil',lB:'Poland',note:'VNL 2026',rec:'A',why:'Brazil VNL defending champs.'},
+{id:'bd1',sport:'Badminton',market:'Match Winner',date:'Mon 29 Jun',
+ name:'Axelsen vs Shi Yuqi',home:'Axelsen',away:'Shi Yuqi',time:'09:00',oA:1.55,oB:2.40,
+ lA:'Axelsen',lB:'Shi Yuqi',note:'BWF Superseries',rec:'A',why:'Axelsen world #1.'},
+];
+
+function save(){
+  try{
+    localStorage.setItem('ip_st',JSON.stringify(state));
+    localStorage.setItem('ip_tr',JSON.stringify(trackedPicks));
+    localStorage.setItem('ip_td',JSON.stringify(trades));
+    localStorage.setItem('ip_bh',JSON.stringify(bankrollHistory));
+    localStorage.setItem('ip_snd',soundOn?'1':'0');
+    localStorage.setItem('ip_dim',dimOn?'1':'0');
+    localStorage.setItem('ip_bot_cfg',JSON.stringify(botConfig));
+    localStorage.setItem('ip_bot_state',JSON.stringify(botState));
+  }catch(e){}
+}
+function loadLocal(){
+  try{
+    const s=localStorage.getItem('ip_st');if(s)state=JSON.parse(s);
+    const t=localStorage.getItem('ip_tr');if(t)trackedPicks=JSON.parse(t);
+    const r=localStorage.getItem('ip_td');if(r)trades=JSON.parse(r);
+    const b=localStorage.getItem('ip_bh');if(b)bankrollHistory=JSON.parse(b);
+    const sn=localStorage.getItem('ip_snd');if(sn!==null)soundOn=sn==='1';
+    const dm=localStorage.getItem('ip_dim');if(dm!==null)dimOn=dm==='1';
+    const bc=localStorage.getItem('ip_bot_cfg');if(bc)botConfig=JSON.parse(bc);
+    const bs=localStorage.getItem('ip_bot_state');if(bs)botState=JSON.parse(bs);
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════════════════════
+// MATH HELPERS
+// ════════════════════════════════════════════════════════════════
+function calcStake(streak){return +(state.base_stake*Math.pow(state.factor,Math.min(streak,state.max_steps))).toFixed(2)}
+function calcEdge(oA,oB){
+  const iA=1/oA,iB=1/oB,margin=(iA+iB-1)*100;
+  const fA=iA/(iA+iB),fB=iB/(iA+iB);
+  const evA=(oA*fA-1)*100,evB=(oB*fB-1)*100;
+  return{margin:margin.toFixed(1),evA:evA.toFixed(1),evB:evB.toFixed(1),diff:Math.abs(oA-oB).toFixed(2)};
+}
+function minutesUntil(t){
+  if(!t)return 9999;
+  const now=new Date();const[h,m]=t.split(':').map(Number);
+  const tgt=new Date(now);tgt.setHours(h,m,0,0);
+  if(tgt<now)tgt.setDate(tgt.getDate()+1);
+  return(tgt-now)/60000;
+}
+function fmtTime(mins){
+  const r=Math.round(mins);
+  if(r<0)return'Finished';if(r<2)return'NOW!';
+  if(r<60)return r+'m';return Math.floor(r/60)+'h '+(r%60)+'m';
+}
+function f(v){return'KES '+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmt(v){return(v>=0?'+':'-')+' KES '+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function alertMins(){return parseFloat(document.getElementById('cfgAlert')?.value||45)}
+function sc(s){const m={'Table Tennis':'tt','Tennis':'tennis','Football':'fb','Volleyball':'vb','Basketball':'bb','Badminton':'badm','Darts':'darts'};return m[s]||'tt'}
+function getRec(m){
+  const{margin,diff}=calcEdge(m.oA,m.oB);
+  const mg=parseFloat(margin),d=parseFloat(diff);
+  if(mg<6&&d<0.06)return{cls:'rp-fire',txt:'🔥 VALUE'};
+  if(mg<8&&d<0.12)return{cls:'rp-fire',txt:'✅ GOOD VALUE'};
+  if(mg<10&&d<0.20)return{cls:'rp-good',txt:'👍 FAIR'};
+  if(d<=0.30)return{cls:'rp-fair',txt:'⚠ WATCH'};
+  return{cls:'rp-skip',txt:'SKIP'};
+}
+const SPORT_SLUGS={'Football':'football','Tennis':'tennis','Table Tennis':'table-tennis','Basketball':'basketball','Volleyball':'volleyball','Badminton':'badminton','Darts':'darts'};
+function polymarketLink(m){
+  if(m.url) return m.url.replace('/event/', '/market/');
+  const slug=m.slug||m.market_id||'';
+  return slug ? `https://polymarket.com/market/${slug}` : 'https://polymarket.com/sports';
+}
+
+// ════════════════════════════════════════════════════════════════
+// MAIN TABS
+// ════════════════════════════════════════════════════════════════
+function showMainTab(id){
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('on'));
+  const tabs=['engine','feed','tracker','results','martingale','reports','bot','wallet'];
+  document.querySelectorAll('.mtab')[tabs.indexOf(id)].classList.add('on');
+  document.getElementById('tab-'+id).classList.add('on');
+  if(id==='martingale') renderMartingaleDemo();
+  if(id==='reports') renderReports();
+  if(id==='bot') renderBotTab();
+  if(id==='results') renderResultsTab();
+  if(id==='tracker') renderTracker();
+  if(id==='feed') renderFeed();
+  if(id==='wallet') renderWalletTab();
+}
+
+// ════════════════════════════════════════════════════════════════
+// SOUND / DIM TOGGLES
+// ════════════════════════════════════════════════════════════════
+function beep(){
+  if(!soundOn)return;
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='sine';o.frequency.setValueAtTime(880,ctx.currentTime);
+    g.gain.setValueAtTime(0.15,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.35);
+    o.start();o.stop(ctx.currentTime+0.35);
+    setTimeout(()=>{
+      const o2=ctx.createOscillator(),g2=ctx.createGain();
+      o2.connect(g2);g2.connect(ctx.destination);
+      o2.type='sine';o2.frequency.setValueAtTime(1100,ctx.currentTime);
+      g2.gain.setValueAtTime(0.15,ctx.currentTime);
+      g2.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
+      o2.start();o2.stop(ctx.currentTime+0.3);
+    },150);
+  }catch(e){}
+}
+function toggleSound(){
+  soundOn=!soundOn;
+  document.getElementById('soundToggle').classList.toggle('on',soundOn);
+  document.getElementById('soundIcon').textContent=soundOn?'🔔':'🔕';
+  save();toast(soundOn?'Sound alerts on':'Sound alerts off','info');
+}
+function toggleDim(){
+  dimOn=!dimOn;
+  document.body.classList.toggle('dim',dimOn);
+  document.getElementById('dimToggle').classList.toggle('on',dimOn);
+  save();
+}
+
+// ════════════════════════════════════════════════════════════════
+// SESSION STATS + SPARKLINE
+// ════════════════════════════════════════════════════════════════
+function renderSessionStats(){
+  const total=state.wins+state.losses;
+  const winRate=total?((state.wins/total)*100).toFixed(1):'0.0';
+  document.getElementById('statWinRate').textContent=winRate+'%';
+  document.getElementById('statWinRate').style.color=parseFloat(winRate)>=50?'var(--green)':'var(--red-b)';
+
+  const totalStaked=trades.reduce((s,t)=>s+parseFloat(t.stake||0),0);
+  const roi=totalStaked?((state.total_pnl/totalStaked)*100).toFixed(1):'0.0';
+  document.getElementById('statROI').textContent=(roi>=0?'+':'')+roi+'%';
+  document.getElementById('statROI').style.color=roi>=0?'var(--green)':'var(--red-b)';
+
+  const avgOdds=trades.length?(trades.reduce((s,t)=>s+parseFloat(t.odds||0),0)/trades.length).toFixed(2):'—';
+  document.getElementById('statAvgOdds').textContent=avgOdds;
+
+  const worstStreak=Math.max(state.streak_a,state.streak_b);
+  document.getElementById('statBestStreak').textContent=worstStreak;
+
+  if(bankrollHistory[bankrollHistory.length-1]!==state.bankroll)bankrollHistory.push(state.bankroll);
+  if(bankrollHistory.length>40)bankrollHistory=bankrollHistory.slice(-40);
+  const trend=bankrollHistory.length>1?(state.bankroll-bankrollHistory[0]):0;
+  const trendEl=document.getElementById('statBankrollTrend');
+  trendEl.textContent=(trend>=0?'+':'')+'KES '+Math.abs(trend).toFixed(0);
+  trendEl.style.color=trend>=0?'var(--green)':'var(--red-b)';
+  drawSparkline();
+}
+function drawSparkline(){
+  const svg=document.getElementById('sparkSVG');
+  if(!svg||bankrollHistory.length<2){if(svg)svg.innerHTML='';return}
+  const min=Math.min(...bankrollHistory),max=Math.max(...bankrollHistory);
+  const range=max-min||1;
+  const w=100,h=24;
+  const pts=bankrollHistory.map((v,i)=>{
+    const x=(i/(bankrollHistory.length-1))*w;
+    const y=h-((v-min)/range)*h;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const color=bankrollHistory[bankrollHistory.length-1]>=bankrollHistory[0]?'#00e676':'#ff5252';
+  svg.innerHTML=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// RECOVERY SUGGESTION
+// ════════════════════════════════════════════════════════════════
+function getRecoverySuggestion(){
+  if(state.streak_a<=0&&state.streak_b<=0)return null;
+  const lastTrade=trades[0];
+  const preferredSport=lastTrade?lastTrade.sport:null;
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+  
+  // Only look at future events in next 4h window that are not SKIP
+  let candidates = feedData.filter(m => {
+    if (!m.end_date) return false;
+    const end = new Date(m.end_date);
+    if (!(end > now && end <= cutoff)) return false;
+    const rec = getRec(m);
+    return rec.txt !== 'SKIP';
+  });
+
+  if(preferredSport){
+    const sameSport=candidates.filter(m=>m.sport===preferredSport);
+    if(sameSport.length)candidates=sameSport;
+  }
+  candidates.sort((a,b)=>Math.abs(a.oA-a.oB)-Math.abs(b.oA-b.oB));
+  return candidates[0]||null;
+}
+
+// ════════════════════════════════════════════════════════════════
+// FEED — GET /api/feed
+// ════════════════════════════════════════════════════════════════
+async function loadFeed(){
+  document.getElementById('cuLoading').style.display='';
+  document.getElementById('cuTable').style.display='none';
+  document.getElementById('cuEmpty').style.display='none';
+  try{
+    const d = await apiGet('/api/feed');
+    feedData = (d.feed||[]).map(normalizeMarket);
+    if(d.state) Object.assign(state, d.state);
+    if(d.tracked_picks) trackedPicks = d.tracked_picks;
+    toast('Polymarket feed synced — '+feedData.length+' sports markets','success');
+  }catch(e){
+    feedData = [...FALLBACK_MARKETS];
+    toast('Backend unreachable — showing fallback markets','error');
+  }
+  const now=new Date();
+  const ts=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('lastScan').textContent=ts;
+  document.getElementById('lastScan2').textContent='Updated '+ts;
+  renderFeed();
+  autoSelectBest();
+  renderAll();
+}
+function normalizeMarket(m){
+  // Adapt Polymarket backend schema to internal shape
+  if(m.oA!==undefined && m.question) return m; // already full Polymarket object
+  if(m.oA!==undefined) return m; // already normalized fallback
+  const yp = m.yes_price || m.oA || 0.5;
+  const np = m.no_price || m.oB || 0.5;
+  const yo = m.yes_odds || m.oA || (yp>0?Math.round(100/yp)/100:2);
+  const no = m.no_odds || m.oB || (np>0?Math.round(100/np)/100:2);
+  const vol = m.volume24h || 0;
+  return {
+    id: m.id || ('m_'+Math.random().toString(36).slice(2)),
+    sport: m.sport || 'Prediction Market',
+    market: m.market || 'Prediction Market',
+    question: m.question || m.name || 'Unknown',
+    date: m.date || '',
+    name: m.question || m.name || 'Unknown',
+    home: m.lA || m.home || outcomes0(m) || 'YES',
+    away: m.lB || m.away || outcomes1(m) || 'NO',
+    time: m.time || '—',
+    oA: yo, oB: no,
+    lA: m.lA || m.desc1 || m.home || 'YES',
+    lB: m.lB || m.desc2 || m.away || 'NO',
+    note: m.note || `Polymarket · ${m.sport||''} · Vol $${vol.toLocaleString()}/24h`,
+    why: m.why || `YES ${Math.round((m.yes_price||yp)*100)}% / NO ${Math.round((m.no_price||np)*100)}% implied`,
+    rec: 'CHECK',
+    volume24h: vol,
+    liquidity: m.liquidity || 0,
+    end_date: m.end_date || '',
+    token_ids: m.token_ids || [],
+    slug: m.slug || '',
+    url: m.url || (m.slug ? `https://polymarket.com/event/${m.slug}` : ''),
+    market_id: m.market_id || '', event_id: m.event_id, specifier: m.specifier
+  };
+}
+function outcomes0(m){return m.outcomes&&m.outcomes[0]||'YES';}
+function outcomes1(m){return m.outcomes&&m.outcomes[1]||'NO';}
+
+function filterSport(sport){
+  currentSportFilter=sport;
+  document.querySelectorAll('.stab').forEach(t=>{
+    t.classList.toggle('on',(sport==='ALL'&&t.textContent==='All')||t.textContent.includes(sport));
+  });
+  renderFeed();
+}
+
+function renderFeed(){
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 4 * 60 * 60 * 1000); // 4 hours from now
+
+  // Show only events closing within next 4 hours OR tracked picks (regardless of time)
+  let data = feedData.filter(m => {
+    const isTracked = !!trackedPicks[m.id];
+    if (isTracked) return true; // always keep tracked
+    if (!m.end_date) return false; // no date = skip
+    const end = new Date(m.end_date);
+    return end > now && end <= cutoff; // future, within 4 hrs
+  });
+
+  if(currentSportFilter!=='ALL') data=data.filter(m=>m.sport===currentSportFilter);
+
+  // Sort: tracked first, then by end_date ascending (soonest closing first)
+  data.sort((a,b)=>{
+    const aT = !!trackedPicks[a.id], bT = !!trackedPicks[b.id];
+    if(aT && !bT) return -1;
+    if(!aT && bT) return 1;
+    const da = a.end_date ? new Date(a.end_date) : new Date('9999');
+    const db = b.end_date ? new Date(b.end_date) : new Date('9999');
+    return da - db;
+  });
+
+  const totalInWindow = feedData.filter(m=>{
+    if(!m.end_date) return false;
+    const end=new Date(m.end_date);
+    return end>now && end<=cutoff;
+  }).length;
+  document.getElementById('cuCount').textContent='('+data.length+' in next 4h / '+feedData.length+' total)';
+
+  const tbody=document.getElementById('cuBody');
+  const loading=document.getElementById('cuLoading');
+  const empty=document.getElementById('cuEmpty');
+  loading.style.display='none';
+  if(!data.length){
+    document.getElementById('cuTable').style.display='none';
+    empty.style.display='';
+    empty.textContent='No events closing in the next 4 hours. Markets are refreshed every 90 seconds.';
+    return;
+  }
+  document.getElementById('cuTable').style.display='table';empty.style.display='none';
+  tbody.innerHTML=data.map(m=>{
+    const isTracked = !!trackedPicks[m.id];
+    const end = m.end_date ? new Date(m.end_date) : null;
+    const minsLeft = end ? Math.round((end - now) / 60000) : null;
+
+    let sig;
+    if (isTracked && end && end <= now) {
+      sig = '<span class="sig-pill sp-wait">TRACKED·CLOSED</span>';
+    } else if (minsLeft !== null && minsLeft <= 0) {
+      sig = '<span class="sig-pill sp-wait">CLOSED</span>';
+    } else if (minsLeft !== null && minsLeft <= 30) {
+      sig = '<span class="sig-pill sp-now">🔥 '+minsLeft+'m left</span>';
+    } else if (minsLeft !== null && minsLeft <= 120) {
+      sig = '<span class="sig-pill sp-soon">'+Math.floor(minsLeft/60)+'h '+( minsLeft%60)+'m</span>';
+    } else if (minsLeft !== null) {
+      sig = '<span class="sig-pill sp-soon">'+Math.floor(minsLeft/60)+'h '+( minsLeft%60)+'m</span>';
+    } else {
+      sig = '<span class="sig-pill sp-wait">—</span>';
+    }
+
+    const pid=m.id;
+    const tracked=trackedPicks[pid];
+    let ctrlHtml='<input type="checkbox" class="cp" '+(tracked?'checked':'')+' onclick="event.stopPropagation();togglePick(\''+pid+'\',this.checked)" title="Track">';
+    if(tracked){
+      if(tracked.status==='won') ctrlHtml='<span class="rb win" style="font-size:8px;padding:1px 4px">✓ WON</span>';
+      else if(tracked.status==='lost') ctrlHtml='<span class="rb loss" style="font-size:8px;padding:1px 4px">✗ LOST</span>';
+    }
+    const{margin,evA,evB,diff}=calcEdge(m.oA,m.oB);
+    const rec=getRec(m);
+    const isHot = minsLeft !== null && minsLeft <= 30 && minsLeft > 0;
+    const volStr = m.volume24h ? '$'+Number(m.volume24h).toLocaleString(undefined,{maximumFractionDigits:0}) : '—';
+    return`<tr class="${isHot?'sug-row':''}" style="cursor:pointer" onclick="selectFromFeed('${m.id}')">
+      <td>${ctrlHtml}</td>
+      <td style="white-space:nowrap;color:var(--text-dim);font-size:10px">${m.date||'—'}<br>${m.time||'—'} UTC</td>
+      <td>${sig}</td>
+      <td><span class="rec-p ${rec.cls}">${rec.txt}</span></td>
+      <td><span class="sb ${sc(m.sport)}">${(m.sport||'—').slice(0,4).toUpperCase()}</span></td>
+      <td>
+        <div style="font-weight:600;font-size:11px">${m.name||m.question||'—'}</div>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:1px">${m.note||''}&nbsp;&nbsp;<a class="deep-link" href="${polymarketLink(m)}" target="_blank" onclick="event.stopPropagation()">Open on Polymarket ↗</a></div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:1px;font-style:italic">${m.why||''}</div>
+      </td>
+      <td style="color:var(--gold);font-size:10px;font-weight:600">${volStr}</td>
+      <td class="fv green">${m.oA.toFixed(2)}</td>
+      <td class="fv gold">${m.oB.toFixed(2)}</td>
+      <td style="color:${parseFloat(diff)<=0.10?'var(--green)':parseFloat(diff)<=0.20?'var(--gold)':'var(--text-dim)'}">${diff}</td>
+    </tr>`;
+  }).join('');
+  updateHeader();
+}
+
+function autoSelectBest(){
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+  // Pick the market closing soonest within 4h window, excluding SKIP
+  const active = feedData.filter(m => {
+    if (!m.end_date) return false;
+    const end = new Date(m.end_date);
+    if (!(end > now && end <= cutoff)) return false;
+    const rec = getRec(m);
+    return rec.txt !== 'SKIP';
+  });
+  if(!active.length){
+    const nonSkip = feedData.filter(m => getRec(m).txt !== 'SKIP');
+    if (nonSkip.length) selectFromFeed(nonSkip[0].id);
+    else if (feedData.length) selectFromFeed(feedData[0].id);
+    return;
+  }
+  active.sort((a,b) => new Date(a.end_date) - new Date(b.end_date));
+  selectFromFeed(active[0].id);
+}
+
+// ════════════════════════════════════════════════════════════════
+// SELECT TRADE
+// ════════════════════════════════════════════════════════════════
+function selectFromFeed(id){
+  const m=feedData.find(x=>x.id===id);
+  if(!m)return;
+  selectedTrade=m;
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 4*60*60*1000);
+  const minsLeft = m.end_date ? Math.round((new Date(m.end_date) - now)/60000) : null;
+  const timerText = minsLeft === null ? '—'
+    : minsLeft <= 0 ? 'CLOSED'
+    : minsLeft < 60 ? minsLeft+'m left'
+    : Math.floor(minsLeft/60)+'h '+(minsLeft%60)+'m left';
+  document.getElementById('sugSection').style.display='';
+  document.getElementById('sugH').textContent=m.lA||m.home||m.name.split(' vs ')[0]||'YES';
+  document.getElementById('sugA').textContent=m.lB||m.away||m.name.split(' vs ')[1]||'NO';
+  document.getElementById('sugT').textContent=(m.date||'')+' '+(m.time||'')+'  UTC';
+  document.getElementById('sugSportLabel').textContent=m.sport;
+  document.getElementById('sugMkt').textContent=m.question||m.market||'Prediction Market';
+  document.getElementById('sugTimer').textContent=timerText;
+  document.getElementById('sugO1').textContent=m.oA.toFixed(2);
+  document.getElementById('sugO2').textContent=m.oB.toFixed(2);
+  document.getElementById('sugD1').textContent=m.lA||'Side A';
+  document.getElementById('sugD2').textContent=m.lB||'Side B';
+  const{margin,evA,evB,diff}=calcEdge(m.oA,m.oB);
+  const rec=getRec(m);
+  const stA=calcStake(state.streak_a);
+  const stB=calcStake(state.streak_b);
+  document.getElementById('sugMetaLeft').textContent=m.note||(m.sport+' · '+(m.question||m.market||''));
+  document.getElementById('sugStakeA').textContent=f(stA);
+  document.getElementById('sugStakeB').textContent=f(stB);
+  document.getElementById('sugRecBadge').innerHTML=`<span class="rec-p ${rec.cls}">${rec.txt}</span> <span style="font-size:10px;color:var(--text-dim);margin-left:6px">${m.why||''}</span>`;
+  document.getElementById('abAOdds').innerHTML=m.oA.toFixed(2)+' <span class="dec">dec</span>';
+  document.getElementById('abBOdds').innerHTML=m.oB.toFixed(2)+' <span class="dec">dec</span>';
+  document.getElementById('abALbl').textContent=m.lA||'YES';
+  document.getElementById('abBLbl').textContent=m.lB||'NO';
+  document.getElementById('abALabel').textContent=m.sport+' · '+(m.question||m.market||'Prediction Market');
+  document.getElementById('abBLabel').textContent=m.sport+' · '+(m.question||m.market||'Prediction Market');
+  document.getElementById('abAStake').textContent=f(stA);
+  document.getElementById('abBStake').textContent=f(stB);
+  document.getElementById('abAWin').textContent=fmt((m.oA-1)*stA);
+  document.getElementById('abBWin').textContent=fmt((m.oB-1)*stB);
+  document.getElementById('abAStreak').textContent=state.streak_a+' loss'+(state.streak_a!==1?'es':'');
+  document.getElementById('abBStreak').textContent=state.streak_b+' loss'+(state.streak_b!==1?'es':'');
+  ['abBtnAWon','abBtnALost','abBtnBWon','abBtnBLost','btnWonA','btnLostA','btnWonB','btnLostB'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.disabled=false;
+  });
+
+  // Enable or disable live trade buttons
+  const hasTokens = m.token_ids && m.token_ids.length > 0;
+  const liveA = document.getElementById('btnTradeLiveA');
+  const liveB = document.getElementById('btnTradeLiveB');
+  const abLiveA = document.getElementById('abBtnLiveA');
+  const abLiveB = document.getElementById('abBtnLiveB');
+
+  if (walletConfig.trading_enabled && hasTokens) {
+    if (liveA) { liveA.style.display = 'inline-flex'; liveA.disabled = false; }
+    if (liveB) { liveB.style.display = 'inline-flex'; liveB.disabled = m.token_ids.length < 2; }
+    if (abLiveA) { abLiveA.disabled = false; }
+    if (abLiveB) { abLiveB.disabled = m.token_ids.length < 2; }
+  } else {
+    if (liveA) { liveA.style.display = 'none'; }
+    if (liveB) { liveB.style.display = 'none'; }
+    if (abLiveA) { abLiveA.disabled = true; }
+    if (abLiveB) { abLiveB.disabled = true; }
+  }
+
+  // Show the Polymarket link on the engine panel
+  const pmLink = document.getElementById('enginePolyLink');
+  if (pmLink) {
+    pmLink.href = polymarketLink(m);
+    pmLink.style.display = m.url || m.slug ? 'inline' : 'none';
+  }
+
+  // Auto-switch to engine tab
+  showMainTab('engine');
+}
+
+// ════════════════════════════════════════════════════════════════
+// MANUAL ENTRY
+// ════════════════════════════════════════════════════════════════
+function loadManual(){
+  const name=document.getElementById('meName').value.trim()||'Custom Market';
+  const oA=parseFloat(document.getElementById('meO1').value)||1.90;
+  const oB=parseFloat(document.getElementById('meO2').value)||1.90;
+  const sport=document.getElementById('meSport').value;
+  const mkt=document.getElementById('meMkt').value;
+  const time=document.getElementById('meTime').value;
+  const id='man_'+Date.now();
+  const m={id,sport,market:mkt,name,question:name,home:name.split(' vs ')[0]||name,
+    away:name.split(' vs ')[1]||'NO',time,date:'Today',oA,oB,
+    lA:'YES',lB:'NO',note:'Manual entry — verify on Polymarket',why:'',rec:'CHECK',
+    token_ids:[],url:'',slug:''};
+  feedData.unshift(m);
+  renderFeed();
+  selectFromFeed(id);
+  toast('Manual market loaded into Trade Engine','success');
+}
+function addManualToTracker(){
+  if(!selectedTrade){toast('Load a market first','error');return}
+  togglePick(selectedTrade.id,true);
+}
+
+// ════════════════════════════════════════════════════════════════
+// TRACKER — GET/POST /api/track
+// ════════════════════════════════════════════════════════════════
+async function togglePick(pid,on){
+  const m=feedData.find(x=>x.id===pid)||selectedTrade;
+  if(on&&m){
+    if(!trackedPicks[pid]||trackedPicks[pid].status!=='pending'){
+      trackedPicks[pid]={...m,status:'pending',stakeA:calcStake(state.streak_a),stakeB:calcStake(state.streak_b),added:new Date().toLocaleString(),live:false,score:null,liveUpdated:null};
+      try{ await apiPost('/api/track',{pid,on:true,ev:m}); }catch(e){}
+      toast(m.name+' tracked','success');
+    }
+  }else{
+    if(trackedPicks[pid]&&trackedPicks[pid].status==='pending'){
+      delete trackedPicks[pid];
+      try{ await apiPost('/api/track',{pid,on:false}); }catch(e){}
+    }
+  }
+  save();renderTracker();renderFeed();
+}
+
+function renderTracker(){
+  const pending=Object.values(trackedPicks).filter(p=>p.status==='pending');
+  const done=Object.values(trackedPicks).filter(p=>p.status!=='pending').slice(-5);
+  document.getElementById('trCount').textContent=pending.length+' tracked';
+  document.getElementById('enginePendCount').textContent='('+pending.length+')';
+  if(!Object.keys(trackedPicks).length){
+    document.getElementById('trTable').style.display='none';
+    document.getElementById('trEmpty').style.display='';
+    document.getElementById('enginePendTable').style.display='none';
+    document.getElementById('enginePendEmpty').style.display='';
+    return;
+  }
+  document.getElementById('trTable').style.display='table';
+  document.getElementById('trEmpty').style.display='none';
+  const all=[...pending,...done];
+  let rows=all.map(p=>{
+    const stCls=p.status==='pending'?'rb pend':p.status==='won'?'rb win':'rb loss';
+    const stTxt=p.status==='pending'?'PENDING':p.status==='won'?'WON':'LOST';
+    const liveBadge=p.live?`<span class="live-pill"><span class="live-dot"></span>LIVE</span>`:'';
+    const scoreDisplay=p.score?`<div style="font-size:10px;color:var(--green-b);font-weight:700;margin-top:2px">📊 ${p.score}${p.liveUpdated?' <span style="color:var(--text-muted);font-weight:400">('+p.liveUpdated+')</span>':''}</div>`:'';
+    const liveCtrl=p.status==='pending'?`<button class="btn btn-outline btn-sm" style="padding:2px 6px;font-size:9px;margin-top:3px" onclick="openLiveScoreInput('${p.id}')">${p.live?'Update Score':'+ Go Live'}</button>`:'';
+    const actHtml=p.status==='pending'?`<div style="display:flex;gap:2px">
+      <button class="btn btn-green btn-sm" style="padding:2px 5px;font-size:9px" onclick="markTrackedResult('${p.id}',true,'A')">W(A)</button>
+      <button class="btn btn-red btn-sm" style="padding:2px 5px;font-size:9px" onclick="markTrackedResult('${p.id}',false,'A')">L(A)</button>
+      <button class="btn btn-gold btn-sm" style="padding:2px 5px;font-size:9px;color:#000" onclick="markTrackedResult('${p.id}',true,'B')">W(B)</button>
+      <button class="btn btn-outline btn-sm" style="padding:2px 5px;font-size:9px" onclick="markTrackedResult('${p.id}',false,'B')">L(B)</button>
+    </div>`:'—';
+    return`<tr class="${p.status==='pending'?'mg-rec':''}">
+      <td style="font-weight:600;font-size:11px">${p.name} ${liveBadge}<div style="font-size:9px;color:var(--text-muted)">${p.note||''}</div>${scoreDisplay}${liveCtrl}</td>
+      <td style="color:var(--text-dim);font-size:10px">${p.market}</td>
+      <td><span class="fv green">${p.oA.toFixed(2)}</span>/<span class="fv gold">${p.oB.toFixed(2)}</span></td>
+      <td style="color:var(--text-dim)">${p.side||'—'}</td>
+      <td style="color:var(--text-dim);font-size:10px">${p.side?f(p.side==='A'?p.stakeA:p.stakeB):'A:'+f(p.stakeA)}</td>
+      <td><span class="${stCls}">${stTxt}</span></td>
+      <td>${actHtml}</td>
+    </tr>`;
+  }).join('');
+  if(state.streak_a>0||state.streak_b>0){
+    rows+=`<tr><td colspan="7" style="padding:8px 10px;text-align:center;font-size:11px;color:var(--gold);background:rgba(255,214,0,0.05)">
+      🔄 Recovery — Side A Step ${state.streak_a}: <strong>${f(calcStake(state.streak_a))}</strong> | Side B Step ${state.streak_b}: <strong>${f(calcStake(state.streak_b))}</strong> | Bankroll: <strong>${f(state.bankroll)}</strong>
+    </td></tr>`;
+    const sugg=getRecoverySuggestion();
+    if(sugg){
+      rows+=`<tr><td colspan="7" style="padding:0">
+        <div class="recov-suggest">
+          <span>👉 <strong>Auto-suggested next bet:</strong> ${sugg.name} <span class="sb ${sc(sugg.sport)}" style="margin-left:4px">${sugg.sport.slice(0,3).toUpperCase()}</span> · ${sugg.oA.toFixed(2)}/${sugg.oB.toFixed(2)} · ${sugg.time} EAT</span>
+          <button class="btn btn-gold btn-sm" onclick="selectFromFeed('${sugg.id}')">Load into Panel</button>
+        </div>
+      </td></tr>`;
+    }
+  }
+  document.getElementById('trBody').innerHTML=rows;
+
+  // Engine tab mirror (pending only, compact)
+  const epBody=document.getElementById('enginePendBody');
+  if(pending.length){
+    document.getElementById('enginePendTable').style.display='table';
+    document.getElementById('enginePendEmpty').style.display='none';
+    epBody.innerHTML=pending.map(p=>`<tr>
+      <td style="font-weight:600;font-size:11px">${p.name}</td>
+      <td><span class="sb ${sc(p.sport)}">${p.sport.slice(0,3).toUpperCase()}</span></td>
+      <td><span class="fv green">${p.oA.toFixed(2)}</span>/<span class="fv gold">${p.oB.toFixed(2)}</span></td>
+      <td style="color:var(--text-dim)">${p.side||'—'}</td>
+      <td style="color:var(--text-dim)">${p.side?f(p.side==='A'?p.stakeA:p.stakeB):'—'}</td>
+      <td><span class="rb pend">PENDING</span></td>
+    </tr>`).join('');
+  }else{
+    document.getElementById('enginePendTable').style.display='none';
+    document.getElementById('enginePendEmpty').style.display='';
+  }
+}
+
+async function markTrackedResult(pid,won,side){
+  const p=trackedPicks[pid];
+  if(!p||p.status!=='pending')return;
+  const stake=side==='A'?p.stakeA:p.stakeB;
+  const odds=side==='A'?p.oA:p.oB;
+  const pnl=won?(odds-1)*stake:-stake;
+  p.status=won?'won':'lost';p.result=won?'WIN':'LOSS';p.side=side;p.pnl=pnl;
+  p.resolved=new Date().toLocaleString();
+  updateEngineState(side,won,odds,stake,p.name,p.sport,p.market);
+  try{ await apiPost('/api/outcome',{won,bet_side:side,trade:{home:p.home,away:p.away,sport:p.sport,market_name:p.market,outcome1_odds:p.oA,outcome2_odds:p.oB}}); }catch(e){}
+  save();renderAll();
+  toast(p.name+' → '+(won?'WON ✓':'LOST ✗')+' '+fmt(pnl),won?'success':'error');
+}
+
+function clearResolvedTracker(){
+  Object.keys(trackedPicks).forEach(k=>{if(trackedPicks[k].status!=='pending')delete trackedPicks[k]});
+  save();renderTracker();renderFeed();toast('Cleared finished picks','success');
+}
+
+// ── LIVE SCORE TRACKING ──────────────────────────────────────────
+const SCORE_FORMATS={
+  'Football':'e.g. 1-0','Tennis':'e.g. 6-4, 3-2 (sets, current set)',
+  'Table Tennis':'e.g. 2-1 sets, 8-6 current','Basketball':'e.g. 58-52',
+  'Volleyball':'e.g. 2-1 sets, 18-15 current','Badminton':'e.g. 1-0 sets, 14-11 current',
+};
+function openLiveScoreInput(pid){
+  const p=trackedPicks[pid];
+  if(!p)return;
+  const fmtHint=SCORE_FORMATS[p.sport]||'e.g. score here';
+  const current=p.score||'';
+  const input=prompt(`Enter live score for:\n${p.name}\n(${p.sport} — ${fmtHint})`,current);
+  if(input===null)return;
+  if(input.trim()===''){
+    p.live=false;p.score=null;p.liveUpdated=null;
+    toast(p.name+' — live tracking cleared','info');
+  }else{
+    p.live=true;p.score=input.trim();
+    p.liveUpdated=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    toast('📊 Live score updated: '+input.trim(),'success');
+    checkAutoResolve(pid);
+  }
+  save();renderTracker();renderFeed();
+}
+function checkAutoResolve(pid){
+  const p=trackedPicks[pid];
+  if(!p||!p.score)return;
+  const s=p.score.toLowerCase();
+  const finishedFlags=['ft','final','finished','complete','f/t'];
+  if(finishedFlags.some(f=>s.includes(f))){
+    setTimeout(()=>{
+      if(confirm(`${p.name} score "${p.score}" looks finished.\n\nResolve this pick now?`)){
+        const side=prompt('Which side won? Type A or B','A');
+        if(side&&['A','a','B','b'].includes(side.trim())) markTrackedResult(pid,true,side.trim().toUpperCase());
+      }
+    },200);
+  }
+}
+function refreshAllLiveScores(){
+  const live=Object.values(trackedPicks).filter(p=>p.status==='pending'&&p.live);
+  if(!live.length){toast('No live picks — mark one as live first','info');return}
+  live.forEach(p=>openLiveScoreInput(Object.keys(trackedPicks).find(k=>trackedPicks[k]===p)));
+}
+
+// ════════════════════════════════════════════════════════════════
+// OUTCOME — POST /api/outcome
+// ════════════════════════════════════════════════════════════════
+function recordOutcome(won,side){
+  if(!selectedTrade){toast('Select a market first','error');return}
+  const pid=selectedTrade.id;
+  if(trackedPicks[pid]&&trackedPicks[pid].status==='pending'){
+    markTrackedResult(pid,won,side);return;
+  }
+  const odds=side==='A'?selectedTrade.oA:selectedTrade.oB;
+  const stake=calcStake(side==='A'?state.streak_a:state.streak_b);
+  updateEngineState(side,won,odds,stake,selectedTrade.name,selectedTrade.sport,selectedTrade.market);
+  apiPost('/api/outcome',{won,bet_side:side,trade:{home:selectedTrade.home,away:selectedTrade.away,sport:selectedTrade.sport,market_name:selectedTrade.market,outcome1_odds:selectedTrade.oA,outcome2_odds:selectedTrade.oB}}).catch(()=>{});
+  renderAll();
+  toast((won?'WON ✓ ':'LOST ✗ ')+fmt((won?(odds-1)*stake:-stake)),won?'success':'error');
+}
+function updateEngineState(side,won,odds,stake,name,sport,market){
+  const pnl=won?(odds-1)*stake:-stake;
+  state.bankroll=+(state.bankroll+pnl).toFixed(2);
+  state.total_pnl=+(state.total_pnl+pnl).toFixed(2);
+  if(won){if(side==='A')state.streak_a=0;else state.streak_b=0;state.wins++;}
+  else{if(side==='A')state.streak_a=Math.min(state.streak_a+1,state.max_steps);else state.streak_b=Math.min(state.streak_b+1,state.max_steps);state.losses++;}
+  trades.unshift({n:trades.length+1,name,sport,market,bet_side:side,odds:odds.toFixed(2),
+    stake:stake.toFixed(2),won,profit:pnl,balance_after:state.bankroll,datetime:new Date().toLocaleString()});
+  save();
+}
+
+// ════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ════════════════════════════════════════════════════════════════
+function renderAll(){
+  updateHeader();updateMgBar();renderFeed();renderTracker();renderSessionStats();
+  renderEngineRecent();
+  if(selectedTrade)selectFromFeed(selectedTrade.id);
+  document.getElementById('cfgBankroll').value=state.bankroll;
+}
+function updateHeader(){
+  document.getElementById('hdrBal').textContent=f(state.bankroll);
+  document.getElementById('hdrW').textContent=state.wins;
+  document.getElementById('hdrL').textContent=state.losses;
+  const pl=document.getElementById('hdrPL');
+  pl.textContent=fmt(state.total_pnl);
+  pl.style.color=state.total_pnl>=0?'var(--green)':'var(--red-b)';
+  const rec=state.streak_a>0||state.streak_b>0;
+  document.getElementById('hdrMode').textContent=rec?'RECOVERY':'NORMAL';
+  document.getElementById('hdrMode').className=rec?'badge badge-gold':'badge badge-green';
+  
+  const wBadge = document.getElementById('hdrWalletBadge');
+  if (wBadge) {
+    wBadge.style.display = 'inline-flex';
+    if (walletConfig.trading_enabled) {
+      wBadge.textContent = '🔑 LIVE';
+      wBadge.className = 'badge badge-green';
+    } else {
+      wBadge.textContent = '🔑 OFFLINE';
+      wBadge.className = 'badge badge-red';
+    }
+  }
+}
+function updateMgBar(){
+  const bar=document.getElementById('mgBar');
+  const badge=document.getElementById('mgBadge');
+  const txt=document.getElementById('mgText');
+  const rec=state.streak_a>0||state.streak_b>0;
+  bar.className='mg-bar '+(rec?'active':'normal');
+  badge.className='badge '+(rec?'badge-gold':'badge-green');
+  badge.textContent=rec?'RECOVERY':'NORMAL';
+  if(rec){txt.innerHTML=`Streak A: <strong>${state.streak_a}</strong> (Next: <span style="color:var(--gold)">${f(calcStake(state.streak_a))}</span>) | Streak B: <strong>${state.streak_b}</strong> (Next: <span style="color:var(--gold)">${f(calcStake(state.streak_b))}</span>) | Bankroll: <strong>${f(state.bankroll)}</strong>`;}
+  else{txt.innerHTML=`Ready — Side A: <strong>${f(state.base_stake)}</strong> | Side B: <strong>${f(state.base_stake)}</strong> | Bankroll: <strong>${f(state.bankroll)}</strong>`;}
+}
+
+function renderEngineRecent(){
+  const recent=trades.slice(0,8);
+  document.getElementById('engineRecentCount').textContent='('+trades.length+')';
+  if(!recent.length){document.getElementById('engineRecentTable').style.display='none';document.getElementById('engineRecentEmpty').style.display='';return}
+  document.getElementById('engineRecentTable').style.display='table';
+  document.getElementById('engineRecentEmpty').style.display='none';
+  document.getElementById('engineRecentBody').innerHTML=recent.map(t=>`<tr>
+    <td style="font-size:11px">${t.name}</td>
+    <td style="color:var(--text-dim)">${t.bet_side}</td>
+    <td>${t.odds}</td>
+    <td><span class="rb ${t.won?'win':'loss'}">${t.won?'WON':'LOST'}</span></td>
+    <td style="color:${t.profit>=0?'var(--green)':'var(--red-b)'};font-weight:700">${fmt(t.profit)}</td>
+  </tr>`).join('');
+}
+
+function renderResultsTab(){
+  document.getElementById('reCount').textContent=trades.length+' trade'+(trades.length!==1?'s':'');
+  const body=document.getElementById('reBody');
+  if(!trades.length){body.innerHTML='';document.getElementById('reEmpty').style.display='';document.getElementById('reTable').style.display='none';return}
+  document.getElementById('reEmpty').style.display='none';document.getElementById('reTable').style.display='table';
+  body.innerHTML=trades.map((t,i)=>`<tr onclick="toggleTradeDetails(${i})" style="cursor:pointer">
+    <td style="color:var(--text-muted)"><span id="ta-${i}" style="font-size:9px;margin-right:4px">▶</span>${trades.length-i}</td>
+    <td><strong>${t.name}</strong></td>
+    <td style="color:var(--text-dim)">${t.bet_side}</td>
+    <td>${t.odds}</td>
+    <td>${f(parseFloat(t.stake))}</td>
+    <td><span class="rb ${t.won?'win':'loss'}">${t.won?'WON':'LOST'}</span></td>
+    <td style="color:${t.profit>=0?'var(--green)':'var(--red-b)'};font-weight:700">${fmt(t.profit)}</td>
+    <td style="color:var(--text-dim)">${f(t.balance_after)}</td>
+  </tr>
+  <tr id="td-${i}" style="display:none;background:rgba(255,255,255,0.015);border-left:2px solid var(--gold)">
+    <td colspan="8" style="padding:10px 14px;font-size:10px;line-height:1.6;color:var(--text-dim)">
+      <strong style="color:var(--text)">${t.name}</strong> · ${t.sport} · ${t.market} · ${t.datetime}
+    </td>
+  </tr>`).join('');
+}
+function toggleTradeDetails(i){
+  const el=document.getElementById('td-'+i);const arr=document.getElementById('ta-'+i);
+  if(el){el.style.display=el.style.display==='none'?'table-row':'none';if(arr)arr.textContent=el.style.display==='none'?'▶':'▼';}
+}
+
+// ════════════════════════════════════════════════════════════════
+// CONFIG — POST /api/config
+// ════════════════════════════════════════════════════════════════
+async function saveConfig(){
+  state.base_stake=parseFloat(document.getElementById('cfgStake').value)||100;
+  state.factor=parseFloat(document.getElementById('cfgFactor').value)||2.1;
+  state.max_steps=parseInt(document.getElementById('cfgSteps').value)||6;
+  state.bankroll=parseFloat(document.getElementById('cfgBankroll').value)||5000;
+  
+  // Keep bot config in sync!
+  botConfig.base_stake = state.base_stake;
+  botConfig.recovery_factor = state.factor;
+  botConfig.bankroll = state.bankroll;
+  
+  try{
+    await apiPost('/api/config',{martingale:{base_stake_fixed:state.base_stake,factor:state.factor,max_steps:state.max_steps},bankroll:state.bankroll});
+    await apiPost('/api/bot/config', botConfig);
+  }catch(e){}
+  
+  save();
+  renderAll();
+  renderBotTab();
+  toast('Settings saved and synchronized','success');
+}
+function applyConfig(){
+  document.getElementById('cfgStake').value=state.base_stake;
+  document.getElementById('cfgFactor').value=state.factor;
+  document.getElementById('cfgSteps').value=state.max_steps;
+  document.getElementById('cfgBankroll').value=state.bankroll;
+}
+
+// ════════════════════════════════════════════════════════════════
+// RESET — POST /api/reset
+// ════════════════════════════════════════════════════════════════
+async function doReset(){
+  if(!confirm('Reset all state, trades and tracker?'))return;
+  state={bankroll:parseFloat(document.getElementById('cfgBankroll').value)||5000,
+    base_stake:parseFloat(document.getElementById('cfgStake').value)||100,
+    factor:parseFloat(document.getElementById('cfgFactor').value)||2.1,
+    max_steps:parseInt(document.getElementById('cfgSteps').value)||6,
+    streak_a:0,streak_b:0,total_pnl:0,wins:0,losses:0};
+  trackedPicks={};trades=[];selectedTrade=null;bankrollHistory=[state.bankroll];
+  try{ await apiPost('/api/reset',{}); }catch(e){}
+  save();renderAll();toast('Engine reset','info');
+}
+function simulateLossStreak(){
+  if(!confirm('Simulate 6 Side A losses?'))return;
+  for(let i=0;i<6;i++){
+    const stake=calcStake(state.streak_a);
+    const pnl=-stake;
+    state.bankroll=+(state.bankroll+pnl).toFixed(2);
+    state.total_pnl=+(state.total_pnl+pnl).toFixed(2);
+    state.streak_a=Math.min(state.streak_a+1,state.max_steps);
+    state.losses++;
+    trades.unshift({n:trades.length+1,name:'Sim Loss '+(i+1),sport:'Test',market:'Test',bet_side:'A',
+      odds:'1.90',stake:stake.toFixed(2),won:false,profit:pnl,balance_after:state.bankroll,datetime:new Date().toLocaleString()});
+  }
+  save();renderAll();
+  toast('6-loss simulated. Step '+state.streak_a+' → Next stake: '+f(calcStake(state.streak_a)),'info');
+}
+function exportCSV(){
+  if(!trades.length){alert('No trades to export');return}
+  const rows=trades.map(t=>[t.datetime,t.name,t.sport,t.market,'Side '+t.bet_side,t.odds,t.stake,t.won?'WIN':'LOSS',t.profit.toFixed(2),t.balance_after.toFixed(2)].join(','));
+  const csv=['Date,Match,Sport,Market,Side,Odds,Stake(KES),Result,P&L(KES),Balance(KES)',...rows].join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='polymarket_trades.csv';a.click();
+}
+
+// ════════════════════════════════════════════════════════════════
+// TAB 5: MARTINGALE DEMO
+// ════════════════════════════════════════════════════════════════
+function renderMartingaleDemo(){
+  const base=parseFloat(document.getElementById('mgDemoBase').value)||100;
+  const factor=parseFloat(document.getElementById('mgDemoFactor').value)||2.1;
+  const odds=parseFloat(document.getElementById('mgDemoOdds').value)||1.9;
+  let cum=0;
+  const body=document.getElementById('mgDemoBody');
+  body.innerHTML=Array.from({length:7},(_,lvl)=>{
+    const stake=+(base*Math.pow(factor,lvl)).toFixed(2);
+    cum=+(cum+stake).toFixed(2);
+    const payout=+(stake*odds).toFixed(2);
+    const recovery=+(payout-cum).toFixed(2);
+    return `<tr>
+      <td><span class="mg-level-badge">${lvl}</span></td>
+      <td class="fv gold">${f(stake)}</td>
+      <td style="color:var(--text-dim)">${f(cum)}</td>
+      <td class="fv green">${f(payout)}</td>
+      <td style="color:${recovery>=0?'var(--green)':'var(--red-b)'};font-weight:700">${fmt(recovery)}</td>
+      <td><button class="btn btn-blue btn-sm" onclick="autoPopulateMartingale(${lvl},${base},${factor})">Auto-Populate</button></td>
+    </tr>`;
+  }).join('');
+}
+function autoPopulateMartingale(level,base,factor){
+  document.getElementById('cfgStake').value=base;
+  document.getElementById('cfgFactor').value=factor;
+  toast(`Level ${level} settings applied — Base ${f(base)}, Factor ${factor}x. Click Save Settings on Trade Engine tab.`,'success');
+}
+
+// ════════════════════════════════════════════════════════════════
+// TAB 6: AUTO REPORTS
+// ════════════════════════════════════════════════════════════════
+function renderReports(){
+  const total=trades.length;
+  document.getElementById('repTotalTrades').textContent=total;
+  const wins=trades.filter(t=>t.won).length;
+  const winRate=total?((wins/total)*100).toFixed(1):'0.0';
+  document.getElementById('repWinRate').textContent=winRate+'%';
+  const netPL=trades.reduce((s,t)=>s+t.profit,0);
+  document.getElementById('repNetPL').textContent=fmt(netPL);
+  document.getElementById('repNetPL').style.color=netPL>=0?'var(--green)':'var(--red-b)';
+  const totalStaked=trades.reduce((s,t)=>s+parseFloat(t.stake),0);
+  const roi=totalStaked?((netPL/totalStaked)*100).toFixed(1):'0.0';
+  document.getElementById('repROI').textContent=(roi>=0?'+':'')+roi+'%';
+  document.getElementById('repROI').style.color=roi>=0?'var(--green)':'var(--red-b)';
+
+  const bestWin=trades.filter(t=>t.won).reduce((m,t)=>Math.max(m,t.profit),0);
+  const worstLoss=trades.filter(t=>!t.won).reduce((m,t)=>Math.min(m,t.profit),0);
+  document.getElementById('repBestWin').textContent=f(bestWin);
+  document.getElementById('repWorstLoss').textContent=f(Math.abs(worstLoss));
+  const avgStake=total?(totalStaked/total).toFixed(2):0;
+  document.getElementById('repAvgStake').textContent=f(avgStake);
+  document.getElementById('repWorstStreakRep').textContent=Math.max(state.streak_a,state.streak_b);
+
+  // bar chart
+  const last30=trades.slice(0,30).reverse();
+  const chartEl=document.getElementById('plBarChart');
+  if(!last30.length){chartEl.innerHTML='<div class="empty-state" style="width:100%">No trades yet</div>';}
+  else{
+    const maxAbs=Math.max(...last30.map(t=>Math.abs(t.profit)),1);
+    chartEl.innerHTML=last30.map(t=>{
+      const h=Math.max(2,(Math.abs(t.profit)/maxAbs)*120);
+      const color=t.profit>=0?'#00e676':'#ff5252';
+      return `<div class="bar" style="height:${h}px;background:${color}" data-tip="${t.name}: ${fmt(t.profit)}"></div>`;
+    }).join('');
+  }
+
+  // bankroll curve
+  const svg=document.getElementById('bankrollCurveSVG');
+  const curve=bankrollHistory.length>1?bankrollHistory:[state.bankroll,state.bankroll];
+  const min=Math.min(...curve),max=Math.max(...curve);
+  const range=max-min||1;
+  const w=600,h=140;
+  const pts=curve.map((v,i)=>{
+    const x=(i/(curve.length-1))*w;
+    const y=h-10-((v-min)/range)*(h-20);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const color=curve[curve.length-1]>=curve[0]?'#00e676':'#ff5252';
+  svg.innerHTML=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <polygon points="0,${h} ${pts} ${w},${h}" fill="${color}" opacity="0.08"/>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+// TAB 7: VIRTUAL BOT
+// ════════════════════════════════════════════════════════════════
+function botLog(msg,type){
+  type=type||'info';
+  const time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  botState.log.unshift({time,msg,type});
+  if(botState.log.length>60)botState.log=botState.log.slice(0,60);
+  renderBotLog();
+  save();
+}
+function renderBotLog(){
+  const el=document.getElementById('botLog');
+  if(!el)return;
+  el.innerHTML=botState.log.map(l=>`<div class="log-line"><span class="log-time">${l.time}</span><span class="log-${l.type}">${l.msg}</span></div>`).join('')
+    || '<div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Bot initialized. Awaiting configuration.</span></div>';
+}
+
+async function loadBotConfig(){
+  try{
+    const d=await apiGet('/api/bot/config');
+    if(d) Object.assign(botConfig,d);
+  }catch(e){}
+  document.getElementById('botBaseStake').value=botConfig.base_stake;
+  document.getElementById('botRecoveryFactor').value=botConfig.recovery_factor;
+  document.getElementById('botMaxConcurrent').value=botConfig.max_concurrent_bets;
+  document.getElementById('botBankroll').value=botConfig.bankroll;
+  document.getElementById('botMode').value=botConfig.bot_mode || 'simulation';
+  document.getElementById('botInterval').value=botConfig.interval_seconds || 60;
+  updateBotEnabledUI();
+  updateLiveModeUI();
+}
+async function saveBotConfig(){
+  botConfig.base_stake=parseFloat(document.getElementById('botBaseStake').value)||50;
+  botConfig.recovery_factor=parseFloat(document.getElementById('botRecoveryFactor').value)||2.0;
+  botConfig.max_concurrent_bets=parseInt(document.getElementById('botMaxConcurrent').value)||3;
+  botConfig.bankroll=parseFloat(document.getElementById('botBankroll').value)||2000;
+  botConfig.bot_mode=document.getElementById('botMode').value;
+  botConfig.interval_seconds=parseInt(document.getElementById('botInterval').value)||60;
+  
+  // Sync back to main state!
+  state.base_stake = botConfig.base_stake;
+  state.factor = botConfig.recovery_factor;
+  state.bankroll = botConfig.bankroll;
+  state.max_steps = botConfig.max_concurrent_bets;
+  
+  botState.bankroll=botConfig.bankroll;
+  
+  try{
+    await apiPost('/api/config',{martingale:{base_stake_fixed:state.base_stake,factor:state.factor,max_steps:state.max_steps},bankroll:state.bankroll});
+    await apiPost('/api/bot/config',botConfig);
+    botLog('Bot configuration saved to backend.','info');
+    startBotAutoLoop();
+  }catch(e){
+    botLog('Backend offline — config saved locally only.','warn');
+  }
+  save();renderAll();renderBotTab();toast('Bot config saved and synchronized','success');
+}
+async function toggleBotEnabled(){
+  botConfig.bot_enabled=!botConfig.bot_enabled;
+  updateBotEnabledUI();
+  try {
+    await apiPost('/api/bot/config', botConfig);
+  } catch(e){}
+  botLog(botConfig.bot_enabled?'Bot ENABLED — will run automated cycles.':'Bot DISABLED.', botConfig.bot_enabled?'info':'warn');
+  save();
+}
+
+async function toggleAutoTrade() {
+  botConfig.bot_enabled = !botConfig.bot_enabled;
+  updateBotEnabledUI();
+  try {
+    await apiPost('/api/bot/config', botConfig);
+  } catch(e){}
+  botLog(botConfig.bot_enabled ? 'Autonomous Trading Bot ENABLED.' : 'Autonomous Trading Bot DISABLED.', botConfig.bot_enabled ? 'info' : 'warn');
+  save();
+  toast(botConfig.bot_enabled ? 'Autonomous Trading ON' : 'Autonomous Trading OFF', botConfig.bot_enabled ? 'success' : 'info');
+}
+
+async function toggleLiveMode() {
+  const currentMode = botConfig.bot_mode || 'simulation';
+  const newMode = currentMode === 'live' ? 'simulation' : 'live';
+  botConfig.bot_mode = newMode;
+  
+  updateLiveModeUI();
+  
+  try {
+    await apiPost('/api/bot/config', botConfig);
+  } catch(e){}
+  
+  save();
+  toast(newMode === 'live' ? 'Live Trading Active ⚡' : 'Virtual Trading Active 🧪', newMode === 'live' ? 'success' : 'info');
+}
+
+function updateLiveModeUI() {
+  const isLive = (botConfig.bot_mode === 'live');
+  
+  const headerTog = document.getElementById('headerLiveModeToggle');
+  const mainTog = document.getElementById('mainLiveModeToggle');
+  const mainIcon = document.getElementById('mainLiveModeIcon');
+  const mainLbl = document.getElementById('mainLiveModeLabel');
+  
+  const botModeEl = document.getElementById('botMode');
+
+  if (headerTog) headerTog.classList.toggle('on', isLive);
+  if (mainTog) mainTog.classList.toggle('on', isLive);
+  if (mainIcon) mainIcon.textContent = isLive ? '▶' : '⏸';
+  if (mainLbl) {
+    mainLbl.textContent = isLive ? 'LIVE' : 'VIRTUAL';
+    mainLbl.style.color = isLive ? 'var(--gold)' : 'var(--text-dim)';
+  }
+  if (botModeEl) {
+    botModeEl.value = isLive ? 'live' : 'simulation';
+  }
+  
+  const modeBadge = document.getElementById('hdrMode');
+  if (modeBadge) {
+    if (botConfig.bot_enabled) {
+      modeBadge.textContent = isLive ? 'LIVE AUTO' : 'VIRTUAL AUTO';
+      modeBadge.className = isLive ? 'badge badge-gold' : 'badge badge-blue';
+    } else {
+      modeBadge.textContent = isLive ? 'LIVE' : 'VIRTUAL';
+      modeBadge.className = isLive ? 'badge badge-green' : 'badge badge-blue';
+    }
+  }
+}
+
+function updateBotEnabledUI(){
+  const tog=document.getElementById('botEnabledToggle');
+  const icon=document.getElementById('botEnabledIcon');
+  const lbl=document.getElementById('botEnabledLabel');
+  
+  const mainTog=document.getElementById('mainAutoTradeToggle');
+  const mainIcon=document.getElementById('mainAutoTradeIcon');
+  const mainLbl=document.getElementById('mainAutoTradeLabel');
+  
+  const headerTog=document.getElementById('headerAutoTradeToggle');
+
+  if(tog) tog.classList.toggle('on',botConfig.bot_enabled);
+  if(icon) icon.textContent=botConfig.bot_enabled?'▶':'⏸';
+  if(lbl) lbl.textContent=botConfig.bot_enabled?'Bot Enabled':'Bot Disabled';
+
+  if(mainTog) mainTog.classList.toggle('on',botConfig.bot_enabled);
+  if(mainIcon) mainIcon.textContent=botConfig.bot_enabled?'▶':'⏸';
+  if(mainLbl) {
+    mainLbl.textContent=botConfig.bot_enabled?'ON':'OFF';
+    mainLbl.style.color=botConfig.bot_enabled?'var(--green)':'var(--text-dim)';
+  }
+
+  if(headerTog) headerTog.classList.toggle('on',botConfig.bot_enabled);
+  
+  const statusBar=document.getElementById('botStatusBar');
+  const statusText=document.getElementById('botStatusText');
+  const statusSub=document.getElementById('botStatusSub');
+  const pulseDot=document.getElementById('botPulseDot');
+  if(statusBar) statusBar.classList.toggle('running',botConfig.bot_enabled);
+  if(pulseDot) pulseDot.classList.toggle('active',botConfig.bot_enabled);
+  if(statusText) statusText.textContent=botConfig.bot_enabled?'Bot Running':'Bot Idle';
+  if(statusSub) statusSub.textContent=botConfig.bot_enabled?'Scanning markets and placing recovery-managed bets automatically':'Configure and enable to start automated trading';
+  updateLiveModeUI();
+}
+
+async function runBotNow(){
+  botLog('Triggering manual bot cycle...','info');
+  try{
+    const d=await apiPost('/api/bot/run',{});
+    if(d){
+      if(d.bankroll!=null) botState.bankroll=d.bankroll;
+      if(d.pnl!=null) botState.pnl=d.pnl;
+      if(d.active_bets) botState.active_bets=d.active_bets;
+      if(d.log) d.log.forEach(l=>botLog(l.msg||l,l.type||'info'));
+    }
+    botState.cycles++;
+    botLog('Bot cycle completed via backend.','info');
+  }catch(e){
+    // local simulation fallback
+    botState.cycles++;
+    simulateBotCycle();
+    botLog('Backend offline — ran local simulated cycle instead.','warn');
+  }
+  save();renderBotTab();
+}
+function simulateBotCycle(){
+  // Initialize streaks if not present
+  if(botState.streak_a == null) botState.streak_a = 0;
+  if(botState.streak_b == null) botState.streak_b = 0;
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() + 4*60*60*1000);
+
+  // Group current active bets by market id to handle resolution
+  const groupedActive = {};
+  for(const bet of botState.active_bets) {
+    groupedActive[bet.id] = groupedActive[bet.id] || [];
+    groupedActive[bet.id].push(bet);
+  }
+
+  // Resolve closed bets
+  const stillOpen = [];
+  for (const mId in groupedActive) {
+    const bets = groupedActive[mId];
+    const end = bets[0].end_date ? new Date(bets[0].end_date) : null;
+    
+    if (end && end <= now) {
+      // Resolve the hedge
+      const outcomeA = Math.random() > 0.50; // YES wins with 50% probability
+      let netPnL = 0.0;
+      const resLogs = [];
+
+      for(const bet of bets) {
+        const won = (bet.side === 'A' && outcomeA) || (bet.side === 'B' && !outcomeA);
+        const pnl = won ? (bet.odds - 1.0) * bet.stake : -bet.stake;
+        netPnL += pnl;
+        resLogs.append = `${bet.side}:${won?'WON':'LOST'} ($${pnl.toFixed(2)})`;
+      }
+
+      // Update streaks
+      const maxSteps = botConfig.max_steps || 6;
+      if (outcomeA) {
+        botState.streak_a = 0;
+        botState.streak_b = Math.min(botState.streak_b + 1, maxSteps);
+      } else {
+        botState.streak_a = Math.min(botState.streak_a + 1, maxSteps);
+        botState.streak_b = 0;
+      }
+
+      botState.bankroll = +(botState.bankroll + netPnL).toFixed(2);
+      botState.pnl = +(botState.pnl + netPnL).toFixed(2);
+      
+      const wonHedge = netPnL >= 0;
+      botLog(`Resolved: ${bets[0].name.slice(0,35)} | YES/NO result -> ${wonHedge?'✅ WON':'❌ LOST'} Net $${netPnL.toFixed(2)} (Streaks A:${botState.streak_a} B:${botState.streak_b})`, wonHedge?'info':'error');
+    } else {
+      stillOpen.push(...bets);
+    }
+  }
+  botState.active_bets = stillOpen;
+
+  // Place new bets ONLY if there are no active bets (linear execution!)
+  if (botState.active_bets.length === 0) {
+    const pool = feedData.filter(m => {
+      if (!m.end_date) return false;
+      const end = new Date(m.end_date);
+      if (!(end > now && end <= cutoff)) return false;
+      const rec = getRec(m);
+      return rec.txt !== 'SKIP';
+    });
+
+    if(!pool.length){
+      botLog('No upcoming sports events (excluding SKIP) in next 4 hours — waiting for feed.','warn');
+      return;
+    }
+
+    // Sort by end date ascending so we play the next immediate closing sport event
+    pool.sort((a,b) => new Date(a.end_date) - new Date(b.end_date));
+    const m = pool[0]; // Soonest closing sport event
+
+    const factor = botConfig.recovery_factor || 2.0;
+    const baseStake = botConfig.base_stake || 10.0;
+    
+    const stakeA = +(baseStake * Math.pow(factor, botState.streak_a)).toFixed(2);
+    const stakeB = +(baseStake * Math.pow(factor, botState.streak_b)).toFixed(2);
+    const totalStake = +(stakeA + stakeB).toFixed(2);
+
+    if (botState.bankroll < totalStake) {
+      botLog(`Insufficient virtual bankroll to place hedge. Required: $${totalStake}`,'error');
+      return;
+    }
+
+    // Place YES (A) and NO (B) bets on this market (Hedge)
+    botState.bankroll = +(botState.bankroll - totalStake).toFixed(2);
+    const name = m.name || m.question;
+    const endStr = m.end_date ? new Date(m.end_date).toUTCString().slice(0,22) : '?';
+
+    botState.active_bets.push({
+      id: m.id, name, sport: m.sport, side: 'A', odds: m.oA, stake: stakeA,
+      end_date: m.end_date, placed: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+    });
+    botState.active_bets.push({
+      id: m.id, name, sport: m.sport, side: 'B', odds: m.oB, stake: stakeB,
+      end_date: m.end_date, placed: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+    });
+
+    botLog(`[HEDGE PLACED] ${m.sport} · ${name.slice(0,40)} | A: $${stakeA} @${m.oA.toFixed(2)} | B: $${stakeB} @${m.oB.toFixed(2)} | Closes: ${endStr}`,'info');
+  }
+}
+async function resetBot(){
+  if(!confirm('Reset virtual bot — clears bankroll, active bets, and logs?'))return;
+  try{ await apiPost('/api/bot/reset',{}); }catch(e){}
+  botState={bankroll:botConfig.bankroll,pnl:0,active_bets:[],cycles:0,log:[],streak_a:0,streak_b:0};
+  botLog('Bot state reset.','warn');
+  save();renderBotTab();toast('Virtual bot reset','info');
+}
+function renderBotTab(){
+  document.getElementById('botBankrollVal').textContent=f(botState.bankroll);
+  const plEl=document.getElementById('botPLVal');
+  plEl.textContent=fmt(botState.pnl);
+  plEl.style.color=botState.pnl>=0?'var(--green)':'var(--red-b)';
+  document.getElementById('botActiveBetsVal').textContent=botState.active_bets.length;
+  document.getElementById('botCyclesVal').textContent=botState.cycles;
+  document.getElementById('botActiveBetsCount').textContent='('+botState.active_bets.length+')';
+  const tbl=document.getElementById('botActiveBetsTable');
+  const empty=document.getElementById('botActiveBetsEmpty');
+  if(botState.active_bets.length){
+    tbl.style.display='table';empty.style.display='none';
+    document.getElementById('botActiveBetsBody').innerHTML=botState.active_bets.map(b=>`<tr>
+      <td style="font-size:11px">${b.name}</td>
+      <td><span class="sb ${sc(b.sport)}">${b.sport.slice(0,3).toUpperCase()}</span></td>
+      <td>${b.side}</td>
+      <td>${b.odds.toFixed(2)}</td>
+      <td>${f(b.stake)}</td>
+      <td style="color:var(--text-dim);font-size:10px">${b.placed}</td>
+    </tr>`).join('');
+  }else{
+    tbl.style.display='none';empty.style.display='';
+  }
+  renderBotLog();
+  updateBotEnabledUI();
+}
+
+// ════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════
+function toast(msg, type){
+  const el = document.getElementById('toast');
+  el.className = 'toast toast-' + (type||'info');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display = 'none', 3000);
+}
+
+// ════════════════════════════════════════════════════════════════
+// CLOCK + AUTO POLL
+// ════════════════════════════════════════════════════════════════
+function tickClock(){
+  const s = new Date().getSeconds();
+  document.getElementById('hdrClock').textContent=new Date().toTimeString().slice(0,8);
+  if(s===0 && document.getElementById('tab-feed').classList.contains('on')) renderFeed();
+  if(s % 30 === 0) loadWalletBalances();
+}
+let botAutoTimer=null;
+function startBotAutoLoop(){
+  if(botAutoTimer)clearInterval(botAutoTimer);
+  const seconds = botConfig.interval_seconds || 60;
+  botAutoTimer=setInterval(async ()=>{
+    if(botConfig.bot_enabled){
+      if (apiConnected) {
+        try {
+          const d = await apiGet('/api/bot/state');
+          if (d) {
+            if(d.bankroll!=null) botState.bankroll=d.bankroll;
+            if(d.pnl!=null) botState.pnl=d.pnl;
+            if(d.active_bets) botState.active_bets=d.active_bets;
+            botState.log = d.log || [];
+          }
+          if(document.getElementById('tab-bot').classList.contains('on')) renderBotTab();
+        } catch(e){}
+      } else {
+        simulateBotCycle();
+        botState.cycles++;
+        save();
+        if(document.getElementById('tab-bot').classList.contains('on')) renderBotTab();
+      }
+    }
+  }, seconds * 1000);
+}
+
+// ════════════════════════════════════════════════════════════════
+// STATUS POLL — GET /api/status
+// ════════════════════════════════════════════════════════════════
+async function pollStatus(){
+  try{
+    const d=await apiGet('/api/status');
+    if(d){
+      if(d.bankroll!=null) state.bankroll=d.bankroll;
+      if(d.won!=null) state.wins=d.won;
+      if(d.lost!=null) state.losses=d.lost;
+      if(d.total_profit!=null) state.total_pnl=d.total_profit;
+      if(d.streak_a!=null) state.streak_a=d.streak_a;
+      if(d.streak_b!=null) state.streak_b=d.streak_b;
+      updateHeader();updateMgBar();renderSessionStats();
+    }
+  }catch(e){ /* silent — fallback already shown via feed load */ }
+}
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+// TAB 8: WALLET & SETTINGS
+// ════════════════════════════════════════════════════════════════
+let walletConfig = {has_private_key: false, private_key_preview: '', funder_address: '', chain_id: 137, trading_enabled: false};
+
+function togglePasswordVisibility(id) {
+  const el = document.getElementById(id);
+  if (el.type === "password") el.type = "text";
+  else el.type = "password";
+}
+
+async function loadWalletConfig() {
+  try {
+    const d = await apiGet('/api/env');
+    if (d) {
+      walletConfig = {
+        has_private_key: d.has_private_key,
+        private_key_preview: d.private_key_preview,
+        funder_address: d.funder_address,
+        chain_id: d.chain_id || 137,
+        trading_enabled: d.trading_enabled
+      };
+      updateWalletUI();
+    }
+  } catch (e) {
+    console.error("Failed to load wallet config:", e);
+  }
+}
+
+function updateWalletUI() {
+  document.getElementById('walletPreviewVal').textContent = walletConfig.has_private_key ? `Yes (${walletConfig.private_key_preview})` : 'No';
+  document.getElementById('funderAddrVal').textContent = walletConfig.funder_address || '—';
+  document.getElementById('chainNameVal').textContent = walletConfig.chain_id == 137 ? 'Polygon (137)' : `Mumbai (${walletConfig.chain_id})`;
+  
+  const statusVal = document.getElementById('tradingStatusVal');
+  const statusText = document.getElementById('walletStatusText');
+  const statusSub = document.getElementById('walletStatusSub');
+  const pulseDot = document.getElementById('walletPulseDot');
+  const statusBar = document.getElementById('walletStatusBar');
+
+  if (walletConfig.trading_enabled) {
+    statusVal.textContent = 'Active (Live CLOB)';
+    statusVal.style.color = 'var(--green)';
+    statusText.textContent = 'Wallet Connected & Live';
+    statusSub.textContent = `Trading enabled on Chain ${walletConfig.chain_id} using key ${walletConfig.private_key_preview}`;
+    pulseDot.className = 'bot-pulse-dot active';
+    statusBar.style.borderColor = 'rgba(0,230,118,0.4)';
+  } else {
+    statusVal.textContent = 'Disabled';
+    statusVal.style.color = 'var(--red-b)';
+    statusText.textContent = 'Wallet Offline';
+    statusSub.textContent = 'Paste your Polygon private key to enable live trading';
+    pulseDot.className = 'bot-pulse-dot';
+    statusBar.style.borderColor = 'var(--border)';
+  }
+}
+
+async function saveWalletConfig() {
+  const pk = document.getElementById('walletPrivateKey').value.trim();
+  const funder = document.getElementById('walletFunderAddress').value.trim();
+  const chainId = parseInt(document.getElementById('walletChainId').value) || 137;
+  
+  const body = {};
+  if (pk) body.private_key = pk;
+  if (funder) body.funder_address = funder;
+  body.chain_id = chainId;
+  
+  try {
+    const d = await apiPost('/api/env', body);
+    if (d.ok) {
+      toast('Wallet settings saved to backend', 'success');
+      document.getElementById('walletPrivateKey').value = ''; // clear input for security
+      await loadWalletConfig();
+      if (walletConfig.trading_enabled) {
+        await renderWalletTab();
+      }
+    } else {
+      toast('Failed to save wallet settings: ' + (d.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    toast('Error connecting to backend to save wallet settings', 'error');
+  }
+}
+
+async function renderWalletTab() {
+  updateWalletUI();
+  if (!walletConfig.trading_enabled) {
+    document.getElementById('posTable').style.display = 'none';
+    document.getElementById('posEmpty').style.display = '';
+    document.getElementById('openOrdersTable').style.display = 'none';
+    document.getElementById('openOrdersEmpty').style.display = '';
+    return;
+  }
+  
+  // Load positions
+  try {
+    const p = await apiGet('/api/polymarket/positions');
+    const pos = p.positions || [];
+    document.getElementById('posCount').textContent = `(${pos.length})`;
+    if (pos.length > 0) {
+      document.getElementById('posTable').style.display = 'table';
+      document.getElementById('posEmpty').style.display = 'none';
+      document.getElementById('posBody').innerHTML = pos.map(x => `<tr>
+        <td style="font-family:monospace;font-size:10px;">${x.asset_id || x.token_id || '—'}</td>
+        <td class="fv green">${parseFloat(x.size).toFixed(2)}</td>
+        <td>${x.avg_price ? parseFloat(x.avg_price).toFixed(2) + ' USDC' : '—'}</td>
+      </tr>`).join('');
+    } else {
+      document.getElementById('posTable').style.display = 'none';
+      document.getElementById('posEmpty').style.display = '';
+    }
+  } catch (e) {
+    console.error("Error loading positions:", e);
+  }
+
+  // Load open orders
+  try {
+    const o = await apiGet('/api/polymarket/orders');
+    const orders = o.orders || [];
+    document.getElementById('openOrdersCount').textContent = `(${orders.length})`;
+    if (orders.length > 0) {
+      document.getElementById('openOrdersTable').style.display = 'table';
+      document.getElementById('openOrdersEmpty').style.display = 'none';
+      document.getElementById('openOrdersBody').innerHTML = orders.map(x => `<tr>
+        <td style="font-family:monospace;font-size:10px;">${(x.orderID || x.id || '').slice(0,8)}...</td>
+        <td style="font-family:monospace;font-size:10px;">${(x.tokenID || x.tokenId || '').slice(0,8)}...</td>
+        <td><span class="badge ${x.side === 'BUY' ? 'badge-green' : 'badge-gold'}" style="font-size:8px;padding:1px 4px">${x.side}</span></td>
+        <td class="fv green">${parseFloat(x.price).toFixed(2)} USDC</td>
+        <td>${parseFloat(x.size).toFixed(2)}</td>
+        <td><button class="btn btn-red btn-sm" style="padding:2px 6px;font-size:8px;" onclick="cancelCLOBOrder('${x.orderID || x.id}')">Cancel</button></td>
+      </tr>`).join('');
+    } else {
+      document.getElementById('openOrdersTable').style.display = 'none';
+      document.getElementById('openOrdersEmpty').style.display = '';
+    }
+  } catch (e) {
+    console.error("Error loading open orders:", e);
+  }
+}
+
+async function cancelCLOBOrder(orderId) {
+  if (!confirm('Cancel this open order?')) return;
+  try {
+    const r = await apiPost('/api/polymarket/cancel', { order_id: orderId });
+    if (r.ok) {
+      toast('Order cancelled successfully', 'success');
+      await renderWalletTab();
+    } else {
+      toast('Failed to cancel order: ' + (r.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    toast('Error connecting to backend to cancel order', 'error');
+  }
+}
+
+async function loadWalletBalances() {
+  try {
+    const d = await apiGet('/api/wallet/balance');
+    if (d && d.ok) {
+      const realBalVal = `$${d.total_usdc.toFixed(2)}`;
+      document.getElementById('hdrRealBal').textContent = realBalVal;
+      
+      const realValEl = document.getElementById('walletRealUSDCVal');
+      if (realValEl) {
+        realValEl.textContent = `$${d.total_usdc.toFixed(2)} (USDC: $${d.usdc.toFixed(2)} / USDC.e: $${d.usdc_e.toFixed(2)})`;
+      }
+      const maticValEl = document.getElementById('walletRealMATICVal');
+      if (maticValEl) {
+        maticValEl.textContent = `${d.matic.toFixed(4)} MATIC`;
+      }
+      
+      const badge = document.getElementById('hdrWalletBadge');
+      if (d.address) {
+        badge.style.display = '';
+        badge.textContent = `🔑 ${d.address.slice(0,6)}...${d.address.slice(-4)}`;
+        badge.className = 'badge badge-green';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load wallet balances:", e);
+  }
+}
+
+async function runBacktest() {
+  const btn = document.querySelector('[onclick="runBacktest()"]');
+  if(!btn) return;
+  btn.textContent = "⌛ Running Backtest...";
+  btn.disabled = true;
+  document.getElementById('backtestResults').style.display = 'none';
+  
+  try {
+    const d = await apiPost('/api/backtest', {
+      base_stake: parseFloat(document.getElementById('botBaseStake').value) || 10,
+      recovery_factor: parseFloat(document.getElementById('botRecoveryFactor').value) || 2.0,
+      max_steps: parseInt(document.getElementById('botMaxConcurrent').value) || 6,
+      bankroll: parseFloat(document.getElementById('botBankroll').value) || 1000
+    });
+    
+    if (d && d.ok) {
+      document.getElementById('btTrades').textContent = d.trades_run;
+      document.getElementById('btWinRate').textContent = d.win_rate;
+      
+      const plEl = document.getElementById('btPL');
+      plEl.textContent = (d.total_pnl >= 0 ? '+' : '') + '$' + d.total_pnl.toFixed(2);
+      plEl.style.color = d.total_pnl >= 0 ? 'var(--green)' : 'var(--red-b)';
+      
+      document.getElementById('btBankroll').textContent = '$' + d.final_bankroll.toFixed(2);
+      
+      const logEl = document.getElementById('backtestLog');
+      if (d.trades.length) {
+        logEl.innerHTML = d.trades.reverse().map(t => {
+          const pnlColor = t.pnl >= 0 ? '#69f0ae' : 'var(--red-b)';
+          const pnlStr = (t.pnl >= 0 ? '+' : '') + '$' + t.pnl.toFixed(2);
+          return `<div class="log-line">
+            <span class="log-time">${t.date} ${t.time}</span>
+            <span style="color:var(--gold)">[${t.sport}]</span> 
+            <span>${t.name.slice(0,35)}...</span>
+            <span style="color:var(--text-muted)">Stakes A/B: $${t.stake_a}/$${t.stake_b}</span>
+            <span style="color:${pnlColor};font-weight:600">${pnlStr}</span>
+          </div>`;
+        }).join('');
+      } else {
+        logEl.innerHTML = '<div style="color:var(--text-muted)">No closed trades found in the past 24h.</div>';
+      }
+      
+      document.getElementById('backtestResults').style.display = 'block';
+      toast('Backtest completed successfully!', 'success');
+    } else {
+      toast('Backtest failed: ' + (d.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    toast('Backtest offline or failed', 'error');
+  } finally {
+    btn.textContent = "Run 24h Backtest";
+    btn.disabled = false;
+  }
+}
+
+// Live order variables
+let modalTradeMarket = null;
+let modalTradeSide = 'A'; // 'A' = YES, 'B' = NO
+let modalTradeTokenId = '';
+let modalTradePrice = 0.5;
+
+function openTradeModal(marketId, side) {
+  const m = feedData.find(x => x.id === marketId) || selectedTrade;
+  if (!m) return;
+  if (!walletConfig.trading_enabled) {
+    toast('Wallet private key is not configured. Go to Wallet & Settings.', 'error');
+    return;
+  }
+  const tokenIds = m.token_ids || [];
+  if (!tokenIds.length || (side === 'B' && tokenIds.length < 2)) {
+    toast('No valid Polymarket Token IDs found for this market.', 'error');
+    return;
+  }
+  
+  modalTradeMarket = m;
+  modalTradeSide = side;
+  modalTradeTokenId = side === 'A' ? tokenIds[0] : tokenIds[1];
+  modalTradePrice = side === 'A' ? m.yes_price : m.no_price;
+
+  document.getElementById('mktModalQuestion').textContent = m.name || m.question;
+  const outcomeEl = document.getElementById('mktModalOutcome');
+  if (side === 'A') {
+    outcomeEl.textContent = m.lA || 'YES';
+    outcomeEl.className = 'badge badge-green';
+  } else {
+    outcomeEl.textContent = m.lB || 'NO';
+    outcomeEl.className = 'badge badge-gold';
+  }
+  document.getElementById('mktModalPrice').textContent = modalTradePrice.toFixed(2);
+  document.getElementById('mktModalTokenId').textContent = modalTradeTokenId;
+  
+  // Set default size (matching the current martingale recovery level stake or 10)
+  const defaultSize = Math.max(10, side === 'A' ? calcStake(state.streak_a) / 100 : calcStake(state.streak_b) / 100);
+  const sizeInput = document.getElementById('tradeModalSize');
+  sizeInput.value = Math.round(defaultSize);
+  
+  updateModalCost();
+  sizeInput.oninput = updateModalCost;
+  
+  document.getElementById('tradeModal').style.display = 'block';
+}
+
+function updateModalCost() {
+  const size = parseFloat(document.getElementById('tradeModalSize').value) || 0;
+  const cost = size * modalTradePrice;
+  document.getElementById('tradeModalCost').textContent = cost.toFixed(2);
+}
+
+function closeTradeModal() {
+  document.getElementById('tradeModal').style.display = 'none';
+}
+
+async function executeLiveOrder() {
+  const size = parseFloat(document.getElementById('tradeModalSize').value) || 0;
+  if (size <= 0) {
+    toast('Please enter a valid size', 'error');
+    return;
+  }
+  closeTradeModal();
+  toast('Placing real CLOB limit order…', 'info');
+  try {
+    const body = {
+      token_id: modalTradeTokenId,
+      side: 'BUY',
+      price: modalTradePrice,
+      size_usdc: size
+    };
+    const r = await apiPost('/api/polymarket/order', body);
+    if (r.ok) {
+      toast('Limit order placed! ID: ' + (r.order_id || 'success'), 'success');
+      await togglePick(modalTradeMarket.id, true);
+    } else {
+      toast('Order failed: ' + (r.error || 'unknown error'), 'error');
+    }
+  } catch (e) {
+    toast('Error connecting to backend to place order', 'error');
+  }
+}
+
+async function init(){
+  loadLocal();
+  applyConfig();
+  document.body.classList.toggle('dim',dimOn);
+  document.getElementById('dimToggle').classList.toggle('on',dimOn);
+  document.getElementById('soundToggle').classList.toggle('on',soundOn);
+  document.getElementById('soundIcon').textContent=soundOn?'🔔':'🔕';
+
+  await loadFeed();
+  await loadBotConfig();
+  await loadWalletConfig();
+  await loadWalletBalances();
+  renderBotTab();
+  renderSessionStats();
+
+  setInterval(tickClock,1000);tickClock();
+  setInterval(pollStatus,15000); // poll backend status every 15s
+  setInterval(loadFeed,60000);   // refresh feed every 60s
+  startBotAutoLoop();
+}
+window.onload=init;
+</script>
+</body>
+</html>
+

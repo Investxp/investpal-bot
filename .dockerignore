@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.git/
+*.md
+cloudflared.exe
+start-dev.bat
+tunnel*.js
+investpal.yml
+.python-version
+__pycache__/
+*.pyc
+.venv/
+polymarket-backend/venv/
+polymarket-backend/__pycache__/
+polymarket-backend/**/__pycache__/
+polymarket-backend/.env

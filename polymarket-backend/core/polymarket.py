@@ -1,0 +1,344 @@
+"""
+core/polymarket.py — Polymarket Gamma + CLOB integration
+NOTE: All APIs return 403 from cloud IPs. Run server.py locally (residential IP).
+"""
+import os,json,logging,time,requests
+from datetime import datetime,timezone
+
+log=logging.getLogger("polymarket")
+GAMMA="https://gamma-api.polymarket.com"
+CLOB="https://clob.polymarket.com"
+DATA_BASE="https://data-api.polymarket.com"
+CHAIN_ID=137
+CACHE=os.path.join(os.path.dirname(__file__),'..','data','poly_cache.json')
+os.makedirs(os.path.dirname(CACHE),exist_ok=True)
+
+S=requests.Session()
+S.headers.update({"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36","Accept":"application/json","Referer":"https://polymarket.com/","Origin":"https://polymarket.com"})
+
+# ── Sports tag slugs used by Polymarket ──
+SPORT_TAGS = [
+    "soccer","nba","nfl","tennis","cricket","golf","mma","boxing",
+    "baseball","nhl","rugby","olympics","esports","horse-racing",
+    "sports","basketball","formula-1","ufc","football"
+]
+
+# Hard exclusion keywords — discard anything that matches these
+NON_SPORT_KW = [
+    "election","president","senator","congress","supreme court","trump","biden","harris",
+    "vote","referendum","primaries","chancellor","minister","parliament","political",
+    "crypto","bitcoin","ethereum","stock","market cap","fed rate","interest rate",
+    "gdp","inflation","recession","war","conflict","invasion","military",
+    "award","oscar","grammy","emmy","nobel","academy award","box office",
+    "celebrity","kardashian","taylor swift","covid","pandemic","vaccine"
+]
+
+SPORT_KW=[
+    "match","win","champion","league","cup","goal","tennis","football","soccer",
+    "nba","nfl","baseball","cricket","wimbledon","world cup","olympic","rugby",
+    "boxing","ufc","mma","arsenal","chelsea","madrid","liverpool","barcelona",
+    "manchester","lakers","celtics","warriors","nadal","djokovic","swiatek",
+    "alcaraz","mbappe","haaland","ronaldo","messi","fight","race","tournament",
+    "grand slam","golf","pga","f1","formula","verstappen","hamilton","nhl",
+    "playoffs","championship","semifinal","final","knockout","bout","vs",
+    "serie a","la liga","bundesliga","premier league","champions league",
+    "super bowl","world series","stanley cup","masters","open tennis"
+]
+
+def _is_sports(t):
+    import re
+    words = set(re.findall(r'\b[a-z0-9\-]+\b', t.lower()))
+    for k in NON_SPORT_KW:
+        if " " in k:
+            if k in t.lower(): return False
+        elif k in words: return False
+    for k in SPORT_KW:
+        if " " in k:
+            if k in t.lower(): return True
+        elif k in words: return True
+    return False
+
+def fetch_by_tag(tag_slug, limit=50):
+    """Fetch active markets by a specific Polymarket sports tag slug."""
+    results = []
+    try:
+        # Try /events endpoint first
+        r = S.get(f"{GAMMA}/events", params={
+            "active":"true","closed":"false","limit":limit,
+            "tag_slug":tag_slug,"order":"volume24hr","ascending":"false"
+        }, timeout=15)
+        if r.ok:
+            d = r.json()
+            evts = d if isinstance(d,list) else d.get("events",[])
+            for ev in evts:
+                title = ev.get("title",ev.get("name",""))
+                for m in ev.get("markets",[]):
+                    results.append((m, title))
+    except Exception as e:
+        log.debug(f"fetch_by_tag events {tag_slug}: {e}")
+    try:
+        # Also try /markets directly with tag
+        r = S.get(f"{GAMMA}/markets", params={
+            "active":"true","closed":"false","limit":limit,
+            "tag_slug":tag_slug,"order":"volume24hr","ascending":"false"
+        }, timeout=15)
+        if r.ok:
+            d = r.json()
+            markets = d if isinstance(d,list) else d.get("markets",[])
+            for m in markets:
+                results.append((m,""))
+    except Exception as e:
+        log.debug(f"fetch_by_tag markets {tag_slug}: {e}")
+    return results
+
+def fetch_events(limit=100):
+    try:
+        r=S.get(f"{GAMMA}/events",params={"active":"true","closed":"false","limit":limit,"order":"endDate","ascending":"true"},timeout=15)
+        r.raise_for_status(); d=r.json()
+        return d if isinstance(d,list) else d.get("events",[])
+    except Exception as e: log.warning(f"fetch_events: {e}"); return []
+
+def fetch_markets(limit=100):
+    try:
+        r=S.get(f"{GAMMA}/markets",params={"active":"true","closed":"false","limit":limit,"tag_slug":"sports","order":"endDate","ascending":"true"},timeout=15)
+        r.raise_for_status(); d=r.json()
+        return d if isinstance(d,list) else d.get("markets",[])
+    except Exception as e: log.warning(f"fetch_markets: {e}"); return []
+
+def fetch_clob_price(token_id):
+    out={"buy":None,"sell":None,"mid":None}
+    try:
+        for side in("buy","sell"):
+            r=S.get(f"{CLOB}/price",params={"token_id":token_id,"side":side},timeout=8)
+            if r.ok: out[side]=float(r.json().get("price",0.5))
+        if out["buy"] and out["sell"]: out["mid"]=round((out["buy"]+out["sell"])/2,4)
+        elif out["buy"]: out["mid"]=out["buy"]
+    except: pass
+    return out
+
+def fetch_orderbook(token_id):
+    try:
+        r=S.get(f"{CLOB}/book",params={"token_id":token_id},timeout=10)
+        r.raise_for_status(); return r.json()
+    except: return {}
+
+def fetch_positions(addr):
+    try:
+        r=S.get(f"{DATA_BASE}/positions",params={"user":addr},timeout=10)
+        r.raise_for_status(); d=r.json()
+        return d if isinstance(d,list) else d.get("positions",[])
+    except Exception as e: log.warning(f"fetch_positions: {e}"); return []
+
+def _parse_end(end_date):
+    if not end_date or len(end_date)<10: return "-","-"
+    try:
+        dt=datetime.fromisoformat(end_date.replace("Z","+00:00"))
+        return dt.strftime("%H:%M"),dt.strftime("%a %d %b")
+    except: return end_date[11:16] if len(end_date)>16 else "-",end_date[:10]
+
+def _p2o(p):
+    if p<=0.001: return 999.0
+    if p>=0.999: return 1.001
+    return round(1.0/p,2)
+
+def _sport(txt):
+    t=txt.lower()
+    if any(k in t for k in ["tennis","wimbledon","atp","wta","grand slam","nadal","djokovic","swiatek","alcaraz"]): return "Tennis"
+    if any(k in t for k in ["nba","basketball","lakers","celtics","warriors","heat","bulls","knicks"]): return "Basketball"
+    if any(k in t for k in ["nfl","american football","superbowl","super bowl","touchdown","chiefs","eagles"]): return "NFL"
+    if any(k in t for k in ["soccer","football","goal","premier league","la liga","bundesliga","world cup","champions league","arsenal","chelsea","madrid","liverpool","mbappe","haaland","messi","ronaldo","copa","serie a"]): return "Football"
+    if any(k in t for k in ["cricket","ipl","test match","odi","t20"]): return "Cricket"
+    if any(k in t for k in ["ufc","boxing","mma","fight","knockout","bout","fury","usyk"]): return "UFC/Boxing"
+    if any(k in t for k in ["f1","formula 1","formula1","grand prix","verstappen","hamilton","racing","leclerc"]): return "Racing"
+    if any(k in t for k in ["mlb","baseball","world series","yankees","dodgers"]): return "Baseball"
+    if any(k in t for k in ["golf","pga","masters","open","ryder","lpga"]): return "Golf"
+    if any(k in t for k in ["nhl","hockey","stanley"]): return "Hockey"
+    if any(k in t for k in ["olympic","olympics"]): return "Olympics"
+    if any(k in t for k in ["rugby","six nations","all blacks"]): return "Rugby"
+    if any(k in t for k in ["esport","league of legends","dota","csgo","counter-strike","valorant"]): return "Esports"
+    return "Sports"
+
+def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
+    try:
+        q=raw.get("question",""); desc=raw.get("description","")
+        if not q: return None
+        if not allow_closed and (not raw.get("active",True) or raw.get("closed",False)): return None
+        combined=(q+" "+desc+" "+event_title)
+        if not force_sports and not _is_sports(combined): return None
+        outcomes=raw.get("outcomes",[])
+        if isinstance(outcomes,str):
+            try: outcomes=json.loads(outcomes)
+            except: outcomes=["Yes","No"]
+        if len(outcomes)<2: return None
+        prices_raw=raw.get("outcomePrices",[])
+        if isinstance(prices_raw,str):
+            try: prices_raw=json.loads(prices_raw)
+            except: prices_raw=["0.5","0.5"]
+        prices=[]
+        for p in prices_raw[:2]:
+            try: prices.append(float(p))
+            except: prices.append(0.5)
+        while len(prices)<2: prices.append(0.5)
+        yp=max(0.001,min(0.999,prices[0])); np=max(0.001,min(0.999,prices[1]))
+        yo=_p2o(yp); no=_p2o(np)
+        end=raw.get("endDate",raw.get("end_date",""))
+        time_s,date_s=_parse_end(end)
+        sport=_sport(q+" "+event_title)
+        tids=raw.get("clobTokenIds",raw.get("clob_token_ids",[]))
+        vol24=float(raw.get("volume24hr",0) or 0)
+        liq=float(raw.get("liquidity",0) or 0)
+        mid=str(raw.get("id",""))
+        slug=raw.get("slug","")
+        return {
+            "id":f"poly_{mid}","source":"polymarket","market_id":mid,"slug":slug,
+            "question":q,"event_title":event_title,"yes_price":round(yp,4),"no_price":round(np,4),
+            "yes_odds":yo,"no_odds":no,"oA":yo,"oB":no,
+            "lA":outcomes[0],"lB":outcomes[1] if len(outcomes)>1 else "No",
+            "volume24h":vol24,"liquidity":liq,"end_date":end,"time":time_s,"date":date_s,
+            "token_ids":tids if isinstance(tids,list) else [],
+            "name":q[:90],"home":outcomes[0],"away":outcomes[1] if len(outcomes)>1 else "No",
+            "sport":sport,"market":"Prediction Market","status":"upcoming","score":"",
+            "note":f"Polymarket · {sport} · Vol ${vol24:,.0f}/24h",
+            "why":f"YES {yp*100:.1f}% / NO {np*100:.1f}% implied",
+            "balance":abs(yo-no),"odds1":yo,"odds2":no,"desc1":outcomes[0],"desc2":outcomes[1] if len(outcomes)>1 else "No",
+            "url": f"https://polymarket.com/market/{slug}" if slug else "https://polymarket.com",
+        }
+    except Exception as e: log.debug(f"parse_market: {e}"); return None
+
+def scan_all(limit=200):
+    results=[]; seen=set()
+    log.info("Scanning sports tags on Polymarket Gamma API...")
+    # PRIMARY: fetch by each sport tag slug — these are guaranteed sports
+    for tag in SPORT_TAGS:
+        try:
+            pairs = fetch_by_tag(tag, limit=30)
+            for (m, title) in pairs:
+                # For tag-based fetches, skip _is_sports gate (already filtered by tag)
+                p = parse_market(m, title, force_sports=True)
+                if p and p["id"] not in seen:
+                    seen.add(p["id"]); results.append(p)
+            if pairs:
+                log.debug(f"Tag '{tag}': {len(pairs)} raw → {len([x for x in results if x['id'] not in seen or True])} total")
+            time.sleep(0.1)
+        except Exception as e:
+            log.debug(f"Tag scan error {tag}: {e}")
+    log.info(f"Tag scan done: {len(results)} sports markets found")
+    # FALLBACK: if still low count, try generic events with strict filtering
+    if len(results) < 10:
+        log.info("Falling back to generic events scan with strict filter...")
+        for ev in fetch_events(limit):
+            title=ev.get("title",ev.get("name",""))
+            for m in ev.get("markets",[]):
+                p=parse_market(m,title)
+                if p and p["id"] not in seen: seen.add(p["id"]); results.append(p)
+        for m in fetch_markets(limit):
+            p=parse_market(m)
+            if p and p["id"] not in seen: seen.add(p["id"]); results.append(p)
+    # Sort by volume (highest first), then by end_date
+    results.sort(key=lambda m: (-m.get("volume24h",0), m.get("end_date","9999")))
+    return results
+
+
+
+
+
+def enrich_with_live_prices(markets,max_enrich=20):
+    done=0
+    for m in markets:
+        if done>=max_enrich: break
+        tids=m.get("token_ids",[])
+        if not tids: continue
+        px=fetch_clob_price(tids[0])
+        if px.get("mid"):
+            yp=px["mid"]; np=round(1-yp,4)
+            m.update({"yes_price":yp,"no_price":np,"oA":_p2o(yp),"oB":_p2o(np),"live_price":True})
+        done+=1; time.sleep(0.15)
+    return markets
+
+def full_scan_and_cache(enrich=True):
+    log.info("Polymarket full scan…")
+    markets=scan_all(200)
+    if enrich and markets: markets=enrich_with_live_prices(markets,20)
+    _write_cache(markets)
+    log.info(f"Scan done: {len(markets)} markets")
+    return markets
+
+def _write_cache(markets):
+    try:
+        with open(CACHE,'w') as f:
+            json.dump({"updated":datetime.now(timezone.utc).isoformat(),"count":len(markets),"markets":markets},f,indent=2)
+    except Exception as e: log.error(f"Cache write: {e}")
+
+def get_cached():
+    try:
+        with open(CACHE) as f: return json.load(f).get("markets",[])
+    except: return []
+
+def get_cache_age_minutes():
+    try:
+        with open(CACHE) as f: d=json.load(f)
+        updated=d.get("updated","")
+        if not updated: return 999
+        dt=datetime.fromisoformat(updated.replace("Z","+00:00"))
+        return (datetime.now(timezone.utc)-dt).total_seconds()/60
+    except: return 999
+
+def run_poly_loop(stop_event,interval=90):
+    while not stop_event.is_set():
+        try:
+            if get_cache_age_minutes()>1.5: full_scan_and_cache(enrich=True)
+            else: log.debug("Cache fresh, skipping scan")
+        except Exception as e: log.error(f"Poly loop: {e}")
+        stop_event.wait(interval)
+
+# ── TRADING ──
+def place_order(token_id,side,price,size_usdc,private_key,funder=None):
+    if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
+    try:
+        from py_clob_client.client import ClobClient
+        from py_clob_client.clob_types import OrderArgs,OrderType
+        client=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1,
+                          funder=funder or os.getenv("POLYMARKET_FUNDER_ADDRESS","") or None)
+        client.set_api_creds(client.create_or_derive_api_creds())
+        resp=client.post_order(OrderArgs(token_id=token_id,price=price,size=size_usdc,side=side.upper()),OrderType.GTC)
+        return {"ok":True,"order_id":resp.get("orderID",""),"response":resp}
+    except ImportError: return {"ok":False,"error":"py-clob-client not installed. Run: pip install py-clob-client"}
+    except Exception as e: log.error(f"place_order: {e}"); return {"ok":False,"error":str(e)}
+
+def cancel_order(order_id,private_key):
+    try:
+        from py_clob_client.client import ClobClient
+        c=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1)
+        c.set_api_creds(c.create_or_derive_api_creds())
+        return {"ok":True,"response":c.cancel(order_id)}
+    except Exception as e: return {"ok":False,"error":str(e)}
+
+def get_open_orders(private_key):
+    try:
+        from py_clob_client.client import ClobClient
+        c=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1)
+        c.set_api_creds(c.create_or_derive_api_creds())
+        orders=c.get_orders()
+        return orders if isinstance(orders,list) else []
+    except Exception as e: log.warning(f"get_open_orders: {e}"); return []
+
+def check_market_resolution(market_id):
+    try:
+        r = S.get(f"{GAMMA}/markets/{market_id}", timeout=10)
+        if r.ok:
+            data = r.json()
+            if data.get("closed") or data.get("resolved"):
+                outcome = data.get("consensus_outcome")
+                if outcome is not None:
+                    try:
+                        idx = int(float(outcome))
+                        winner = data.get("outcomes")[idx] if data.get("outcomes") and 0 <= idx < len(data.get("outcomes")) else None
+                        return {"resolved": True, "outcome": idx, "winner": winner}
+                    except:
+                        pass
+                return {"resolved": True, "outcome": outcome, "winner": None}
+        return {"resolved": False}
+    except Exception as e:
+        log.warning(f"check_market_resolution: {e}")
+        return {"resolved": False}
+

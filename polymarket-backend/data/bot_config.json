@@ -1,0 +1,11 @@
+{
+  "bot_enabled": true,
+  "bot_mode": "simulation",
+  "base_stake": 10,
+  "recovery_factor": 2.5,
+  "max_concurrent": 3,
+  "bankroll": 10000,
+  "balance_filter": 0.3,
+  "interval_seconds": 60,
+  "max_concurrent_bets": 10
+}
