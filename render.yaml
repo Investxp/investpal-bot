@@ -1,7 +1,7 @@
 services:
   - type: web
     name: investpal-bot
-    runtime: image
+    runtime: docker
     repo: https://github.com/Investxp/investpal-bot
     branch: main
     dockerfilePath: ./Dockerfile
