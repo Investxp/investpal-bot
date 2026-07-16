@@ -19,9 +19,10 @@ cd /app
 PORT=$NEXT_PORT npm start &
 NEXT_PID=$!
 
-# Wait for Next.js to be ready before starting nginx (avoids 502)
-for i in $(seq 1 15); do
+echo "[INFO] Waiting for Next.js to start on port 3000..."
+for i in $(seq 1 60); do
   if curl -s http://localhost:3000 > /dev/null 2>&1; then
+    echo "[INFO] Next.js is ready!"
     break
   fi
   sleep 1

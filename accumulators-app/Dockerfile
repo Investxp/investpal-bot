@@ -11,6 +11,8 @@ COPY lib ./lib
 COPY packages ./packages
 COPY public ./public
 COPY scripts ./scripts
+# Copy production env so NEXT_PUBLIC_* vars are baked in at build time
+COPY .env.production ./
 COPY declarations.d.ts next-env.d.ts next.config.js package.json postcss.config.js tailwind.config.js tsconfig.json vercel.json ./
 RUN npm run build -- --webpack
 
@@ -36,8 +38,9 @@ COPY nginx.conf /etc/nginx/sites-available/default.template
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-# FORCE: hardcode Python port to 8090 so Render's $PORT doesn't conflict with nginx
-RUN sed -i 's/int(os.getenv("PORT", 8090))/8090/' /app/polymarket-backend/server.py
+# Python server always uses port 8090 â€” nginx gets $PORT from Render
+# This avoids any port conflicts between Python and nginx
+ENV POLY_PORT=8090
 
 EXPOSE 8080
 
