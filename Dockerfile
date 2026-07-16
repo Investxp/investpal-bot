@@ -1,6 +1,7 @@
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
-COPY package*.json scripts/ ./
+COPY package*.json ./
+COPY scripts ./scripts/
 RUN npm ci --legacy-peer-deps --ignore-scripts
 RUN node scripts/copy-smartcharts-assets.js
 COPY . .
