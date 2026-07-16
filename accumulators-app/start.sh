@@ -9,7 +9,7 @@ ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 cd /app/polymarket-backend
 . venv/bin/activate
-PORT=8090 \
+POLY_PORT=8090 \
 POLYMARKET_PRIVATE_KEY="${POLYMARKET_PRIVATE_KEY:-}" \
 POLYMARKET_FUNDER_ADDRESS="${POLYMARKET_FUNDER_ADDRESS:-}" \
 python server.py &
