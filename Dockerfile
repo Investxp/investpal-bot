@@ -12,7 +12,6 @@ COPY packages ./packages
 COPY public ./public
 COPY scripts ./scripts
 COPY declarations.d.ts next-env.d.ts next.config.js package.json postcss.config.js tailwind.config.js tsconfig.json vercel.json ./
-RUN ls -la components/digit* && ls -la lib/ && ls -la packages/core/src/
 RUN npm run build -- --webpack
 
 FROM node:20-bookworm-slim
