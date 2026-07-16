@@ -33,9 +33,11 @@ RUN python3 -m venv /app/polymarket-backend/venv && \
     /app/polymarket-backend/venv/bin/pip install -r /app/polymarket-backend/requirements.txt
 
 COPY nginx.conf /etc/nginx/sites-available/default.template
-RUN echo "cache-bust-v3"
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
+
+# FORCE: hardcode Python port to 8090 so Render's $PORT doesn't conflict with nginx
+RUN sed -i 's/int(os.getenv("PORT", 8090))/8090/' /app/polymarket-backend/server.py
 
 EXPOSE 8080
 
