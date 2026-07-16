@@ -9,7 +9,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  transpilePackages: ['@deriv/core'],
+  transpilePackages: ['@deriv-com/smartcharts-champion'],
   outputFileTracingRoot: __dirname,
   async headers() {
     return [
