@@ -4,7 +4,14 @@ COPY package*.json ./
 COPY scripts ./scripts/
 RUN npm ci --legacy-peer-deps --ignore-scripts
 RUN node scripts/copy-smartcharts-assets.js
-COPY . .
+COPY app ./app
+COPY components ./components
+COPY hooks ./hooks
+COPY lib ./lib
+COPY packages ./packages
+COPY public ./public
+COPY scripts ./scripts
+COPY declarations.d.ts next-env.d.ts next.config.js package.json postcss.config.js tailwind.config.js tsconfig.json vercel.json ./
 RUN npm run build -- --webpack
 
 FROM node:20-bookworm-slim
