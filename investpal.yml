@@ -1,0 +1,6 @@
+tunnel: investpal
+credentials-file: C:\Users\SAMM\.cloudflared\a830e935-c396-4919-9159-64bb866d0774.json
+ingress:
+  - hostname: investpal.online
+    service: http://localhost:3005
+  - service: http_status:404

@@ -1,0 +1,6 @@
+@echo off
+echo Starting Next.js dev server on port 3005...
+start "InvestPal Dev Server" cmd /c "npm run dev"
+echo Waiting for server to start...
+timeout /t 8 /nobreak >nul
+echo Server should be ready on http://localhost:3005
