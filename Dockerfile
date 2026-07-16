@@ -5,7 +5,7 @@ COPY scripts ./scripts/
 RUN npm ci --legacy-peer-deps --ignore-scripts
 RUN node scripts/copy-smartcharts-assets.js
 COPY . .
-RUN npm run build
+RUN npm run build -- --webpack
 
 FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y python3 python3-pip python3-venv nginx && rm -rf /var/lib/apt/lists/*
