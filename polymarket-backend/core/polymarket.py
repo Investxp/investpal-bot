@@ -223,7 +223,14 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
         end=raw.get("endDate",raw.get("end_date",""))
         time_s,date_s=_parse_end(end)
         sport=_sport(q+" "+event_title)
-        tids=raw.get("clobTokenIds",raw.get("clob_token_ids",[]))
+        tids_raw=raw.get("clobTokenIds",raw.get("clob_token_ids",[]))
+        if isinstance(tids_raw, str):
+            try: tids=json.loads(tids_raw)
+            except: tids=[]
+        elif isinstance(tids_raw, list):
+            tids=tids_raw
+        else:
+            tids=[]
         vol24=float(raw.get("volume24hr",0) or 0)
         liq=float(raw.get("liquidity",0) or 0)
         mid=str(raw.get("id",""))
