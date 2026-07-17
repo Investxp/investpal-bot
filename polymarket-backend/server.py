@@ -8,13 +8,7 @@ from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Monkey-patch OrderArgs.dict for py-clob-client Pydantic v2 compat
-try:
-    from py_clob_client.clob_types import OrderArgs
-    import dataclasses
-    OrderArgs.dict = lambda self: dataclasses.asdict(self)
-except Exception:
-    pass
+# CLOB V2 — no monkey patches needed
 
 from core.polymarket   import (run_poly_loop, get_cached, full_scan_and_cache,
                                 fetch_orderbook, fetch_clob_price, fetch_positions,

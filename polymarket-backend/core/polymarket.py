@@ -351,104 +351,159 @@ def run_poly_loop(stop_event,interval=90):
         except Exception as e: log.error(f"Poly loop: {e}")
         stop_event.wait(interval)
 
-# ── TRADING ──
-def place_order(token_id,side,price,size_usdc,private_key,funder=None):
+# ── TRADING (CLOB V2) ──
+EXCHANGE_ADDR = "0xE111180000d2663C0091e4f400237545B87B996B"
+NEG_RISK_ADDR = "0xe2222d279d744050d28e00520010520000310F59"
+V2_COLLATERAL = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
+
+def _l1_sign(maker, private_key, ts, nonce):
+    """EIP-712 typed data signing for CLOB V2 L1 auth."""
+    from eth_account.messages import encode_structured_data
+    from eth_account import Account
+    domain = {"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID}
+    types = {
+        "EIP712Domain": [
+            {"name": "name", "type": "string"},
+            {"name": "version", "type": "string"},
+            {"name": "chainId", "type": "uint256"},
+        ],
+        "ClobAuth": [
+            {"name": "address", "type": "address"},
+            {"name": "timestamp", "type": "string"},
+            {"name": "nonce", "type": "uint256"},
+            {"name": "message", "type": "string"},
+        ],
+    }
+    value = {
+        "address": maker,
+        "timestamp": str(ts),
+        "nonce": nonce,
+        "message": "This message attests that I control the given wallet",
+    }
+    signable = encode_structured_data({"types": types, "domain": domain, "primaryType": "ClobAuth", "message": value})
+    signed = Account.sign_message(signable, private_key)
+    return signed.signature.hex()
+
+def _l2_sign(method, path, body, timestamp, secret):
+    """HMAC-SHA256 for CLOB V2 L2 auth."""
+    import hmac, hashlib
+    msg = f"{timestamp}{method}{path}{body}".encode()
+    return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+
+def _get_api_creds(private_key):
+    """Obtain or derive CLOB V2 API credentials (L1 auth). Returns {apiKey, secret, passphrase, owner}."""
+    import time, requests
+    from eth_account import Account
+    Account.enable_unaudited_hdwallet_features()
+    acct = Account.from_key(private_key)
+    maker = acct.address
+    ts = int(time.time())
+    nonce = ts
+    sig = _l1_sign(maker, private_key, ts, nonce)
+    headers = {
+        "POLY_ADDRESS": maker,
+        "POLY_SIGNATURE": f"0x{sig}",
+        "POLY_TIMESTAMP": str(ts),
+        "POLY_NONCE": str(nonce),
+    }
+    clob_host = CLOB.rstrip("/")
+    create = requests.post(f"{clob_host}/auth/api-key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
+    if create.ok:
+        creds = create.json()
+    else:
+        derive = requests.get(f"{clob_host}/auth/derive-api-key", params={"nonce": str(nonce)}, headers=headers, timeout=15)
+        if not derive.ok:
+            raise Exception(f"L1 auth failed: create={create.status_code} derive={derive.status_code}")
+        creds = derive.json()
+    api_key = creds.get("apiKey", creds.get("api_key", ""))
+    api_secret = creds.get("secret", creds.get("api_secret", ""))
+    api_passphrase = creds.get("passphrase", creds.get("api_passphrase", ""))
+    return {"apiKey": api_key, "secret": api_secret, "passphrase": api_passphrase, "owner": api_key, "address": maker}
+
+def _v2_l2_headers(method, path, body, creds, ts):
+    """Build L2 headers for a V2 CLOB API request."""
+    sig = _l2_sign(method, path, body, ts, creds["secret"])
+    return {
+        "POLY_ADDRESS": creds["address"],
+        "POLY_SIGNATURE": sig,
+        "POLY_TIMESTAMP": str(ts),
+        "POLY_API_KEY": creds["apiKey"],
+        "POLY_PASSPHRASE": creds["passphrase"],
+        "Content-Type": "application/json",
+    }
+
+def place_order(token_id, side, price, size_usdc, private_key, funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
-    log.info(f"place_order invoked: token={token_id} side={side} price={price} size={size_usdc}")
+    log.info(f"place_order: token={token_id} side={side} price={price} size={size_usdc}")
     try:
-        import requests, time
+        import time, json, requests
         from eth_account import Account
-        from eth_account.messages import encode_defunct
         Account.enable_unaudited_hdwallet_features()
         acct = Account.from_key(private_key)
         maker = acct.address
-        log.info(f"Maker address: {maker}")
-        ts = int(time.time())
-        nonce = ts
         clob_host = CLOB.rstrip("/")
-        # L1 auth: EIP-191 personal sign (same as py-clob-client Signer.sign)
-        sig_payload = f"POST/request/api_key{nonce}"
-        msg_hash = encode_defunct(text=sig_payload)
-        sig = Account.sign_message(msg_hash, private_key).signature.hex()
-        log.info(f"L1 signature computed, nonce={nonce}")
-        # Try to create API key
-        headers = {"POLY_SIGNATURE": f"0x{sig}"}
-        create_resp = requests.post(f"{clob_host}/request/api_key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
-        log.info(f"Create API key response: status={create_resp.status_code}")
-        if not create_resp.ok:
-            derive_resp = requests.get(f"{clob_host}/request/api_key?nonce={nonce}", headers={"POLY_SIGNATURE": f"0x{sig}"}, timeout=15)
-            log.info(f"Derive API key response: status={derive_resp.status_code}")
-            if not derive_resp.ok:
-                return {"ok":False,"error":f"CLOB auth failed: create={create_resp.status_code} derive={derive_resp.status_code}"}
-            creds = derive_resp.json()
-        else:
-            creds = create_resp.json()
-        api_key = creds.get("apiKey", creds.get("api_key", ""))
-        api_secret = creds.get("secret", creds.get("api_secret", ""))
-        api_passphrase = creds.get("passphrase", creds.get("api_passphrase", ""))
-        log.info(f"API creds: key={api_key[:8]}... secret={api_secret[:4]}...")
-        # Get neg_risk
+        # L1 auth → get API creds
+        creds = _get_api_creds(private_key)
+        log.info(f"API creds obtained: key={creds['apiKey'][:8]}...")
+        # Check neg_risk
         neg_resp = requests.get(f"{clob_host}/neg-risk?token_id={token_id}", timeout=15)
         neg_risk = neg_resp.json().get("neg_risk", False) if neg_resp.ok else False
         log.info(f"neg_risk={neg_risk}")
-        # Sign and place order
-        order_data = _build_order(token_id, side, price, size_usdc, private_key, neg_risk)
-        order_headers = {"Content-Type": "application/json"}
-        if api_key:
-            order_headers["POLY_API_KEY"] = api_key
-            order_headers["POLY_API_SECRET"] = api_secret[:16] if api_secret else ""
-            order_headers["POLY_API_PASSPHRASE"] = api_passphrase[:16] if api_passphrase else ""
-        log.info(f"Posting order to {clob_host}/order")
-        order_resp = requests.post(f"{clob_host}/order", json=order_data, headers=order_headers, timeout=30)
+        # Build and sign V2 order
+        order_data = _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk)
+        order_data["owner"] = creds["owner"]
+        now_ts = int(time.time())
+        body_str = json.dumps(order_data)
+        l2_headers = _v2_l2_headers("POST", "/order", body_str, creds, now_ts)
+        log.info(f"Posting V2 order to {clob_host}/order")
+        order_resp = requests.post(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=30)
         log.info(f"Order response: status={order_resp.status_code}")
         if order_resp.ok:
             data = order_resp.json()
             return {"ok": True, "order_id": data.get("orderID",""), "response": data}
-        return {"ok": False, "error": f"CLOB order: {order_resp.status_code} {order_resp.text[:300]}"}
+        return {"ok": False, "error": f"CLOB V2 order: {order_resp.status_code} {order_resp.text[:300]}"}
     except Exception as e:
         import traceback
         log.error(f"place_order: {e}\n{traceback.format_exc()}")
         return {"ok":False,"error":str(e)}
 
-EXCHANGE_ADDR = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
-NEG_RISK_ADDR = "0xC5d563A36AE78145C45a50134d48A1215220f80a"
-
-def _build_order(token_id, side, price, size_usdc, private_key, neg_risk=False):
-    """Build and EIP-712 sign a Polymarket CLOB order, return the order dict."""
+def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=False):
+    """Build and EIP-712 sign a CLOB V2 order. Returns the full order envelope dict."""
     import time, json
     from eth_account.messages import encode_structured_data
     from eth_account import Account
     Account.enable_unaudited_hdwallet_features()
     acct = Account.from_key(private_key)
     maker = acct.address
-    ts = int(time.time() * 1000)
+    ts_ms = int(time.time() * 1000)
     usdc_decimals = 10**6
-    maker_amount = int(size_usdc * usdc_decimals)
-    signer_amount = int(size_usdc * price * usdc_decimals)
-    salt = ts % (2**32)
-    order_side = 1 if side.upper() == "BUY" else 0
-    now_sec = ts // 1000
-    expiration = now_sec + 3600  # 1 hour from now
-    nonce = salt
+    is_buy = side.upper() == "BUY"
+    if is_buy:
+        maker_amount = int(size_usdc * usdc_decimals)
+        taker_amount = int(size_usdc * usdc_decimals / price) if price > 0 else maker_amount
+    else:
+        maker_amount = int(size_usdc * usdc_decimals / price) if price > 0 else int(size_usdc * usdc_decimals)
+        taker_amount = int(size_usdc * usdc_decimals)
+    salt = ts_ms % (2**32)
+    order_side = 1 if is_buy else 0
     verifying_contract = NEG_RISK_ADDR if neg_risk else EXCHANGE_ADDR
-    order_data = {
+    signed_data = {
         "salt": salt,
         "maker": maker,
         "signer": maker,
-        "taker": "0x0000000000000000000000000000000000000000",
         "tokenId": token_id,
         "makerAmount": str(maker_amount),
-        "signerAmount": str(signer_amount),
-        "side": str(order_side),
-        "expiration": str(expiration),
-        "nonce": str(nonce),
-        "feeRateBps": "0",
-        "signatureType": "1",
+        "takerAmount": str(taker_amount),
+        "side": order_side,
+        "timestamp": str(ts_ms),
+        "metadata": "0x" + "0"*64,
+        "builder": "0x" + "0"*64,
+        "signatureType": 0,
     }
     domain = {
         "name": "Polymarket CTF",
-        "version": "1",
-        "chainId": str(CHAIN_ID),
+        "version": "2",
+        "chainId": CHAIN_ID,
         "verifyingContract": verifying_contract,
     }
     types = {
@@ -462,54 +517,69 @@ def _build_order(token_id, side, price, size_usdc, private_key, neg_risk=False):
             {"name": "salt", "type": "uint256"},
             {"name": "maker", "type": "address"},
             {"name": "signer", "type": "address"},
-            {"name": "taker", "type": "address"},
             {"name": "tokenId", "type": "uint256"},
             {"name": "makerAmount", "type": "uint256"},
-            {"name": "signerAmount", "type": "uint256"},
+            {"name": "takerAmount", "type": "uint256"},
             {"name": "side", "type": "uint8"},
-            {"name": "expiration", "type": "uint256"},
-            {"name": "nonce", "type": "uint256"},
-            {"name": "feeRateBps", "type": "uint256"},
+            {"name": "timestamp", "type": "uint256"},
+            {"name": "metadata", "type": "bytes32"},
+            {"name": "builder", "type": "bytes32"},
             {"name": "signatureType", "type": "uint8"},
         ],
     }
-    signable = encode_structured_data({"types": types, "domain": domain, "primaryType": "Order", "message": order_data})
+    signable = encode_structured_data({"types": types, "domain": domain, "primaryType": "Order", "message": signed_data})
     signed = Account.sign_message(signable, private_key)
     signature = signed.signature.hex()
     return {
-        "salt": salt,
-        "maker": maker,
-        "signer": maker,
-        "taker": "0x0000000000000000000000000000000000000000",
-        "tokenId": token_id,
-        "makerAmount": str(maker_amount),
-        "signerAmount": str(signer_amount),
-        "side": str(order_side),
-        "expiration": str(expiration),
-        "nonce": str(nonce),
-        "feeRateBps": "0",
-        "signatureType": "1",
-        "signature": signature,
+        "order": {
+            "salt": salt,
+            "maker": maker,
+            "signer": maker,
+            "tokenId": token_id,
+            "makerAmount": str(maker_amount),
+            "takerAmount": str(taker_amount),
+            "side": "BUY" if order_side else "SELL",
+            "expiration": str(ts_ms // 1000 + 3600),
+            "timestamp": str(ts_ms),
+            "metadata": "0x" + "0"*64,
+            "builder": "0x" + "0"*64,
+            "signature": f"0x{signature}",
+            "signatureType": 0,
+        },
         "owner": maker,
-        "negRisk": neg_risk,
+        "orderType": "GTC",
+        "deferExec": False,
+        "postOnly": False,
     }
 
-def cancel_order(order_id,private_key):
+def cancel_order(order_id, private_key):
     try:
-        from py_clob_client.client import ClobClient
-        c=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1)
-        c.set_api_creds(c.create_or_derive_api_creds())
-        return {"ok":True,"response":c.cancel(order_id)}
-    except Exception as e: return {"ok":False,"error":str(e)}
+        import time, json, requests
+        creds = _get_api_creds(private_key)
+        clob_host = CLOB.rstrip("/")
+        now_ts = int(time.time())
+        body_str = json.dumps({"orderID": order_id})
+        l2_headers = _v2_l2_headers("DELETE", "/order", body_str, creds, now_ts)
+        resp = requests.delete(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=15)
+        return {"ok": resp.ok, "status": resp.status_code, "response": resp.json() if resp.ok else resp.text[:200]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 def get_open_orders(private_key):
     try:
-        from py_clob_client.client import ClobClient
-        c=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1)
-        c.set_api_creds(c.create_or_derive_api_creds())
-        orders=c.get_orders()
-        return orders if isinstance(orders,list) else []
-    except Exception as e: log.warning(f"get_open_orders: {e}"); return []
+        import time, requests
+        creds = _get_api_creds(private_key)
+        clob_host = CLOB.rstrip("/")
+        now_ts = int(time.time())
+        l2_headers = _v2_l2_headers("GET", "/orders", "", creds, now_ts)
+        resp = requests.get(f"{clob_host}/orders", headers=l2_headers, timeout=15)
+        if resp.ok:
+            data = resp.json()
+            return data if isinstance(data, list) else data.get("orders", data.get("data", []))
+        return []
+    except Exception as e:
+        log.warning(f"get_open_orders: {e}")
+        return []
 
 def check_market_resolution(market_id):
     try:
