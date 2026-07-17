@@ -39,3 +39,5 @@ RUN chmod +x /app/start.sh
 EXPOSE 8080
 
 CMD ["/app/start.sh"]
+
+# trigger rebuild 20260717204436
