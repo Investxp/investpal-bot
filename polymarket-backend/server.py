@@ -392,6 +392,25 @@ class Handler(BaseHTTPRequestHandler):
             tid = qs.get("token_id", [""])[0]
             self._json(fetch_orderbook(tid) if tid else {"error": "token_id required"})
 
+        elif path == "/api/polymarket/test-connection":
+            import requests as req
+            proxy = get_proxy()
+            proxies = {"http": proxy, "https": proxy} if proxy else None
+            results = {}
+            for url in ["https://clob.polymarket.com/", "https://clob.polymarket.com/feature-flags",
+                        "https://gamma-api.polymarket.com/events?limit=1"]:
+                try:
+                    r = req.get(url, proxies=proxies, timeout=10)
+                    results[url] = {"status": r.status_code, "ok": r.ok}
+                except Exception as e:
+                    results[url] = {"error": str(e)[:100]}
+            self._json({
+                "ok": True,
+                "proxy_configured": bool(proxy),
+                "proxy_url": proxy,
+                "results": results,
+            })
+
         elif path == "/api/polymarket/price":
             tid = qs.get("token_id", [""])[0]
             self._json(fetch_clob_price(tid) if tid else {"error": "token_id required"})
