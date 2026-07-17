@@ -359,15 +359,12 @@ V2_COLLATERAL = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
 def _l1_sign(maker, private_key, ts, nonce):
     """EIP-712 typed data signing for CLOB V2 L1 auth."""
     from eth_account import Account
+    from eth_account.messages import encode_typed_data
     Account.enable_unaudited_hdwallet_features()
     acct = Account.from_key(private_key)
-    data = {
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-            ],
+    signable = encode_typed_data(
+        domain={"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID},
+        types={
             "ClobAuth": [
                 {"name": "address", "type": "address"},
                 {"name": "timestamp", "type": "string"},
@@ -375,16 +372,14 @@ def _l1_sign(maker, private_key, ts, nonce):
                 {"name": "message", "type": "string"},
             ],
         },
-        "domain": {"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID},
-        "primaryType": "ClobAuth",
-        "message": {
+        value={
             "address": maker,
             "timestamp": str(ts),
             "nonce": nonce,
             "message": "This message attests that I control the given wallet",
         },
-    }
-    signed = Account.sign_typed_data(acct, data)
+    )
+    signed = Account.sign_message(signable, private_key)
     return signed.signature.hex()
 
 def _l2_sign(method, path, body, timestamp, secret):
@@ -474,6 +469,7 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
     """Build and EIP-712 sign a CLOB V2 order. Returns the full order envelope dict."""
     import time, json
     from eth_account import Account
+    from eth_account.messages import encode_typed_data
     Account.enable_unaudited_hdwallet_features()
     acct = Account.from_key(private_key)
     maker = acct.address
@@ -489,27 +485,14 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
     salt = ts_ms % (2**32)
     order_side = 1 if is_buy else 0
     verifying_contract = NEG_RISK_ADDR if neg_risk else EXCHANGE_ADDR
-    signed_data = {
-        "salt": salt,
-        "maker": maker,
-        "signer": maker,
-        "tokenId": token_id,
-        "makerAmount": str(maker_amount),
-        "takerAmount": str(taker_amount),
-        "side": order_side,
-        "timestamp": str(ts_ms),
-        "metadata": "0x" + "0"*64,
-        "builder": "0x" + "0"*64,
-        "signatureType": 0,
-    }
-    eip712_data = {
-        "types": {
-            "EIP712Domain": [
-                {"name": "name", "type": "string"},
-                {"name": "version", "type": "string"},
-                {"name": "chainId", "type": "uint256"},
-                {"name": "verifyingContract", "type": "address"},
-            ],
+    signable = encode_typed_data(
+        domain={
+            "name": "Polymarket CTF",
+            "version": "2",
+            "chainId": CHAIN_ID,
+            "verifyingContract": verifying_contract,
+        },
+        types={
             "Order": [
                 {"name": "salt", "type": "uint256"},
                 {"name": "maker", "type": "address"},
@@ -524,16 +507,21 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
                 {"name": "signatureType", "type": "uint8"},
             ],
         },
-        "domain": {
-            "name": "Polymarket CTF",
-            "version": "2",
-            "chainId": CHAIN_ID,
-            "verifyingContract": verifying_contract,
+        value={
+            "salt": salt,
+            "maker": maker,
+            "signer": maker,
+            "tokenId": token_id,
+            "makerAmount": str(maker_amount),
+            "takerAmount": str(taker_amount),
+            "side": order_side,
+            "timestamp": str(ts_ms),
+            "metadata": "0x" + "0"*64,
+            "builder": "0x" + "0"*64,
+            "signatureType": 0,
         },
-        "primaryType": "Order",
-        "message": signed_data,
-    }
-    signed = Account.sign_typed_data(acct, eip712_data)
+    )
+    signed = Account.sign_message(signable, private_key)
     signature = signed.signature.hex()
     return {
         "order": {
