@@ -12,8 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from py_clob_client.clob_types import OrderArgs
     import dataclasses
-    if not hasattr(OrderArgs, 'dict'):
-        OrderArgs.dict = lambda self: dataclasses.asdict(self)
+    OrderArgs.dict = lambda self: dataclasses.asdict(self)
 except Exception:
     pass
 
