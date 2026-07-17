@@ -82,7 +82,7 @@ def run_cycle(markets):
     cfg   = get_config()
     state = get_bot_state()
     if not cfg.get('bot_enabled'):
-        _log(state, 'Bot disabled â€” skipping cycle.', 'warn')
+        _log(state, 'Bot disabled — skipping cycle.', 'warn')
         _w(BOT_STATE, state); return state
 
     state['cycles'] = state.get('cycles', 0) + 1
@@ -95,7 +95,7 @@ def run_cycle(markets):
     state.setdefault('streak_a', 0)
     state.setdefault('streak_b', 0)
     
-    _log(state, f"Cycle #{state['cycles']} ({mode.upper()}) â€” Streaks: A={state['streak_a']} B={state['streak_b']} | {len(markets)} markets available", 'info')
+    _log(state, f"Cycle #{state['cycles']} ({mode.upper()}) — Streaks: A={state['streak_a']} B={state['streak_b']} | {len(markets)} markets available", 'info')
 
     # Resolve bets
     active_bets = state.get('active_bets', [])
@@ -170,7 +170,7 @@ def run_cycle(markets):
                     bet_pnl = round(stake * (1.0 / price - 1.0) if won else -stake, 2)
                     
                 total_net_pnl += bet_pnl
-                results_log.append(f"{side}:{won and 'WON âœ“' or 'LOST âœ—'} ({bet_pnl:+.2f} USDC)")
+                results_log.append(f"{side}:{won and 'WON ✓' or 'LOST ✗'} ({bet_pnl:+.2f} USDC)")
                 
             # Update streaks based on outcome in shared main state.json
             max_steps = int(cfg.get('max_steps', 6) or 6)
@@ -234,7 +234,7 @@ def run_cycle(markets):
     slots_available = max_concurrent - active_events_count
     
     if slots_available > 0:
-        cutoff = utc_now + timedelta(hours=4)
+        cutoff = utc_now + timedelta(hours=72)
         
         # Filter markets to only include those ending in next 4 hours (excluding SKIP and already active)
         cands = []
@@ -261,9 +261,9 @@ def run_cycle(markets):
             
             main_s = get_main_state()
             
-            factor = float(main_s.get('factor', 2.1))
-            base_stake = float(main_s.get('base_stake', 10.0))
-            max_steps = int(main_s.get('max_steps', 6))
+            factor = float(cfg.get('factor', main_s.get('factor', 2.1)))
+            base_stake = float(cfg.get('base_stake', main_s.get('base_stake', 10.0)))
+            max_steps = int(cfg.get('max_steps', main_s.get('max_steps', 6)))
             
             stake_a = round(base_stake * (factor ** min(main_s.get('streak_a', 0), max_steps)), 2)
             stake_b = round(base_stake * (factor ** min(main_s.get('streak_b', 0), max_steps)), 2)
