@@ -10,8 +10,26 @@ GAMMA="https://gamma-api.polymarket.com"
 CLOB="https://clob.polymarket.com"
 DATA_BASE="https://data-api.polymarket.com"
 CHAIN_ID=137
-CACHE=os.path.join(os.path.dirname(__file__),'..','data','poly_cache.json')
-os.makedirs(os.path.dirname(CACHE),exist_ok=True)
+DATA_DIR=os.path.join(os.path.dirname(__file__),'..','data')
+CACHE=os.path.join(DATA_DIR,'poly_cache.json')
+PROXY_FILE=os.path.join(DATA_DIR,'proxy.json')
+os.makedirs(DATA_DIR,exist_ok=True)
+
+def get_proxy():
+    try:
+        with open(PROXY_FILE) as f: return json.load(f).get("proxy_url","") or ""
+    except: return ""
+
+def set_proxy(url):
+    os.makedirs(DATA_DIR,exist_ok=True)
+    with open(PROXY_FILE,'w') as f: json.dump({"proxy_url":url},f)
+
+def _proxied_session():
+    s = requests.Session()
+    proxy = get_proxy()
+    if proxy:
+        s.proxies = {"http": proxy, "https": proxy}
+    return s
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -405,11 +423,12 @@ def _get_api_creds(private_key):
         "POLY_NONCE": str(nonce),
     }
     clob_host = CLOB.rstrip("/")
-    create = requests.post(f"{clob_host}/auth/api-key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
+    sess = _proxied_session()
+    create = sess.post(f"{clob_host}/auth/api-key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
     if create.ok:
         creds = create.json()
     else:
-        derive = requests.get(f"{clob_host}/auth/derive-api-key", params={"nonce": str(nonce)}, headers=headers, timeout=15)
+        derive = sess.get(f"{clob_host}/auth/derive-api-key", params={"nonce": str(nonce)}, headers=headers, timeout=15)
         if not derive.ok:
             raise Exception(f"L1 auth failed: create={create.status_code} derive={derive.status_code}")
         creds = derive.json()
@@ -444,7 +463,8 @@ def place_order(token_id, side, price, size_usdc, private_key, funder=None):
         creds = _get_api_creds(private_key)
         log.info(f"API creds obtained: key={creds['apiKey'][:8]}...")
         # Check neg_risk
-        neg_resp = requests.get(f"{clob_host}/neg-risk?token_id={token_id}", timeout=15)
+        sess = _proxied_session()
+        neg_resp = sess.get(f"{clob_host}/neg-risk?token_id={token_id}", timeout=15)
         neg_risk = neg_resp.json().get("neg_risk", False) if neg_resp.ok else False
         log.info(f"neg_risk={neg_risk}")
         # Build and sign V2 order
@@ -454,7 +474,7 @@ def place_order(token_id, side, price, size_usdc, private_key, funder=None):
         body_str = json.dumps(order_data)
         l2_headers = _v2_l2_headers("POST", "/order", body_str, creds, now_ts)
         log.info(f"Posting V2 order to {clob_host}/order")
-        order_resp = requests.post(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=30)
+        order_resp = sess.post(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=30)
         log.info(f"Order response: status={order_resp.status_code}")
         if order_resp.ok:
             data = order_resp.json()
@@ -547,25 +567,27 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
 
 def cancel_order(order_id, private_key):
     try:
-        import time, json, requests
+        import time, json
         creds = _get_api_creds(private_key)
         clob_host = CLOB.rstrip("/")
+        sess = _proxied_session()
         now_ts = int(time.time())
         body_str = json.dumps({"orderID": order_id})
         l2_headers = _v2_l2_headers("DELETE", "/order", body_str, creds, now_ts)
-        resp = requests.delete(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=15)
+        resp = sess.delete(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=15)
         return {"ok": resp.ok, "status": resp.status_code, "response": resp.json() if resp.ok else resp.text[:200]}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
 def get_open_orders(private_key):
     try:
-        import time, requests
+        import time
         creds = _get_api_creds(private_key)
         clob_host = CLOB.rstrip("/")
+        sess = _proxied_session()
         now_ts = int(time.time())
         l2_headers = _v2_l2_headers("GET", "/orders", "", creds, now_ts)
-        resp = requests.get(f"{clob_host}/orders", headers=l2_headers, timeout=15)
+        resp = sess.get(f"{clob_host}/orders", headers=l2_headers, timeout=15)
         if resp.ok:
             data = resp.json()
             return data if isinstance(data, list) else data.get("orders", data.get("data", []))

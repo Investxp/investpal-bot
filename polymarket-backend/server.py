@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.polymarket   import (run_poly_loop, get_cached, full_scan_and_cache,
                                 fetch_orderbook, fetch_clob_price, fetch_positions,
                                 place_order, cancel_order, get_open_orders,
-                                get_cache_age_minutes)
+                                get_cache_age_minutes, get_proxy, set_proxy)
 from core.trade_engine import (get_picks, get_results, get_tracked,
                                 save_tracked, resolve_pick, reset_all)
 from core.martingale   import (get_state, reset_state, calc_stake,
@@ -423,6 +423,9 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self._json({"ok": True, "address": "", "usdc": 0.0, "usdc_e": 0.0, "total_usdc": 0.0})
 
+        elif path == "/api/proxy":
+            self._json({"ok": True, "proxy_url": get_proxy()})
+
         elif path.startswith("/api/"):
             self._json({"error": "unknown endpoint"}, 404)
 
@@ -584,6 +587,11 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/polymarket/refresh":
             markets = full_scan_and_cache(enrich=bool(body.get("enrich", True)))
             self._json({"ok": True, "count": len(markets)})
+
+        elif path == "/api/proxy":
+            proxy_url = body.get("proxy_url", "")
+            set_proxy(proxy_url)
+            self._json({"ok": True, "proxy_url": proxy_url})
 
         else:
             self._json({"error": "unknown endpoint"}, 404)
