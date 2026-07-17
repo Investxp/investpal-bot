@@ -591,6 +591,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/proxy":
             proxy_url = body.get("proxy_url", "")
             set_proxy(proxy_url)
+            save_env({"POLYMARKET_PROXY": proxy_url})
             self._json({"ok": True, "proxy_url": proxy_url})
 
         else:

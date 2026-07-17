@@ -16,6 +16,8 @@ PROXY_FILE=os.path.join(DATA_DIR,'proxy.json')
 os.makedirs(DATA_DIR,exist_ok=True)
 
 def get_proxy():
+    env_proxy = os.environ.get("POLYMARKET_PROXY","") or ""
+    if env_proxy: return env_proxy
     try:
         with open(PROXY_FILE) as f: return json.load(f).get("proxy_url","") or ""
     except: return ""
