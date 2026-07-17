@@ -355,8 +355,13 @@ def run_poly_loop(stop_event,interval=90):
 def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
     try:
+        import dataclasses
         from py_clob_client.client import ClobClient
         from py_clob_client.clob_types import OrderArgs,OrderType
+        # Some py-clob-client versions call .dict() on OrderArgs (a dataclass)
+        # Monkey-patch a .dict() method using dataclasses.asdict
+        if not hasattr(OrderArgs, 'dict'):
+            OrderArgs.dict = lambda self: dataclasses.asdict(self)
         client=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1,
                           funder=funder or os.getenv("POLYMARKET_FUNDER_ADDRESS","") or None)
         client.set_api_creds(client.create_or_derive_api_creds())
