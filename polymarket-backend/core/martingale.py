@@ -14,7 +14,7 @@ def _w(s):
     with open(STATE, 'w') as f: json.dump(s, f, indent=2)
 
 def _d():
-    return {'bankroll': 200.0, 'base_stake': 10.0, 'factor': 2.1, 'max_steps': 6,
+    return {'bankroll': 100.0, 'base_stake': 0.1, 'factor': 2.1, 'max_steps': 6,
             'streak_a': 0, 'streak_b': 0, 'total_pnl': 0.0, 'wins': 0, 'losses': 0,
             'updated': datetime.now(timezone.utc).isoformat()}
 
@@ -48,7 +48,7 @@ def update_config(bankroll=None, base_stake=None, factor=None, max_steps=None):
     if max_steps  is not None: s['max_steps']  = int(max_steps)
     _w(s); return s
 
-def reset_state(bankroll=200, base_stake=10, factor=2.1, max_steps=6):
+def reset_state(bankroll=100, base_stake=0.1, factor=2.1, max_steps=6):
     s = _d()
     s['bankroll']   = float(bankroll)
     s['base_stake'] = float(base_stake)
