@@ -355,29 +355,47 @@ def run_poly_loop(stop_event,interval=90):
 def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
     try:
-        import dataclasses
-        from py_clob_client.client import ClobClient
-        # Use only ClobClient for API creds and neg_risk check, bypass OrderArgs
-        client=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1,
-                          funder=funder or os.getenv("POLYMARKET_FUNDER_ADDRESS","") or None)
-        client.set_api_creds(client.create_or_derive_api_creds())
-        neg_risk = client.get_neg_risk(token_id)
-        # Build order dict manually (no OrderArgs needed)
+        import requests, time
+        from eth_account import Account
+        from eth_account.messages import encode_defunct
+        Account.enable_unaudited_hdwallet_features()
+        acct = Account.from_key(private_key)
+        maker = acct.address
+        ts = int(time.time())
+        nonce = ts
+        clob_host = CLOB.rstrip("/")
+        # L1 auth: EIP-191 personal sign (same as py-clob-client Signer.sign)
+        sig_payload = f"POST/request/api_key{nonce}"
+        msg_hash = encode_defunct(text=sig_payload)
+        sig = Account.sign_message(msg_hash, private_key).signature.hex()
+        # Try to create API key
+        headers = {"POLY_SIGNATURE": f"0x{sig}"}
+        create_resp = requests.post(f"{clob_host}/request/api_key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
+        if not create_resp.ok:
+            derive_resp = requests.get(f"{clob_host}/request/api_key?nonce={nonce}", headers={"POLY_SIGNATURE": f"0x{sig}"}, timeout=15)
+            if not derive_resp.ok:
+                return {"ok":False,"error":f"CLOB auth failed: create={create_resp.status_code} derive={derive_resp.status_code}"}
+            creds = derive_resp.json()
+        else:
+            creds = create_resp.json()
+        api_key = creds.get("apiKey", creds.get("api_key", ""))
+        api_secret = creds.get("secret", creds.get("api_secret", ""))
+        api_passphrase = creds.get("passphrase", creds.get("api_passphrase", ""))
+        # Get neg_risk
+        neg_resp = requests.get(f"{clob_host}/neg-risk?token_id={token_id}", timeout=15)
+        neg_risk = neg_resp.json().get("neg_risk", False) if neg_resp.ok else False
+        # Sign and place order
         order_data = _build_order(token_id, side, price, size_usdc, private_key, neg_risk)
-        # Post via raw CLOB API
-        import requests
-        creds = client.api_creds or {}
-        headers = {"Content-Type": "application/json"}
-        if creds.get("api_key"):
-            headers["POLY_API_KEY"] = creds["api_key"]
-            headers["POLY_API_SECRET"] = (creds.get("api_secret","") or "")[:16]
-            headers["POLY_API_PASSPHRASE"] = (creds.get("api_secret","") or "")[:16]
-        resp = requests.post(f"{CLOB}/order", json=order_data, headers=headers, timeout=30)
-        if resp.ok:
-            data = resp.json()
+        order_headers = {"Content-Type": "application/json"}
+        if api_key:
+            order_headers["POLY_API_KEY"] = api_key
+            order_headers["POLY_API_SECRET"] = api_secret[:16] if api_secret else ""
+            order_headers["POLY_API_PASSPHRASE"] = api_passphrase[:16] if api_passphrase else ""
+        order_resp = requests.post(f"{clob_host}/order", json=order_data, headers=order_headers, timeout=30)
+        if order_resp.ok:
+            data = order_resp.json()
             return {"ok": True, "order_id": data.get("orderID",""), "response": data}
-        return {"ok": False, "error": f"CLOB: {resp.status_code} {resp.text[:300]}"}
-    except ImportError: return {"ok":False,"error":"py-clob-client not installed. Run: pip install py-clob-client"}
+        return {"ok": False, "error": f"CLOB order: {order_resp.status_code} {order_resp.text[:300]}"}
     except Exception as e: log.error(f"place_order: {e}"); return {"ok":False,"error":str(e)}
 
 EXCHANGE_ADDR = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
