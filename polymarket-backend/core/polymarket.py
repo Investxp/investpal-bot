@@ -1,8 +1,8 @@
 """
-core/polymarket.py — Polymarket Gamma + CLOB integration
+core/polymarket.py â€” Polymarket Gamma + CLOB integration
 NOTE: All APIs return 403 from cloud IPs. Run server.py locally (residential IP).
 """
-import os,json,logging,time,requests
+import os,json,logging,time,requests,random
 from datetime import datetime,timezone
 
 log=logging.getLogger("polymarket")
@@ -13,17 +13,55 @@ CHAIN_ID=137
 CACHE=os.path.join(os.path.dirname(__file__),'..','data','poly_cache.json')
 os.makedirs(os.path.dirname(CACHE),exist_ok=True)
 
-S=requests.Session()
-S.headers.update({"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36","Accept":"application/json","Referer":"https://polymarket.com/","Origin":"https://polymarket.com"})
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0"
+]
 
-# ── Sports tag slugs used by Polymarket ──
+class SmartSession(requests.Session):
+    def request(self, method, url, **kwargs):
+        headers = kwargs.get("headers", {})
+        headers.update({
+            "User-Agent": random.choice(USER_AGENTS),
+            "Accept": "application/json",
+            "Referer": "https://polymarket.com/",
+            "Origin": "https://polymarket.com"
+        })
+        kwargs["headers"] = headers
+        
+        retries = 3
+        delay = 1.0
+        r = None
+        for attempt in range(retries):
+            try:
+                r = super().request(method, url, **kwargs)
+                if r.status_code == 403:
+                    log.warning(f"403 Forbidden on {method} {url} (Attempt {attempt+1}/{retries}). Rotating UA...")
+                    time.sleep(delay)
+                    delay *= 2
+                    headers["User-Agent"] = random.choice(USER_AGENTS)
+                    continue
+                return r
+            except Exception as e:
+                if attempt == retries - 1:
+                    raise e
+                time.sleep(delay)
+                delay *= 2
+        return r
+
+S = SmartSession()
+
+# â”€â”€ Sports tag slugs used by Polymarket â”€â”€
 SPORT_TAGS = [
     "soccer","nba","nfl","tennis","cricket","golf","mma","boxing",
     "baseball","nhl","rugby","olympics","esports","horse-racing",
     "sports","basketball","formula-1","ufc","football"
 ]
 
-# Hard exclusion keywords — discard anything that matches these
+# Hard exclusion keywords â€” discard anything that matches these
 NON_SPORT_KW = [
     "election","president","senator","congress","supreme court","trump","biden","harris",
     "vote","referendum","primaries","chancellor","minister","parliament","political",
@@ -198,7 +236,7 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
             "token_ids":tids if isinstance(tids,list) else [],
             "name":q[:90],"home":outcomes[0],"away":outcomes[1] if len(outcomes)>1 else "No",
             "sport":sport,"market":"Prediction Market","status":"upcoming","score":"",
-            "note":f"Polymarket · {sport} · Vol ${vol24:,.0f}/24h",
+            "note":f"Polymarket Â· {sport} Â· Vol ${vol24:,.0f}/24h",
             "why":f"YES {yp*100:.1f}% / NO {np*100:.1f}% implied",
             "balance":abs(yo-no),"odds1":yo,"odds2":no,"desc1":outcomes[0],"desc2":outcomes[1] if len(outcomes)>1 else "No",
             "url": f"https://polymarket.com/market/{slug}" if slug else "https://polymarket.com",
@@ -208,34 +246,48 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
 def scan_all(limit=200):
     results=[]; seen=set()
     log.info("Scanning sports tags on Polymarket Gamma API...")
-    # PRIMARY: fetch by each sport tag slug — these are guaranteed sports
+    # PRIMARY: fetch by each sport tag slug
     for tag in SPORT_TAGS:
         try:
-            pairs = fetch_by_tag(tag, limit=30)
+            pairs = fetch_by_tag(tag, limit=20)
             for (m, title) in pairs:
-                # For tag-based fetches, skip _is_sports gate (already filtered by tag)
                 p = parse_market(m, title, force_sports=True)
                 if p and p["id"] not in seen:
                     seen.add(p["id"]); results.append(p)
             if pairs:
-                log.debug(f"Tag '{tag}': {len(pairs)} raw → {len([x for x in results if x['id'] not in seen or True])} total")
-            time.sleep(0.1)
+                log.debug(f"Tag '{tag}': {len(pairs)} raw from tag scan")
+            time.sleep(random.uniform(0.3, 0.8))
         except Exception as e:
             log.debug(f"Tag scan error {tag}: {e}")
-    log.info(f"Tag scan done: {len(results)} sports markets found")
-    # FALLBACK: if still low count, try generic events with strict filtering
-    if len(results) < 10:
-        log.info("Falling back to generic events scan with strict filter...")
-        for ev in fetch_events(limit):
+    log.info(f"Tag scan done: {len(results)} sports markets from tags")
+    # SECONDARY: fetch all sports markets via generic endpoint (higher limit)
+    try:
+        r = S.get(f"{GAMMA}/markets", params={
+            "active":"true","closed":"false","limit":300,
+            "tag_slug":"sports","order":"volume24hr","ascending":"false"
+        }, timeout=20)
+        if r.ok:
+            raw = r.json()
+            all_mkts = raw if isinstance(raw,list) else raw.get("markets",[])
+            for m in all_mkts:
+                p = parse_market(m, "", force_sports=True)
+                if p and p["id"] not in seen:
+                    seen.add(p["id"]); results.append(p)
+            log.info(f"Generic sports scan: {len(all_mkts)} raw, {len(results)} total")
+    except Exception as e:
+        log.warning(f"Generic sports scan: {e}")
+    # TERTIARY: fetch events for additional coverage
+    try:
+        for ev in fetch_events(100):
             title=ev.get("title",ev.get("name",""))
             for m in ev.get("markets",[]):
                 p=parse_market(m,title)
                 if p and p["id"] not in seen: seen.add(p["id"]); results.append(p)
-        for m in fetch_markets(limit):
-            p=parse_market(m)
-            if p and p["id"] not in seen: seen.add(p["id"]); results.append(p)
+    except Exception as e:
+        log.debug(f"Events fallback: {e}")
     # Sort by volume (highest first), then by end_date
     results.sort(key=lambda m: (-m.get("volume24h",0), m.get("end_date","9999")))
+    log.info(f"Total sports markets: {len(results)}")
     return results
 
 
@@ -256,7 +308,7 @@ def enrich_with_live_prices(markets,max_enrich=20):
     return markets
 
 def full_scan_and_cache(enrich=True):
-    log.info("Polymarket full scan…")
+    log.info("Polymarket full scanâ€¦")
     markets=scan_all(200)
     if enrich and markets: markets=enrich_with_live_prices(markets,20)
     _write_cache(markets)
@@ -291,7 +343,7 @@ def run_poly_loop(stop_event,interval=90):
         except Exception as e: log.error(f"Poly loop: {e}")
         stop_event.wait(interval)
 
-# ── TRADING ──
+# â”€â”€ TRADING â”€â”€
 def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
     try:
