@@ -357,19 +357,112 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     try:
         import dataclasses
         from py_clob_client.client import ClobClient
-        from py_clob_client.clob_types import OrderArgs,OrderType
-        # Some py-clob-client versions call .dict() on OrderArgs (a dataclass)
-        # Monkey-patch a .dict() method using dataclasses.asdict
-        if not hasattr(OrderArgs, 'dict'):
-            OrderArgs.dict = lambda self: dataclasses.asdict(self)
+        # Use only ClobClient for API creds and neg_risk check, bypass OrderArgs
         client=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1,
                           funder=funder or os.getenv("POLYMARKET_FUNDER_ADDRESS","") or None)
         client.set_api_creds(client.create_or_derive_api_creds())
-        args=OrderArgs(token_id=token_id,price=price,size=size_usdc,side=side.upper())
-        resp=client.post_order(args,OrderType.GTC)
-        return {"ok":True,"order_id":resp.get("orderID",""),"response":resp}
+        neg_risk = client.get_neg_risk(token_id)
+        # Build order dict manually (no OrderArgs needed)
+        order_data = _build_order(token_id, side, price, size_usdc, private_key, neg_risk)
+        # Post via raw CLOB API
+        import requests
+        creds = client.api_creds or {}
+        headers = {"Content-Type": "application/json"}
+        if creds.get("api_key"):
+            headers["POLY_API_KEY"] = creds["api_key"]
+            headers["POLY_API_SECRET"] = (creds.get("api_secret","") or "")[:16]
+            headers["POLY_API_PASSPHRASE"] = (creds.get("api_secret","") or "")[:16]
+        resp = requests.post(f"{CLOB}/order", json=order_data, headers=headers, timeout=30)
+        if resp.ok:
+            data = resp.json()
+            return {"ok": True, "order_id": data.get("orderID",""), "response": data}
+        return {"ok": False, "error": f"CLOB: {resp.status_code} {resp.text[:300]}"}
     except ImportError: return {"ok":False,"error":"py-clob-client not installed. Run: pip install py-clob-client"}
     except Exception as e: log.error(f"place_order: {e}"); return {"ok":False,"error":str(e)}
+
+EXCHANGE_ADDR = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
+NEG_RISK_ADDR = "0xC5d563A36AE78145C45a50134d48A1215220f80a"
+
+def _build_order(token_id, side, price, size_usdc, private_key, neg_risk=False):
+    """Build and EIP-712 sign a Polymarket CLOB order, return the order dict."""
+    import time, json
+    from eth_account.messages import encode_structured_data
+    from eth_account import Account
+    Account.enable_unaudited_hdwallet_features()
+    acct = Account.from_key(private_key)
+    maker = acct.address
+    ts = int(time.time() * 1000)
+    usdc_decimals = 10**6
+    maker_amount = int(size_usdc * usdc_decimals)
+    signer_amount = int(size_usdc * price * usdc_decimals)
+    salt = ts % (2**32)
+    order_side = 1 if side.upper() == "BUY" else 0
+    now_sec = ts // 1000
+    expiration = now_sec + 3600  # 1 hour from now
+    nonce = salt
+    verifying_contract = NEG_RISK_ADDR if neg_risk else EXCHANGE_ADDR
+    order_data = {
+        "salt": salt,
+        "maker": maker,
+        "signer": maker,
+        "taker": "0x0000000000000000000000000000000000000000",
+        "tokenId": token_id,
+        "makerAmount": str(maker_amount),
+        "signerAmount": str(signer_amount),
+        "side": str(order_side),
+        "expiration": str(expiration),
+        "nonce": str(nonce),
+        "feeRateBps": "0",
+        "signatureType": "1",
+    }
+    domain = {
+        "name": "Polymarket CTF",
+        "version": "1",
+        "chainId": str(CHAIN_ID),
+        "verifyingContract": verifying_contract,
+    }
+    types = {
+        "EIP712Domain": [
+            {"name": "name", "type": "string"},
+            {"name": "version", "type": "string"},
+            {"name": "chainId", "type": "uint256"},
+            {"name": "verifyingContract", "type": "address"},
+        ],
+        "Order": [
+            {"name": "salt", "type": "uint256"},
+            {"name": "maker", "type": "address"},
+            {"name": "signer", "type": "address"},
+            {"name": "taker", "type": "address"},
+            {"name": "tokenId", "type": "uint256"},
+            {"name": "makerAmount", "type": "uint256"},
+            {"name": "signerAmount", "type": "uint256"},
+            {"name": "side", "type": "uint8"},
+            {"name": "expiration", "type": "uint256"},
+            {"name": "nonce", "type": "uint256"},
+            {"name": "feeRateBps", "type": "uint256"},
+            {"name": "signatureType", "type": "uint8"},
+        ],
+    }
+    signable = encode_structured_data({"types": types, "domain": domain, "primaryType": "Order", "message": order_data})
+    signed = Account.sign_message(signable, private_key)
+    signature = signed.signature.hex()
+    return {
+        "salt": salt,
+        "maker": maker,
+        "signer": maker,
+        "taker": "0x0000000000000000000000000000000000000000",
+        "tokenId": token_id,
+        "makerAmount": str(maker_amount),
+        "signerAmount": str(signer_amount),
+        "side": str(order_side),
+        "expiration": str(expiration),
+        "nonce": str(nonce),
+        "feeRateBps": "0",
+        "signatureType": "1",
+        "signature": signature,
+        "owner": maker,
+        "negRisk": neg_risk,
+    }
 
 def cancel_order(order_id,private_key):
     try:
