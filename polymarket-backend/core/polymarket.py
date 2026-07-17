@@ -360,7 +360,16 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
         client=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1,
                           funder=funder or os.getenv("POLYMARKET_FUNDER_ADDRESS","") or None)
         client.set_api_creds(client.create_or_derive_api_creds())
-        resp=client.post_order(OrderArgs(token_id=token_id,price=price,size=size_usdc,side=side.upper()),OrderType.GTC)
+        args=OrderArgs(token_id=token_id,price=price,size=size_usdc,side=side.upper())
+        try:
+            resp=client.post_order(args,OrderType.GTC)
+        except TypeError as te:
+            # Monkey-patch for Pydantic v2 compat (model_dump instead of dict)
+            if "dict" in str(te):
+                setattr(OrderArgs, "dict", lambda self: self.model_dump())
+                resp=client.post_order(args,OrderType.GTC)
+            else:
+                raise
         return {"ok":True,"order_id":resp.get("orderID",""),"response":resp}
     except ImportError: return {"ok":False,"error":"py-clob-client not installed. Run: pip install py-clob-client"}
     except Exception as e: log.error(f"place_order: {e}"); return {"ok":False,"error":str(e)}
