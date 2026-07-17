@@ -1,5 +1,5 @@
 """
-server.py — InvestPal Polymarket Trade Engine HTTP Server
+server.py â€” InvestPal Polymarket Trade Engine HTTP Server
 Run: python run.py
 """
 import json, logging, os, sys, threading, time
@@ -25,7 +25,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("server")
 
-PORT = 8090
+PORT     = 8090
 STATIC   = os.path.join(os.path.dirname(__file__), "web", "static")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 ENV_FILE = os.path.join(os.path.dirname(__file__), ".env")
@@ -33,12 +33,12 @@ CFG_FILE = os.path.join(DATA_DIR, "config.json")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 DEFAULT_CFG = {
-    "base_stake": 10, "factor": 2.1, "max_steps": 6,
-    "bankroll": 200, "alert_mins": 60, "balance_filter": 0.30
+    "base_stake": 0.1, "factor": 2.1, "max_steps": 6,
+    "bankroll": 100, "alert_mins": 60, "balance_filter": 0.30
 }
 
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def load_cfg():
     try:
         with open(CFG_FILE) as f:
@@ -51,7 +51,7 @@ def save_cfg(d):
     with open(CFG_FILE, 'w') as f: json.dump(c, f, indent=2)
 
 
-# ── .env helpers ──────────────────────────────────────────────────────────────
+# â”€â”€ .env helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def load_env():
     env = {}
     if not os.path.isfile(ENV_FILE): return env
@@ -75,7 +75,7 @@ def get_funder():
     return load_env().get("POLYMARKET_FUNDER_ADDRESS", "") or os.getenv("POLYMARKET_FUNDER_ADDRESS", "")
 
 
-# ── Wallet Integration & Balance Fetcher ──────────────────────────────────────
+# â”€â”€ Wallet Integration & Balance Fetcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def get_wallet_address_and_balance(private_key_or_mnemonic):
     import requests
     from eth_account import Account
@@ -147,7 +147,6 @@ def get_wallet_address_and_balance(private_key_or_mnemonic):
         
     usdc = token_balance("0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359") # Native USDC
     usdc_e = token_balance("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174") # Bridged USDC.e
-    matic = matic_balance()
     
     return {
         "ok": True,
@@ -155,7 +154,6 @@ def get_wallet_address_and_balance(private_key_or_mnemonic):
         "usdc": usdc,
         "usdc_e": usdc_e,
         "total_usdc": round(usdc + usdc_e, 2),
-        "matic": matic,
         "private_key_preview": f"0x...{pk[-6:]}" if pk else ""
     }
 
@@ -272,7 +270,7 @@ def run_24h_backtest(base_stake=10.0, recovery_factor=2.0, max_steps=6, initial_
     }
 
 
-# ── Handler ───────────────────────────────────────────────────────────────────
+# â”€â”€ Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass   # silence access log
 
@@ -317,7 +315,7 @@ class Handler(BaseHTTPRequestHandler):
 
     PREFIX = "/polymarket"
 
-    # ── GET ───────────────────────────────────────────────────────────────────
+    # â”€â”€ GET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def do_GET(self):
         parsed = urlparse(self.path)
         path   = parsed.path.rstrip("/")
@@ -372,6 +370,16 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/results":
             self._json({"results": get_results()})
 
+        elif path == "/api/sports-categories":
+            from core.polymarket import SPORT_TAGS
+            markets = get_cached()
+            cat_counts = {}
+            for m in markets:
+                s = m.get("sport", "Other")
+                cat_counts[s] = cat_counts.get(s, 0) + 1
+            cats = [{"name": s, "count": c, "slug": s.lower().replace("/", "-")} for s, c in sorted(cat_counts.items(), key=lambda x: -x[1])]
+            self._json({"categories": cats, "tags": SPORT_TAGS})
+
         elif path == "/api/bot/config":
             self._json(get_bot_cfg())
 
@@ -411,7 +419,7 @@ class Handler(BaseHTTPRequestHandler):
             if pk:
                 self._json(get_wallet_address_and_balance(pk))
             else:
-                self._json({"ok": True, "address": "", "usdc": 0.0, "usdc_e": 0.0, "total_usdc": 0.0, "matic": 0.0})
+                self._json({"ok": True, "address": "", "usdc": 0.0, "usdc_e": 0.0, "total_usdc": 0.0})
 
         elif path.startswith("/api/"):
             self._json({"error": "unknown endpoint"}, 404)
@@ -419,7 +427,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._static(path)
 
-    # ── POST ──────────────────────────────────────────────────────────────────
+    # â”€â”€ POST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     def do_POST(self):
         parsed = urlparse(self.path)
         path   = parsed.path.rstrip("/")
@@ -579,14 +587,14 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "unknown endpoint"}, 404)
 
 
-# ── Background threads + entry point ─────────────────────────────────────────
+# â”€â”€ Background threads + entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 def main():
     stop = threading.Event()
 
     threads = [
         threading.Thread(
             target=run_poly_loop,
-            args=(stop, 90),
+            args=(stop, 600),
             daemon=True, name="PolyScan"
         ),
         threading.Thread(
@@ -597,25 +605,25 @@ def main():
     ]
     for t in threads: t.start()
 
-    # Warm up cache on startup — run in a thread so the server starts immediately
+    # Warm up cache on startup â€” run in a thread so the server starts immediately
     def warmup():
         try:
-            log.info("Initial Polymarket scan starting…")
+            log.info("Initial Polymarket scan startingâ€¦")
             full_scan_and_cache(enrich=True)
         except Exception as e:
             log.warning(f"Initial scan failed (expected on first run or no internet): {e}")
     threading.Thread(target=warmup, daemon=True, name="Warmup").start()
 
     server = HTTPServer(("0.0.0.0", PORT), Handler)
-    log.info(f"╔══════════════════════════════════════════╗")
-    log.info(f"║  InvestPal Polymarket Engine running     ║")
-    log.info(f"║  http://localhost:{PORT}                   ║")
-    log.info(f"╚══════════════════════════════════════════╝")
+    log.info(f"â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—")
+    log.info(f"â•‘  InvestPal Polymarket Engine running     â•‘")
+    log.info(f"â•‘  http://localhost:{PORT}                   â•‘")
+    log.info(f"â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•")
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        log.info("Shutting down…")
+        log.info("Shutting downâ€¦")
         stop.set()
         server.shutdown()
 
