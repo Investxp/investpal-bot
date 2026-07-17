@@ -197,7 +197,7 @@ export function PolymarketGuide() {
                         {'referral' in section && section.referral && (
                           <div className="mt-3 pt-3 border-t border-zinc-700/50">
                             <a
-                              href="https://polymarket.com/?r=investpal"
+                              href="https://polymarket.com/?r=Investpal"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-300 underline underline-offset-2"
