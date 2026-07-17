@@ -29,13 +29,12 @@ The bot continuously scans Polymarket Gamma API for sports markets, detects valu
   {
     id: 'fund-wallet',
     icon: Wallet,
-    title: 'Step 2: Fund Your Polygon Wallet with USDC & MATIC',
+    title: 'Step 2: Fund Your Polygon Wallet with USDC',
     content: [
       ['Get a Polygon Wallet', 'Use MetaMask, Rabby, or any EVM wallet. Add Polygon Mainnet (Chain ID: 137)'],
-      ['Buy MATIC (Gas Token)', 'MATIC is required for every transaction (order placement, cancellation, approval). Buy from an exchange (Binance, Coinbase, Kraken) and withdraw to your Polygon wallet. Recommended: 20-50 MATIC minimum.'],
-      ['Buy USDC (Trading Capital)', 'USDC is the trading currency on Polymarket. Buy USDC on Polygon network from an exchange and send to your wallet. Minimum recommended: 200-500 USDC to start.'],
-      ['Bridge from Ethereum (Alternative)', 'Use the official Polygon Bridge (https://bridge.polygon.technology) or a third-party bridge like Stargate or Circle CCTP. ETH â†’ Polygon usually takes 15-30 minutes.'],
-      ['Check Balances', 'Your wallet address and balances can be verified in the InvestPal Polymarket tab â†’ Settings â†’ Wallet Balance. USDC should appear as "USDC" or "USDC.e"'],
+      ['Buy USDC (Trading Capital)', 'USDC is the only trading currency on Polymarket. Buy USDC on Polygon network from an exchange (Binance, Coinbase, Kraken) and send to your wallet. Minimum recommended: 100 USDC to start.'],
+      ['Bridge from Ethereum (Alternative)', 'Use the official Polygon Bridge (https://bridge.polygon.technology) or Stargate / Circle CCTP.'],
+      ['Check Balances', 'Your wallet address and USDC balances can be verified in the InvestPal Polymarket tab â†’ Settings â†’ Wallet Balance.'],
     ],
     warning: 'âš ï¸ Never send funds directly from an exchange to Polymarket without first depositing to your own wallet. Always test with a small amount first (5-10 USDC).'
   },
@@ -63,17 +62,17 @@ The bot continuously scans Polymarket Gamma API for sports markets, detects valu
 â€¢ When the market resolves, you win one side and lose the other
 â€¢ Profit comes from odds imbalance (the spread between implied probabilities)
 
-Example (base stake = 10 USDC, factor = 2.1):
-  Loss #1: stake 10 USDC each side â†’ total stake 20 USDC
-  Loss #2: stake 21 USDC each side â†’ total stake 42 USDC
-  Loss #3: stake 44.1 USDC each side â†’ total stake 88.2 USDC
+Example (base stake = 0.1 USDC, factor = 2.1):
+  Loss #1: stake 0.1 USDC each side â†’ total stake 0.2 USDC
+  Loss #2: stake 0.21 USDC each side â†’ total stake 0.42 USDC
+  Loss #3: stake 0.44 USDC each side â†’ total stake 0.88 USDC
   Win resets that side's streak to 0; the other side's streak increments.
 
 Key parameters:
-  â€¢ base_stake: Starting stake per side (default: 10 USDC)
+  â€¢ base_stake: Starting stake per side (default: 0.1 USDC)
   â€¢ factor: Martingale multiplier per loss (default: 2.1-2.5)
   â€¢ max_steps: Cap on streak multiplier (default: 6)
-  â€¢ bankroll: Maximum capital allocated (default: 200-10,000 USDC)
+  â€¢ bankroll: Maximum capital allocated (default: 100 USDC)
   â€¢ balance_filter: Max odds difference for suggested markets (default: 0.30)`
   },
   {
@@ -82,12 +81,12 @@ Key parameters:
     title: 'Step 5: Configure & Start the Bot',
     content: [
       ['Open Polymarket Tab', 'Navigate to the Polymarket tab in InvestPal'],
-      ['Configure Bot Settings', 'Go to Bot Config panel and set: bot_enabled = true, bot_mode = "simulation" (start here!), base_stake = 10, recovery_factor = 2.5, max_concurrent = 1-3'],
+      ['Configure Bot Settings', 'Go to Bot Config panel and set: bot_enabled = true, bot_mode = "simulation" (start here!), base_stake = 0.1, recovery_factor = 2.5, max_concurrent = 1-3'],
       ['Run in Simulation First', 'The bot will scan markets, detect value, and simulate trades. Monitor the log and results for 24-48 hours to verify the strategy works.'],
       ['Switch to Live Mode', 'Once confident in the strategy, change bot_mode to "live". The bot will now place REAL orders on the Polymarket CLOB using your wallet.'],
       ['Monitor Performance', 'Use the Status panel to track: current streak, bankroll, PnL, active bets, and trade history.'],
     ],
-    warning: 'âš ï¸ Always test in simulation mode first. Start with small stakes (5-10 USDC) when going live. Martingale strategies can grow stake sizes exponentially during a losing streak â€” ensure your bankroll can handle 6+ consecutive losses.'
+    warning: 'âš ï¸ Always test in simulation mode first. Start with small stakes (0.1 USDC) when going live. Martingale strategies can grow stake sizes exponentially during a losing streak â€” ensure your bankroll can handle 6+ consecutive losses.'
   },
   {
     id: 'referral',
@@ -108,7 +107,7 @@ Key parameters:
     title: 'Troubleshooting & Tips',
     content: [
       ['Polymarket Blocked in My Region?', 'Polymarket blocks US IPs. Use a VPN if outside permitted regions. Some EU countries may also have restrictions.'],
-      ['Order Not Placing?', 'Check: (1) Sufficient MATIC balance for gas, (2) Sufficient USDC balance for stake, (3) USDC approved for spending (needs token approval on first trade).'],
+      ['Order Not Placing?', 'Check: (1) Sufficient USDC balance for stake, (2) USDC approved for spending (token approval needed on first trade).'],
       ['Bot Not Running?', 'Ensure bot_enabled=true in Bot Config. Check the server logs for errors. The market scanner must complete at least one full scan before the bot can trade.'],
       ['Cache Empty?', 'The Polymarket scanner runs every 10 minutes. If cache is empty, wait for the next scan cycle or click "Refresh Markets" in Settings.'],
       ['Gas Fees Too High?', 'Polygon gas fees are typically <$0.01 per transaction. If the network is congested, consider waiting or increasing your gas price. MATIC is the native gas token.'],
