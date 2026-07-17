@@ -231,11 +231,11 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
   <div class="logo">INVESTPAL <span>| POLYMARKET TRADE ENGINE</span></div>
   <div class="hdr-mid">
     <span><span class="conn-dot conn-off" id="connDot"></span><span style="font-size:10px;color:var(--text-dim)" id="connText">Connecting...</span></span>
-    <span><span class="lbl" style="color:var(--blue)">DEMO </span><span class="val" id="hdrBal">KES 0.00</span></span>
+    <span><span class="lbl" style="color:var(--blue)">DEMO </span><span class="val" id="hdrBal">USDC 0.00</span></span>
     <span style="border-left:1px solid var(--border);padding-left:10px"><span class="lbl" style="color:var(--green)">REAL USDC </span><span class="val" id="hdrRealBal">$0.00</span></span>
     <span><span class="lbl">W </span><span class="val" style="color:var(--green)" id="hdrW">0</span></span>
     <span><span class="lbl">L </span><span class="val" style="color:var(--red-b)" id="hdrL">0</span></span>
-    <span><span class="lbl">P/L </span><span class="val" id="hdrPL">KES 0</span></span>
+    <span><span class="lbl">P/L </span><span class="val" id="hdrPL">USDC 0</span></span>
     <span style="font-size:11px;color:var(--text-dim);font-variant-numeric:tabular-nums" id="hdrClock">--:--:--</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
@@ -288,10 +288,10 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
 <div id="tab-engine" class="tab-panel on">
 
 <div class="settings-row">
-  <div class="sg"><label>Base Stake (KES)</label><input id="cfgStake" type="number" value="100" step="1" min="1"></div>
+  <div class="sg"><label>Base Stake (USDC)</label><input id="cfgStake" type="number" value="100" step="1" min="1"></div>
   <div class="sg"><label>Factor</label><input id="cfgFactor" type="number" value="2.1" step="0.1" min="1.1"></div>
   <div class="sg"><label>Max Steps</label><input id="cfgSteps" type="number" value="6" step="1" min="1" max="10"></div>
-  <div class="sg"><label>Bankroll (KES)</label><input id="cfgBankroll" type="number" value="5000" step="100" style="width:100px"></div>
+  <div class="sg"><label>Bankroll (USDC)</label><input id="cfgBankroll" type="number" value="5000" step="100" style="width:100px"></div>
   <div class="sg">
     <label>Auto Trade</label>
     <div style="display:flex;align-items:center;height:38px;">
@@ -361,14 +361,14 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
       </div>
       <div class="sug-meta">
         <span id="sugMetaLeft">—</span>
-        <span>A: <strong style="color:var(--gold)" id="sugStakeA">KES 100</strong> &nbsp;B: <strong style="color:var(--gold)" id="sugStakeB">KES 100</strong></span>
+        <span>A: <strong style="color:var(--gold)" id="sugStakeA">USDC 100</strong> &nbsp;B: <strong style="color:var(--gold)" id="sugStakeB">USDC 100</strong></span>
       </div>
     </div>
   </div>
 
   <div id="mgBar" class="mg-bar normal">
     <span class="badge badge-green" id="mgBadge">NORMAL</span>
-    <span id="mgText" style="font-size:11px;color:var(--text-dim)">Ready — base stake KES 100</span>
+    <span id="mgText" style="font-size:11px;color:var(--text-dim)">Ready — base stake USDC 100</span>
   </div>
 
   <div style="border-radius:var(--radius);overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
@@ -381,8 +381,8 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
         <div class="ab-odds" id="abAOdds">— <span class="dec">dec</span></div>
         <div class="ab-label" id="abALabel">Select a market</div>
         <div class="ab-stats">
-          <div class="ab-stat"><div class="lbl">Stake</div><div class="val" id="abAStake">KES —</div></div>
-          <div class="ab-stat"><div class="lbl">Win P/L</div><div class="val green" id="abAWin">+KES —</div></div>
+          <div class="ab-stat"><div class="lbl">Stake</div><div class="val" id="abAStake">USDC —</div></div>
+          <div class="ab-stat"><div class="lbl">Win P/L</div><div class="val green" id="abAWin">+USDC —</div></div>
         </div>
         <div class="ab-stat" style="margin-bottom:10px"><div class="lbl">Streak (A)</div><div class="val" id="abAStreak">0 losses</div></div>
         <div style="display:flex;gap:4px">
@@ -402,8 +402,8 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
         <div class="ab-odds" id="abBOdds">— <span class="dec">dec</span></div>
         <div class="ab-label" id="abBLabel">Select a market</div>
         <div class="ab-stats">
-          <div class="ab-stat"><div class="lbl">Stake</div><div class="val" id="abBStake">KES —</div></div>
-          <div class="ab-stat"><div class="lbl">Win P/L</div><div class="val gold" id="abBWin">+KES —</div></div>
+          <div class="ab-stat"><div class="lbl">Stake</div><div class="val" id="abBStake">USDC —</div></div>
+          <div class="ab-stat"><div class="lbl">Win P/L</div><div class="val gold" id="abBWin">+USDC —</div></div>
         </div>
         <div class="ab-stat" style="margin-bottom:10px"><div class="lbl">Streak (B)</div><div class="val" id="abBStreak">0 losses</div></div>
         <div style="display:flex;gap:4px">
@@ -566,7 +566,7 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
     <div class="tw">
       <table class="mg-demo-table">
         <thead><tr>
-          <th>Level</th><th>Stake (KES)</th><th>Cumulative Risk</th><th>Win Payout</th><th>Recovery P/L</th><th>Action</th>
+          <th>Level</th><th>Stake (USDC)</th><th>Cumulative Risk</th><th>Win Payout</th><th>Recovery P/L</th><th>Action</th>
         </tr></thead>
         <tbody id="mgDemoBody"></tbody>
       </table>
@@ -588,7 +588,7 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
   <div class="report-grid">
     <div class="report-card"><div class="rv" id="repTotalTrades" style="color:var(--blue)">0</div><div class="rl">Total Trades</div></div>
     <div class="report-card"><div class="rv" id="repWinRate" style="color:var(--green)">0%</div><div class="rl">Win Rate</div></div>
-    <div class="report-card"><div class="rv" id="repNetPL" style="color:var(--gold)">KES 0</div><div class="rl">Net P/L</div></div>
+    <div class="report-card"><div class="rv" id="repNetPL" style="color:var(--gold)">USDC 0</div><div class="rl">Net P/L</div></div>
     <div class="report-card"><div class="rv" id="repROI" style="color:var(--green)">0%</div><div class="rl">ROI</div></div>
   </div>
   <div class="chart-wrap">
@@ -600,9 +600,9 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
     <svg id="bankrollCurveSVG" viewBox="0 0 600 140" preserveAspectRatio="none" style="width:100%;height:140px"></svg>
   </div>
   <div class="report-grid" style="margin-top:14px">
-    <div class="report-card"><div class="rv" id="repBestWin" style="color:var(--green)">KES 0</div><div class="rl">Best Single Win</div></div>
-    <div class="report-card"><div class="rv" id="repWorstLoss" style="color:var(--red-b)">KES 0</div><div class="rl">Worst Single Loss</div></div>
-    <div class="report-card"><div class="rv" id="repAvgStake" style="color:var(--text)">KES 0</div><div class="rl">Avg Stake</div></div>
+    <div class="report-card"><div class="rv" id="repBestWin" style="color:var(--green)">USDC 0</div><div class="rl">Best Single Win</div></div>
+    <div class="report-card"><div class="rv" id="repWorstLoss" style="color:var(--red-b)">USDC 0</div><div class="rl">Worst Single Loss</div></div>
+    <div class="report-card"><div class="rv" id="repAvgStake" style="color:var(--text)">USDC 0</div><div class="rl">Avg Stake</div></div>
     <div class="report-card"><div class="rv" id="repWorstStreakRep" style="color:var(--gold)">0</div><div class="rl">Worst Loss Streak</div></div>
   </div>
 </div><!-- /tab-reports -->
@@ -634,12 +634,12 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
           <span style="font-size:12px;font-weight:600" id="botEnabledLabel">Bot Disabled</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-          <div><label class="me-lbl">Base Stake (KES/USDC)</label><input class="me-inp" id="botBaseStake" type="number" value="50" step="1"></div>
+          <div><label class="me-lbl">Base Stake (USDC)</label><input class="me-inp" id="botBaseStake" type="number" value="50" step="1"></div>
           <div><label class="me-lbl">Recovery Factor</label><input class="me-inp" id="botRecoveryFactor" type="number" value="2.0" step="0.1"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div><label class="me-lbl">Max Concurrent Bets</label><input class="me-inp" id="botMaxConcurrent" type="number" value="3" step="1" min="1"></div>
-          <div><label class="me-lbl">Bot Bankroll (KES/USDC)</label><input class="me-inp" id="botBankroll" type="number" value="2000" step="100"></div>
+          <div><label class="me-lbl">Bot Bankroll (USDC)</label><input class="me-inp" id="botBankroll" type="number" value="2000" step="100"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
@@ -667,8 +667,8 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
       <div class="card">
         <div class="sec-lbl" style="margin-bottom:8px"><span>Bot Performance</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div class="ab-stat"><div class="lbl">Bot Bankroll</div><div class="val" id="botBankrollVal">KES 2,000</div></div>
-          <div class="ab-stat"><div class="lbl">Bot P/L</div><div class="val" id="botPLVal">KES 0</div></div>
+          <div class="ab-stat"><div class="lbl">Bot Bankroll</div><div class="val" id="botBankrollVal">USDC 2,000</div></div>
+          <div class="ab-stat"><div class="lbl">Bot P/L</div><div class="val" id="botPLVal">USDC 0</div></div>
           <div class="ab-stat"><div class="lbl">Active Bets</div><div class="val" id="botActiveBetsVal">0</div></div>
           <div class="ab-stat"><div class="lbl">Cycles Run</div><div class="val" id="botCyclesVal">0</div></div>
         </div>
@@ -958,8 +958,8 @@ function fmtTime(mins){
   if(r<0)return'Finished';if(r<2)return'NOW!';
   if(r<60)return r+'m';return Math.floor(r/60)+'h '+(r%60)+'m';
 }
-function f(v){return'KES '+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function fmt(v){return(v>=0?'+':'-')+' KES '+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function f(v){return'USDC '+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmt(v){return(v>=0?'+':'-')+' USDC '+Math.abs(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function alertMins(){return parseFloat(document.getElementById('cfgAlert')?.value||45)}
 function sc(s){const m={'Table Tennis':'tt','Tennis':'tennis','Football':'fb','Volleyball':'vb','Basketball':'bb','Badminton':'badm','Darts':'darts'};return m[s]||'tt'}
 function getRec(m){
@@ -1056,7 +1056,7 @@ function renderSessionStats(){
   if(bankrollHistory.length>40)bankrollHistory=bankrollHistory.slice(-40);
   const trend=bankrollHistory.length>1?(state.bankroll-bankrollHistory[0]):0;
   const trendEl=document.getElementById('statBankrollTrend');
-  trendEl.textContent=(trend>=0?'+':'')+'KES '+Math.abs(trend).toFixed(0);
+  trendEl.textContent=(trend>=0?'+':'')+'USDC '+Math.abs(trend).toFixed(0);
   trendEl.style.color=trend>=0?'var(--green)':'var(--red-b)';
   drawSparkline();
 }
@@ -1187,11 +1187,14 @@ function renderFeed(){
 
   if(currentSportFilter!=='ALL') data=data.filter(m=>m.sport===currentSportFilter);
 
-  // Sort: tracked first, then by end_date ascending (soonest closing first)
+  // Sort: tracked first, then non-skip by time, then skip by time
   data.sort((a,b)=>{
     const aT = !!trackedPicks[a.id], bT = !!trackedPicks[b.id];
     if(aT && !bT) return -1;
     if(!aT && bT) return 1;
+    const aS = getRec(a).txt === 'SKIP', bS = getRec(b).txt === 'SKIP';
+    if(!aS && bS) return -1;
+    if(aS && !bS) return 1;
     const da = a.end_date ? new Date(a.end_date) : new Date('9999');
     const db = b.end_date ? new Date(b.end_date) : new Date('9999');
     return da - db;
@@ -1721,7 +1724,7 @@ function simulateLossStreak(){
 function exportCSV(){
   if(!trades.length){alert('No trades to export');return}
   const rows=trades.map(t=>[t.datetime,t.name,t.sport,t.market,'Side '+t.bet_side,t.odds,t.stake,t.won?'WIN':'LOSS',t.profit.toFixed(2),t.balance_after.toFixed(2)].join(','));
-  const csv=['Date,Match,Sport,Market,Side,Odds,Stake(KES),Result,P&L(KES),Balance(KES)',...rows].join('\n');
+  const csv=['Date,Match,Sport,Market,Side,Odds,Stake,Result,P/L,Balance',...rows].join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='polymarket_trades.csv';a.click();
 }
 
