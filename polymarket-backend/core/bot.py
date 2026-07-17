@@ -1,15 +1,18 @@
 import json, os, logging, time, random
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from core.polymarket import place_order, check_market_resolution
+from core.martingale import get_state as get_main_state, _w as save_main_state
+from core.trade_engine import _r as load_results, _w as save_results
+
 
 log = logging.getLogger("bot")
 DATA      = os.path.join(os.path.dirname(__file__), '..', 'data')
 BOT_STATE = os.path.join(DATA, 'bot_state.json')
 BOT_CFG   = os.path.join(DATA, 'bot_config.json')
 
-D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'base_stake': 10.0, 'recovery_factor': 2.0,
-           'max_concurrent': 1, 'bankroll': 200.0, 'balance_filter': 0.30, 'interval_seconds': 60}
-D_STATE = {'bankroll': 200.0, 'pnl': 0.0, 'active_bets': [],
+D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'base_stake': 0.1, 'recovery_factor': 2.0,
+           'max_concurrent': 1, 'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 60}
+D_STATE = {'bankroll': 100.0, 'pnl': 0.0, 'active_bets': [],
            'cycles': 0, 'wins': 0, 'losses': 0, 'log': [],
            'streak_a': 0, 'streak_b': 0}
 
@@ -79,17 +82,20 @@ def run_cycle(markets):
     cfg   = get_config()
     state = get_bot_state()
     if not cfg.get('bot_enabled'):
-        _log(state, 'Bot disabled — skipping cycle.', 'warn')
+        _log(state, 'Bot disabled â€” skipping cycle.', 'warn')
         _w(BOT_STATE, state); return state
 
     state['cycles'] = state.get('cycles', 0) + 1
     mode = cfg.get('bot_mode', 'simulation')
     
+    if len(markets) == 0:
+        _log(state, "Polymarket market cache is empty. Warmup in progress or blocked. Resolution checks will still run.", "warn")
+    
     # Initialize streaks if not present
     state.setdefault('streak_a', 0)
     state.setdefault('streak_b', 0)
     
-    _log(state, f"Cycle #{state['cycles']} ({mode.upper()}) — Streaks: A={state['streak_a']} B={state['streak_b']} | {len(markets)} markets available", 'info')
+    _log(state, f"Cycle #{state['cycles']} ({mode.upper()}) â€” Streaks: A={state['streak_a']} B={state['streak_b']} | {len(markets)} markets available", 'info')
 
     # Resolve bets
     active_bets = state.get('active_bets', [])
@@ -101,7 +107,6 @@ def run_cycle(markets):
         m_id = bet.get('market_id')
         grouped_bets.setdefault(m_id, []).append(bet)
         
-    from datetime import timezone, timedelta
     utc_now = datetime.now(timezone.utc)
     
     for m_id, bets in grouped_bets.items():
@@ -165,11 +170,10 @@ def run_cycle(markets):
                     bet_pnl = round(stake * (1.0 / price - 1.0) if won else -stake, 2)
                     
                 total_net_pnl += bet_pnl
-                results_log.append(f"{side}:{won and 'WON ✓' or 'LOST ✗'} ({bet_pnl:+.2f} USDC)")
+                results_log.append(f"{side}:{won and 'WON âœ“' or 'LOST âœ—'} ({bet_pnl:+.2f} USDC)")
                 
             # Update streaks based on outcome in shared main state.json
             max_steps = int(cfg.get('max_steps', 6) or 6)
-            from core.martingale import get_state as get_main_state, _w as save_main_state
             main_s = get_main_state()
             
             main_s['bankroll'] = round(main_s.get('bankroll', 200.0) + total_net_pnl, 2)
@@ -194,6 +198,26 @@ def run_cycle(markets):
             state['pnl']      = main_s['total_pnl']
             state['wins']     = main_s['wins']
             state['losses']   = main_s['losses']
+            
+            # Save resolved trade to results.json for the Results tab
+            results_file = os.path.join(DATA, 'results.json')
+            resolved_entry = {
+                'id': m_id,
+                'name': first_bet.get('name', 'Hedge')[:60],
+                'sport': first_bet.get('sport', 'Sports'),
+                'side': 'A' if outcome_is_A else 'B',
+                'stake': sum(b.get('stake', 0) for b in bets),
+                'odds': first_bet.get('odds', 2.0),
+                'status': 'resolved',
+                'result': 'WIN' if total_net_pnl >= 0 else 'LOSS',
+                'pnl': total_net_pnl,
+                'simulation': is_sim,
+                'end_date': first_bet.get('end_date', ''),
+                'resolved_at': datetime.now(timezone.utc).isoformat()
+            }
+            existing = load_results(results_file, [])
+            existing.append(resolved_entry)
+            save_results(results_file, existing)
                 
             log_prefix = "[SIM]" if is_sim else "[LIVE]"
             m_name = first_bet.get('name', 'Hedge')[:45]
@@ -235,8 +259,6 @@ def run_cycle(markets):
         for m in cands[:slots_available]:
             market_id = m.get('market_id')
             
-            # Calculate linear recovery stakes for YES (A) and NO (B) using main state.json
-            from core.martingale import get_state as get_main_state, _w as save_main_state
             main_s = get_main_state()
             
             factor = float(main_s.get('factor', 2.1))
