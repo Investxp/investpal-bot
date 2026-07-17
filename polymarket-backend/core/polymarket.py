@@ -363,8 +363,8 @@ def _l1_sign(maker, private_key, ts, nonce):
     Account.enable_unaudited_hdwallet_features()
     acct = Account.from_key(private_key)
     signable = encode_typed_data(
-        domain={"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID},
-        types={
+        domain_data={"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID},
+        message_types={
             "ClobAuth": [
                 {"name": "address", "type": "address"},
                 {"name": "timestamp", "type": "string"},
@@ -372,7 +372,7 @@ def _l1_sign(maker, private_key, ts, nonce):
                 {"name": "message", "type": "string"},
             ],
         },
-        value={
+        message_data={
             "address": maker,
             "timestamp": str(ts),
             "nonce": nonce,
@@ -486,13 +486,13 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
     order_side = 1 if is_buy else 0
     verifying_contract = NEG_RISK_ADDR if neg_risk else EXCHANGE_ADDR
     signable = encode_typed_data(
-        domain={
+        domain_data={
             "name": "Polymarket CTF",
             "version": "2",
             "chainId": CHAIN_ID,
             "verifyingContract": verifying_contract,
         },
-        types={
+        message_types={
             "Order": [
                 {"name": "salt", "type": "uint256"},
                 {"name": "maker", "type": "address"},
@@ -507,7 +507,7 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
                 {"name": "signatureType", "type": "uint8"},
             ],
         },
-        value={
+        message_data={
             "salt": salt,
             "maker": maker,
             "signer": maker,
