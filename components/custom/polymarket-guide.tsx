@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, BookOpen, ExternalLink, Wallet, Settings, Zap, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, BookOpen, ExternalLink, Wallet, Settings, Zap, Users, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const sections = [
