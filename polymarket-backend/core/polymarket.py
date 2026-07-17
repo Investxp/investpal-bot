@@ -356,18 +356,52 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
     try:
         from py_clob_client.client import ClobClient
-        from py_clob_client.clob_types import OrderArgs,OrderType
         client=ClobClient(host=CLOB,key=private_key,chain_id=CHAIN_ID,signature_type=1,
                           funder=funder or os.getenv("POLYMARKET_FUNDER_ADDRESS","") or None)
         client.set_api_creds(client.create_or_derive_api_creds())
-        args=OrderArgs(token_id=token_id,price=price,size=size_usdc,side=side.upper())
-        # Pydantic v2 compat: add .dict() if missing
-        if not hasattr(args, 'dict') and hasattr(args, 'model_dump'):
-            OrderArgs.dict = lambda self: self.model_dump()
-        resp=client.post_order(args,OrderType.GTC)
+        neg_risk = client.get_neg_risk(token_id)
+        order = client.create_order(
+            token_id=token_id,
+            price=price,
+            size=size_usdc,
+            side=side.upper(),
+            signature_type=1,
+            neg_risk=neg_risk
+        )
+        resp = client.post_order(order, OrderType.GTC)
         return {"ok":True,"order_id":resp.get("orderID",""),"response":resp}
     except ImportError: return {"ok":False,"error":"py-clob-client not installed. Run: pip install py-clob-client"}
+    except AttributeError as ae:
+        if "dict" in str(ae):
+            # Fallback: use lower-level API if create_order also fails with dict
+            return _place_order_direct(token_id,side,price,size_usdc,private_key,client)
+        return {"ok":False,"error":f"place_order attr: {ae}"}
     except Exception as e: log.error(f"place_order: {e}"); return {"ok":False,"error":str(e)}
+
+def _place_order_direct(token_id,side,price,size_usdc,private_key,client):
+    """Fallback: place order using raw CLOB API signing."""
+    try:
+        from py_clob_client.order_builder import OrderBuilder
+        from eth_account import Account
+        Account.enable_unaudited_hdwallet_features()
+        creds = client.api_creds
+        builder = OrderBuilder(client)
+        neg_risk = client.get_neg_risk(token_id)
+        order = builder.build_order(
+            token_id=token_id,
+            price=price,
+            size=size_usdc,
+            side=side.upper(),
+            signature_type=1,
+            neg_risk=neg_risk,
+            maker_address=creds.get("maker_address", ""),
+            api_key=creds.get("api_key", ""),
+            api_secret=creds.get("api_secret", "")[:16],
+        )
+        resp = client.post_order(order, "GTC")
+        return {"ok":True,"order_id":resp.get("orderID",""),"response":resp}
+    except Exception as e:
+        return {"ok":False,"error":f"Direct order failed: {e}"}
 
 def cancel_order(order_id,private_key):
     try:
