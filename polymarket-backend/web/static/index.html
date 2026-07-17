@@ -485,15 +485,18 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
   <div class="sport-tabs" id="sportTabs">
     <button class="stab on" onclick="filterSport('ALL')">All</button>
     <button class="stab" onclick="filterSport('Football')">⚽ Football</button>
-    <button class="stab" onclick="filterSport('Tennis')">🎾 Tennis</button>
     <button class="stab" onclick="filterSport('Basketball')">🏀 Basketball</button>
+    <button class="stab" onclick="filterSport('Tennis')">🎾 Tennis</button>
     <button class="stab" onclick="filterSport('Cricket')">🏏 Cricket</button>
     <button class="stab" onclick="filterSport('UFC/Boxing')">🥊 UFC/Boxing</button>
-    <button class="stab" onclick="filterSport('Racing')">🏎 Racing</button>
+    <button class="stab" onclick="filterSport('Racing')">🏎️ Racing</button>
     <button class="stab" onclick="filterSport('Golf')">⛳ Golf</button>
     <button class="stab" onclick="filterSport('Baseball')">⚾ Baseball</button>
     <button class="stab" onclick="filterSport('NFL')">🏈 NFL</button>
-    <button class="stab" onclick="filterSport('Prediction Market')">🔮 Other</button>
+    <button class="stab" onclick="filterSport('Hockey')">🏒 Hockey</button>
+    <button class="stab" onclick="filterSport('Esports')">🎮 Esports</button>
+    <button class="stab" onclick="filterSport('Sports')">🏆 Sports</button>
+    <button class="stab" onclick="filterSport('Prediction Market')">📊 Other</button>
   </div>
   <div class="tw">
     <table class="et" id="cuTable">
@@ -1164,22 +1167,22 @@ function outcomes1(m){return m.outcomes&&m.outcomes[1]||'NO';}
 function filterSport(sport){
   currentSportFilter=sport;
   document.querySelectorAll('.stab').forEach(t=>{
-    t.classList.toggle('on',(sport==='ALL'&&t.textContent==='All')||t.textContent.includes(sport));
+    t.classList.toggle('on',(sport==='ALL'&&t.textContent==='All')||t.textContent.trim().endsWith(sport)||t.getAttribute('data-sport')===sport);
   });
   renderFeed();
 }
 
 function renderFeed(){
   const now = new Date();
-  const cutoff = new Date(now.getTime() + 4 * 60 * 60 * 1000); // 4 hours from now
+  const cutoff = new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72 hours from now
 
-  // Show only events closing within next 4 hours OR tracked picks (regardless of time)
+  // Show only events closing within next 72 hours OR tracked picks (regardless of time)
   let data = feedData.filter(m => {
     const isTracked = !!trackedPicks[m.id];
     if (isTracked) return true; // always keep tracked
     if (!m.end_date) return false; // no date = skip
     const end = new Date(m.end_date);
-    return end > now && end <= cutoff; // future, within 4 hrs
+    return end > now && end <= cutoff; // future, within 72 hrs
   });
 
   if(currentSportFilter!=='ALL') data=data.filter(m=>m.sport===currentSportFilter);
@@ -1199,7 +1202,7 @@ function renderFeed(){
     const end=new Date(m.end_date);
     return end>now && end<=cutoff;
   }).length;
-  document.getElementById('cuCount').textContent='('+data.length+' in next 4h / '+feedData.length+' total)';
+  document.getElementById('cuCount').textContent='('+data.length+' in next 72h / '+feedData.length+' total)';
 
   const tbody=document.getElementById('cuBody');
   const loading=document.getElementById('cuLoading');
@@ -1208,7 +1211,7 @@ function renderFeed(){
   if(!data.length){
     document.getElementById('cuTable').style.display='none';
     empty.style.display='';
-    empty.textContent='No events closing in the next 4 hours. Markets are refreshed every 90 seconds.';
+    empty.textContent='No events closing in the next 72 hours. Markets are refreshed every 90 seconds.';
     return;
   }
   document.getElementById('cuTable').style.display='table';empty.style.display='none';
@@ -1265,8 +1268,8 @@ function renderFeed(){
 
 function autoSelectBest(){
   const now = new Date();
-  const cutoff = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  // Pick the market closing soonest within 4h window, excluding SKIP
+  const cutoff = new Date(now.getTime() + 72 * 60 * 60 * 1000);
+  // Pick the market closing soonest within 72h window, excluding SKIP
   const active = feedData.filter(m => {
     if (!m.end_date) return false;
     const end = new Date(m.end_date);
