@@ -1,5 +1,5 @@
 """
-core/polymarket.py â€” Polymarket Gamma + CLOB integration
+core/polymarket.py — Polymarket Gamma + CLOB integration
 NOTE: All APIs return 403 from cloud IPs. Run server.py locally (residential IP).
 """
 import os,json,logging,time,requests,random
@@ -54,14 +54,14 @@ class SmartSession(requests.Session):
 
 S = SmartSession()
 
-# â”€â”€ Sports tag slugs used by Polymarket â”€â”€
+# ── Sports tag slugs used by Polymarket ──
 SPORT_TAGS = [
     "soccer","nba","nfl","tennis","cricket","golf","mma","boxing",
     "baseball","nhl","rugby","olympics","esports","horse-racing",
     "sports","basketball","formula-1","ufc","football"
 ]
 
-# Hard exclusion keywords â€” discard anything that matches these
+# Hard exclusion keywords — discard anything that matches these
 NON_SPORT_KW = [
     "election","president","senator","congress","supreme court","trump","biden","harris",
     "vote","referendum","primaries","chancellor","minister","parliament","political",
@@ -98,36 +98,37 @@ def _is_sports(t):
 
 def fetch_by_tag(tag_slug, limit=50):
     """Fetch active markets by a specific Polymarket sports tag slug."""
-    results = []
+    results = {}
     try:
-        # Try /events endpoint first
-        r = S.get(f"{GAMMA}/events", params={
-            "active":"true","closed":"false","limit":limit,
-            "tag_slug":tag_slug,"order":"volume24hr","ascending":"false"
-        }, timeout=15)
-        if r.ok:
-            d = r.json()
-            evts = d if isinstance(d,list) else d.get("events",[])
-            for ev in evts:
-                title = ev.get("title",ev.get("name",""))
-                for m in ev.get("markets",[]):
-                    results.append((m, title))
-    except Exception as e:
-        log.debug(f"fetch_by_tag events {tag_slug}: {e}")
-    try:
-        # Also try /markets directly with tag
         r = S.get(f"{GAMMA}/markets", params={
             "active":"true","closed":"false","limit":limit,
             "tag_slug":tag_slug,"order":"volume24hr","ascending":"false"
         }, timeout=15)
         if r.ok:
             d = r.json()
-            markets = d if isinstance(d,list) else d.get("markets",[])
-            for m in markets:
-                results.append((m,""))
+            for m in (d if isinstance(d,list) else d.get("markets",[])):
+                mid = m.get("id","")
+                # /markets endpoint has clobTokenIds — keep this version
+                results[mid] = (m, "")
     except Exception as e:
         log.debug(f"fetch_by_tag markets {tag_slug}: {e}")
-    return results
+    try:
+        r = S.get(f"{GAMMA}/events", params={
+            "active":"true","closed":"false","limit":limit,
+            "tag_slug":tag_slug,"order":"volume24hr","ascending":"false"
+        }, timeout=15)
+        if r.ok:
+            d = r.json()
+            for ev in (d if isinstance(d,list) else d.get("events",[])):
+                title = ev.get("title",ev.get("name",""))
+                for m in ev.get("markets",[]):
+                    mid = m.get("id","")
+                    # Only add if not already in results (/markets data preferred)
+                    if mid not in results:
+                        results[mid] = (m, title)
+    except Exception as e:
+        log.debug(f"fetch_by_tag events {tag_slug}: {e}")
+    return list(results.values())
 
 def fetch_events(limit=100):
     try:
@@ -236,7 +237,7 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
             "token_ids":tids if isinstance(tids,list) else [],
             "name":q[:90],"home":outcomes[0],"away":outcomes[1] if len(outcomes)>1 else "No",
             "sport":sport,"market":"Prediction Market","status":"upcoming","score":"",
-            "note":f"Polymarket Â· {sport} Â· Vol ${vol24:,.0f}/24h",
+            "note":f"Polymarket · {sport} · Vol ${vol24:,.0f}/24h",
             "why":f"YES {yp*100:.1f}% / NO {np*100:.1f}% implied",
             "balance":abs(yo-no),"odds1":yo,"odds2":no,"desc1":outcomes[0],"desc2":outcomes[1] if len(outcomes)>1 else "No",
             "url": f"https://polymarket.com/market/{slug}" if slug else "https://polymarket.com",
@@ -308,7 +309,7 @@ def enrich_with_live_prices(markets,max_enrich=20):
     return markets
 
 def full_scan_and_cache(enrich=True):
-    log.info("Polymarket full scanâ€¦")
+    log.info("Polymarket full scan…")
     markets=scan_all(200)
     if enrich and markets: markets=enrich_with_live_prices(markets,20)
     _write_cache(markets)
@@ -343,7 +344,7 @@ def run_poly_loop(stop_event,interval=90):
         except Exception as e: log.error(f"Poly loop: {e}")
         stop_event.wait(interval)
 
-# â”€â”€ TRADING â”€â”€
+# ── TRADING ──
 def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
     try:
