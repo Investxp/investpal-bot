@@ -1,5 +1,5 @@
 """
-server.py â€” InvestPal Polymarket Trade Engine HTTP Server
+server.py — InvestPal Polymarket Trade Engine HTTP Server
 Run: python run.py
 """
 import json, logging, os, sys, threading, time
@@ -7,6 +7,15 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Monkey-patch OrderArgs.dict for py-clob-client Pydantic v2 compat
+try:
+    from py_clob_client.clob_types import OrderArgs
+    import dataclasses
+    if not hasattr(OrderArgs, 'dict'):
+        OrderArgs.dict = lambda self: dataclasses.asdict(self)
+except Exception:
+    pass
 
 from core.polymarket   import (run_poly_loop, get_cached, full_scan_and_cache,
                                 fetch_orderbook, fetch_clob_price, fetch_positions,
@@ -38,7 +47,7 @@ DEFAULT_CFG = {
 }
 
 
-# â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Config ────────────────────────────────────────────────────────────────────
 def load_cfg():
     try:
         with open(CFG_FILE) as f:
@@ -51,7 +60,7 @@ def save_cfg(d):
     with open(CFG_FILE, 'w') as f: json.dump(c, f, indent=2)
 
 
-# â”€â”€ .env helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── .env helpers ──────────────────────────────────────────────────────────────
 def load_env():
     env = {}
     if not os.path.isfile(ENV_FILE): return env
@@ -75,7 +84,7 @@ def get_funder():
     return load_env().get("POLYMARKET_FUNDER_ADDRESS", "") or os.getenv("POLYMARKET_FUNDER_ADDRESS", "")
 
 
-# â”€â”€ Wallet Integration & Balance Fetcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Wallet Integration & Balance Fetcher ──────────────────────────────────────
 def get_wallet_address_and_balance(private_key_or_mnemonic):
     import requests
     from eth_account import Account
@@ -270,7 +279,7 @@ def run_24h_backtest(base_stake=10.0, recovery_factor=2.0, max_steps=6, initial_
     }
 
 
-# â”€â”€ Handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Handler ───────────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args): pass   # silence access log
 
@@ -315,7 +324,7 @@ class Handler(BaseHTTPRequestHandler):
 
     PREFIX = "/polymarket"
 
-    # â”€â”€ GET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── GET ───────────────────────────────────────────────────────────────────
     def do_GET(self):
         parsed = urlparse(self.path)
         path   = parsed.path.rstrip("/")
@@ -427,7 +436,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._static(path)
 
-    # â”€â”€ POST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── POST ──────────────────────────────────────────────────────────────────
     def do_POST(self):
         parsed = urlparse(self.path)
         path   = parsed.path.rstrip("/")
@@ -587,7 +596,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "unknown endpoint"}, 404)
 
 
-# â”€â”€ Background threads + entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Background threads + entry point ─────────────────────────────────────────
 def main():
     stop = threading.Event()
 
@@ -605,25 +614,25 @@ def main():
     ]
     for t in threads: t.start()
 
-    # Warm up cache on startup â€” run in a thread so the server starts immediately
+    # Warm up cache on startup — run in a thread so the server starts immediately
     def warmup():
         try:
-            log.info("Initial Polymarket scan startingâ€¦")
+            log.info("Initial Polymarket scan starting…")
             full_scan_and_cache(enrich=True)
         except Exception as e:
             log.warning(f"Initial scan failed (expected on first run or no internet): {e}")
     threading.Thread(target=warmup, daemon=True, name="Warmup").start()
 
     server = HTTPServer(("0.0.0.0", PORT), Handler)
-    log.info(f"â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—")
-    log.info(f"â•‘  InvestPal Polymarket Engine running     â•‘")
-    log.info(f"â•‘  http://localhost:{PORT}                   â•‘")
-    log.info(f"â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•")
+    log.info(f"╔══════════════════════════════════════════╗")
+    log.info(f"║  InvestPal Polymarket Engine running     ║")
+    log.info(f"║  http://localhost:{PORT}                   ║")
+    log.info(f"╚══════════════════════════════════════════╝")
 
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        log.info("Shutting downâ€¦")
+        log.info("Shutting down…")
         stop.set()
         server.shutdown()
 
