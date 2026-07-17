@@ -358,30 +358,33 @@ V2_COLLATERAL = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
 
 def _l1_sign(maker, private_key, ts, nonce):
     """EIP-712 typed data signing for CLOB V2 L1 auth."""
-    from eth_account.messages import encode_structured_data
     from eth_account import Account
-    domain = {"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID}
-    types = {
-        "EIP712Domain": [
-            {"name": "name", "type": "string"},
-            {"name": "version", "type": "string"},
-            {"name": "chainId", "type": "uint256"},
-        ],
-        "ClobAuth": [
-            {"name": "address", "type": "address"},
-            {"name": "timestamp", "type": "string"},
-            {"name": "nonce", "type": "uint256"},
-            {"name": "message", "type": "string"},
-        ],
+    Account.enable_unaudited_hdwallet_features()
+    acct = Account.from_key(private_key)
+    data = {
+        "types": {
+            "EIP712Domain": [
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
+            ],
+            "ClobAuth": [
+                {"name": "address", "type": "address"},
+                {"name": "timestamp", "type": "string"},
+                {"name": "nonce", "type": "uint256"},
+                {"name": "message", "type": "string"},
+            ],
+        },
+        "domain": {"name": "ClobAuthDomain", "version": "1", "chainId": CHAIN_ID},
+        "primaryType": "ClobAuth",
+        "message": {
+            "address": maker,
+            "timestamp": str(ts),
+            "nonce": nonce,
+            "message": "This message attests that I control the given wallet",
+        },
     }
-    value = {
-        "address": maker,
-        "timestamp": str(ts),
-        "nonce": nonce,
-        "message": "This message attests that I control the given wallet",
-    }
-    signable = encode_structured_data({"types": types, "domain": domain, "primaryType": "ClobAuth", "message": value})
-    signed = Account.sign_message(signable, private_key)
+    signed = Account.sign_typed_data(acct, data)
     return signed.signature.hex()
 
 def _l2_sign(method, path, body, timestamp, secret):
@@ -470,7 +473,6 @@ def place_order(token_id, side, price, size_usdc, private_key, funder=None):
 def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=False):
     """Build and EIP-712 sign a CLOB V2 order. Returns the full order envelope dict."""
     import time, json
-    from eth_account.messages import encode_structured_data
     from eth_account import Account
     Account.enable_unaudited_hdwallet_features()
     acct = Account.from_key(private_key)
@@ -500,35 +502,38 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
         "builder": "0x" + "0"*64,
         "signatureType": 0,
     }
-    domain = {
-        "name": "Polymarket CTF",
-        "version": "2",
-        "chainId": CHAIN_ID,
-        "verifyingContract": verifying_contract,
+    eip712_data = {
+        "types": {
+            "EIP712Domain": [
+                {"name": "name", "type": "string"},
+                {"name": "version", "type": "string"},
+                {"name": "chainId", "type": "uint256"},
+                {"name": "verifyingContract", "type": "address"},
+            ],
+            "Order": [
+                {"name": "salt", "type": "uint256"},
+                {"name": "maker", "type": "address"},
+                {"name": "signer", "type": "address"},
+                {"name": "tokenId", "type": "uint256"},
+                {"name": "makerAmount", "type": "uint256"},
+                {"name": "takerAmount", "type": "uint256"},
+                {"name": "side", "type": "uint8"},
+                {"name": "timestamp", "type": "uint256"},
+                {"name": "metadata", "type": "bytes32"},
+                {"name": "builder", "type": "bytes32"},
+                {"name": "signatureType", "type": "uint8"},
+            ],
+        },
+        "domain": {
+            "name": "Polymarket CTF",
+            "version": "2",
+            "chainId": CHAIN_ID,
+            "verifyingContract": verifying_contract,
+        },
+        "primaryType": "Order",
+        "message": signed_data,
     }
-    types = {
-        "EIP712Domain": [
-            {"name": "name", "type": "string"},
-            {"name": "version", "type": "string"},
-            {"name": "chainId", "type": "uint256"},
-            {"name": "verifyingContract", "type": "address"},
-        ],
-        "Order": [
-            {"name": "salt", "type": "uint256"},
-            {"name": "maker", "type": "address"},
-            {"name": "signer", "type": "address"},
-            {"name": "tokenId", "type": "uint256"},
-            {"name": "makerAmount", "type": "uint256"},
-            {"name": "takerAmount", "type": "uint256"},
-            {"name": "side", "type": "uint8"},
-            {"name": "timestamp", "type": "uint256"},
-            {"name": "metadata", "type": "bytes32"},
-            {"name": "builder", "type": "bytes32"},
-            {"name": "signatureType", "type": "uint8"},
-        ],
-    }
-    signable = encode_structured_data({"types": types, "domain": domain, "primaryType": "Order", "message": signed_data})
-    signed = Account.sign_message(signable, private_key)
+    signed = Account.sign_typed_data(acct, eip712_data)
     signature = signed.signature.hex()
     return {
         "order": {
