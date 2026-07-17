@@ -354,6 +354,7 @@ def run_poly_loop(stop_event,interval=90):
 # ── TRADING ──
 def place_order(token_id,side,price,size_usdc,private_key,funder=None):
     if not private_key: return {"ok":False,"error":"No private key. Configure in Settings tab."}
+    log.info(f"place_order invoked: token={token_id} side={side} price={price} size={size_usdc}")
     try:
         import requests, time
         from eth_account import Account
@@ -361,6 +362,7 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
         Account.enable_unaudited_hdwallet_features()
         acct = Account.from_key(private_key)
         maker = acct.address
+        log.info(f"Maker address: {maker}")
         ts = int(time.time())
         nonce = ts
         clob_host = CLOB.rstrip("/")
@@ -368,11 +370,14 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
         sig_payload = f"POST/request/api_key{nonce}"
         msg_hash = encode_defunct(text=sig_payload)
         sig = Account.sign_message(msg_hash, private_key).signature.hex()
+        log.info(f"L1 signature computed, nonce={nonce}")
         # Try to create API key
         headers = {"POLY_SIGNATURE": f"0x{sig}"}
         create_resp = requests.post(f"{clob_host}/request/api_key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
+        log.info(f"Create API key response: status={create_resp.status_code}")
         if not create_resp.ok:
             derive_resp = requests.get(f"{clob_host}/request/api_key?nonce={nonce}", headers={"POLY_SIGNATURE": f"0x{sig}"}, timeout=15)
+            log.info(f"Derive API key response: status={derive_resp.status_code}")
             if not derive_resp.ok:
                 return {"ok":False,"error":f"CLOB auth failed: create={create_resp.status_code} derive={derive_resp.status_code}"}
             creds = derive_resp.json()
@@ -381,9 +386,11 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
         api_key = creds.get("apiKey", creds.get("api_key", ""))
         api_secret = creds.get("secret", creds.get("api_secret", ""))
         api_passphrase = creds.get("passphrase", creds.get("api_passphrase", ""))
+        log.info(f"API creds: key={api_key[:8]}... secret={api_secret[:4]}...")
         # Get neg_risk
         neg_resp = requests.get(f"{clob_host}/neg-risk?token_id={token_id}", timeout=15)
         neg_risk = neg_resp.json().get("neg_risk", False) if neg_resp.ok else False
+        log.info(f"neg_risk={neg_risk}")
         # Sign and place order
         order_data = _build_order(token_id, side, price, size_usdc, private_key, neg_risk)
         order_headers = {"Content-Type": "application/json"}
@@ -391,12 +398,17 @@ def place_order(token_id,side,price,size_usdc,private_key,funder=None):
             order_headers["POLY_API_KEY"] = api_key
             order_headers["POLY_API_SECRET"] = api_secret[:16] if api_secret else ""
             order_headers["POLY_API_PASSPHRASE"] = api_passphrase[:16] if api_passphrase else ""
+        log.info(f"Posting order to {clob_host}/order")
         order_resp = requests.post(f"{clob_host}/order", json=order_data, headers=order_headers, timeout=30)
+        log.info(f"Order response: status={order_resp.status_code}")
         if order_resp.ok:
             data = order_resp.json()
             return {"ok": True, "order_id": data.get("orderID",""), "response": data}
         return {"ok": False, "error": f"CLOB order: {order_resp.status_code} {order_resp.text[:300]}"}
-    except Exception as e: log.error(f"place_order: {e}"); return {"ok":False,"error":str(e)}
+    except Exception as e:
+        import traceback
+        log.error(f"place_order: {e}\n{traceback.format_exc()}")
+        return {"ok":False,"error":str(e)}
 
 EXCHANGE_ADDR = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
 NEG_RISK_ADDR = "0xC5d563A36AE78145C45a50134d48A1215220f80a"
