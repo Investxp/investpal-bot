@@ -31,6 +31,8 @@ def set_proxy(url):
 def _proxied_session():
     s = requests.Session()
     proxy = get_proxy()
+    if os.environ.get("POLYMARKET_USE_TOR",""):
+        proxy = "socks5h://127.0.0.1:9050"
     if proxy:
         s.proxies = {"http": proxy, "https": proxy}
     return s

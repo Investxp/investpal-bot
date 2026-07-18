@@ -7,6 +7,15 @@ export NEXT_PORT=3000
 envsubst '${PORT}' < /etc/nginx/sites-available/default.template > /etc/nginx/sites-available/default
 ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
+# Start Tor if POLYMARKET_USE_TOR is set
+if [ -n "${POLYMARKET_USE_TOR:-}" ]; then
+    echo "Starting Tor..."
+    tor -f /app/torrc &
+    TOR_PID=$!
+    sleep 5
+    echo "Tor started (PID $TOR_PID)"
+fi
+
 cd /app/polymarket-backend
 . venv/bin/activate
 POLYMARKET_PRIVATE_KEY="${POLYMARKET_PRIVATE_KEY:-}" \
