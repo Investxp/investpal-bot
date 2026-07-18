@@ -624,7 +624,8 @@ def update_balance_allowance(private_key, amount=None):
         params = {"asset_type": "COLLATERAL", "signature_type": "0"}
         if amount: params["amount"] = str(amount)
         param_str = "?" + urllib.parse.urlencode(params)
-        l2_headers = _v2_l2_headers("GET", f"/balance-allowance/update{param_str}", "", creds, now_ts)
+        # HMAC path excludes query string (matches py-clob-client behavior)
+        l2_headers = _v2_l2_headers("GET", "/balance-allowance/update", "", creds, now_ts)
         resp = sess.get(f"{clob_host}/balance-allowance/update{param_str}", headers=l2_headers, timeout=15)
         return {"ok": resp.ok, "status": resp.status_code, "data": resp.json() if resp.ok else resp.text[:300]}
     except Exception as e:
@@ -650,9 +651,9 @@ def approve_usdc(private_key, amount=100):
         nonce = int(nonce_r["result"], 16)
         gas_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=10).json()
         gas_price = int(gas_r["result"], 16)
-        tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price}
+        tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price,"chainId":137}
         tx["gas"] = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_estimateGas","params":[tx],"id":1}, timeout=10).json().get("result", 100000)
-        signed = acct.sign_transaction(tx, chain_id=137)
+        signed = acct.sign_transaction(tx)
         send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[signed.rawTransaction.hex()],"id":1}, timeout=30).json()
         return {"ok": True, "tx": send_r.get("result",""), "note": f"Approved {amount} USDC for exchange"}
     except Exception as e:
