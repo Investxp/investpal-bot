@@ -609,9 +609,12 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/proxy":
             proxy_url = body.get("proxy_url", "")
+            relay_url = body.get("relay_url", "")
             set_proxy(proxy_url)
-            save_env({"POLYMARKET_PROXY": proxy_url})
-            self._json({"ok": True, "proxy_url": proxy_url})
+            updates = {"POLYMARKET_PROXY": proxy_url}
+            if relay_url: updates["POLYMARKET_RELAY"] = relay_url
+            save_env(updates)
+            self._json({"ok": True, "proxy_url": proxy_url, "relay_url": relay_url})
 
         else:
             self._json({"error": "unknown endpoint"}, 404)

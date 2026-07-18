@@ -1,5 +1,5 @@
 """
-core/polymarket.py — Polymarket Gamma + CLOB integration
+core/polymarket.py — Polymarket Gamma + _clob() integration
 NOTE: All APIs return 403 from cloud IPs. Run server.py locally (residential IP).
 """
 import os,json,logging,time,requests,random
@@ -7,8 +7,9 @@ from datetime import datetime,timezone
 
 log=logging.getLogger("polymarket")
 GAMMA="https://gamma-api.polymarket.com"
-RELAY=os.environ.get("POLYMARKET_RELAY","") or ""
-CLOB=RELAY or "https://clob.polymarket.com"
+def _clob():
+    relay = os.environ.get("POLYMARKET_RELAY","") or ""
+    return relay or "https://clob.polymarket.com"
 DATA_BASE="https://data-api.polymarket.com"
 CHAIN_ID=137
 DATA_DIR=os.path.join(os.path.dirname(__file__),'..','data')
@@ -169,7 +170,7 @@ def fetch_clob_price(token_id):
     out={"buy":None,"sell":None,"mid":None}
     try:
         for side in("buy","sell"):
-            r=S.get(f"{CLOB}/price",params={"token_id":token_id,"side":side},timeout=8)
+            r=S.get(f"{_clob()}/price",params={"token_id":token_id,"side":side},timeout=8)
             if r.ok: out[side]=float(r.json().get("price",0.5))
         if out["buy"] and out["sell"]: out["mid"]=round((out["buy"]+out["sell"])/2,4)
         elif out["buy"]: out["mid"]=out["buy"]
@@ -178,7 +179,7 @@ def fetch_clob_price(token_id):
 
 def fetch_orderbook(token_id):
     try:
-        r=S.get(f"{CLOB}/book",params={"token_id":token_id},timeout=10)
+        r=S.get(f"{_clob()}/book",params={"token_id":token_id},timeout=10)
         r.raise_for_status(); return r.json()
     except: return {}
 
@@ -372,13 +373,13 @@ def run_poly_loop(stop_event,interval=90):
         except Exception as e: log.error(f"Poly loop: {e}")
         stop_event.wait(interval)
 
-# ── TRADING (CLOB V2) ──
+# ── TRADING (_clob() V2) ──
 EXCHANGE_ADDR = "0xE111180000d2663C0091e4f400237545B87B996B"
 NEG_RISK_ADDR = "0xe2222d279d744050d28e00520010520000310F59"
 V2_COLLATERAL = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
 
 def _l1_sign(maker, private_key, ts, nonce):
-    """EIP-712 typed data signing for CLOB V2 L1 auth."""
+    """EIP-712 typed data signing for _clob() V2 L1 auth."""
     from eth_account import Account
     from eth_account.messages import encode_typed_data
     Account.enable_unaudited_hdwallet_features()
@@ -404,13 +405,13 @@ def _l1_sign(maker, private_key, ts, nonce):
     return signed.signature.hex()
 
 def _l2_sign(method, path, body, timestamp, secret):
-    """HMAC-SHA256 for CLOB V2 L2 auth."""
+    """HMAC-SHA256 for _clob() V2 L2 auth."""
     import hmac, hashlib
     msg = f"{timestamp}{method}{path}{body}".encode()
     return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
 
 def _get_api_creds(private_key):
-    """Obtain or derive CLOB V2 API credentials (L1 auth). Returns {apiKey, secret, passphrase, owner}."""
+    """Obtain or derive _clob() V2 API credentials (L1 auth). Returns {apiKey, secret, passphrase, owner}."""
     import time, requests
     from eth_account import Account
     Account.enable_unaudited_hdwallet_features()
@@ -425,7 +426,7 @@ def _get_api_creds(private_key):
         "POLY_TIMESTAMP": str(ts),
         "POLY_NONCE": str(nonce),
     }
-    clob_host = CLOB.rstrip("/")
+    clob_host = _clob().rstrip("/")
     sess = _proxied_session()
     create = sess.post(f"{clob_host}/auth/api-key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
     if create.ok:
@@ -441,7 +442,7 @@ def _get_api_creds(private_key):
     return {"apiKey": api_key, "secret": api_secret, "passphrase": api_passphrase, "owner": api_key, "address": maker}
 
 def _v2_l2_headers(method, path, body, creds, ts):
-    """Build L2 headers for a V2 CLOB API request."""
+    """Build L2 headers for a V2 _clob() API request."""
     sig = _l2_sign(method, path, body, ts, creds["secret"])
     return {
         "POLY_ADDRESS": creds["address"],
@@ -461,7 +462,7 @@ def place_order(token_id, side, price, size_usdc, private_key, funder=None):
         Account.enable_unaudited_hdwallet_features()
         acct = Account.from_key(private_key)
         maker = acct.address
-        clob_host = CLOB.rstrip("/")
+        clob_host = _clob().rstrip("/")
         # L1 auth → get API creds
         creds = _get_api_creds(private_key)
         log.info(f"API creds obtained: key={creds['apiKey'][:8]}...")
@@ -482,14 +483,14 @@ def place_order(token_id, side, price, size_usdc, private_key, funder=None):
         if order_resp.ok:
             data = order_resp.json()
             return {"ok": True, "order_id": data.get("orderID",""), "response": data}
-        return {"ok": False, "error": f"CLOB V2 order: {order_resp.status_code} {order_resp.text[:300]}"}
+        return {"ok": False, "error": f"_clob() V2 order: {order_resp.status_code} {order_resp.text[:300]}"}
     except Exception as e:
         import traceback
         log.error(f"place_order: {e}\n{traceback.format_exc()}")
         return {"ok":False,"error":str(e)}
 
 def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=False):
-    """Build and EIP-712 sign a CLOB V2 order. Returns the full order envelope dict."""
+    """Build and EIP-712 sign a _clob() V2 order. Returns the full order envelope dict."""
     import time, json
     from eth_account import Account
     from eth_account.messages import encode_typed_data
@@ -572,7 +573,7 @@ def cancel_order(order_id, private_key):
     try:
         import time, json
         creds = _get_api_creds(private_key)
-        clob_host = CLOB.rstrip("/")
+        clob_host = _clob().rstrip("/")
         sess = _proxied_session()
         now_ts = int(time.time())
         body_str = json.dumps({"orderID": order_id})
@@ -586,7 +587,7 @@ def get_open_orders(private_key):
     try:
         import time
         creds = _get_api_creds(private_key)
-        clob_host = CLOB.rstrip("/")
+        clob_host = _clob().rstrip("/")
         sess = _proxied_session()
         now_ts = int(time.time())
         l2_headers = _v2_l2_headers("GET", "/orders", "", creds, now_ts)
