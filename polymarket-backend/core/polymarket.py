@@ -621,7 +621,7 @@ def update_balance_allowance(private_key, amount=None):
         clob_host = _clob().rstrip("/")
         sess = _proxied_session()
         now_ts = int(time.time())
-        params = {"asset_type": "COLLATERAL", "signature_type": "0"}
+        params = {"signature_type": "0"}
         if amount: params["amount"] = str(amount)
         param_str = "?" + urllib.parse.urlencode(params)
         # HMAC path excludes query string (matches py-clob-client behavior)
