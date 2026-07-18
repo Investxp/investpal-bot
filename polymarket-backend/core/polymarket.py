@@ -650,10 +650,11 @@ def approve_usdc(private_key, amount=100):
         nonce_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[addr,"latest"],"id":1}, timeout=30).json()
         if "error" in nonce_r: return {"ok": False, "error": f"RPC nonce: {nonce_r['error']}"}
         nonce = int(nonce_r["result"], 16)
-        gas_r = req.post(rpc_ok, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=15).json()
+        gas_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=30).json()
+        if "error" in gas_r: return {"ok": False, "error": f"RPC gas: {gas_r['error']}"}
         gas_price = int(gas_r["result"], 16)
         tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price,"chainId":137}
-        gas_est = req.post(rpc_ok, json={"jsonrpc":"2.0","method":"eth_estimateGas","params":[tx],"id":1}, timeout=15).json()
+        gas_est = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_estimateGas","params":[tx],"id":1}, timeout=30).json()
         tx["gas"] = gas_est.get("result", 100000)
         signed = acct.sign_transaction(tx)
         raw_tx = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction', None)
