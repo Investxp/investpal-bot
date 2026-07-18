@@ -601,6 +601,35 @@ def cancel_order(order_id, private_key):
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+def get_balance_allowance(private_key):
+    try:
+        import time, urllib.parse
+        creds = _get_api_creds(private_key)
+        clob_host = _clob().rstrip("/")
+        sess = _proxied_session()
+        now_ts = int(time.time())
+        l2_headers = _v2_l2_headers("GET", "/balance-allowance", "", creds, now_ts)
+        resp = sess.get(f"{clob_host}/balance-allowance", headers=l2_headers, timeout=15)
+        return {"ok": resp.ok, "status": resp.status_code, "data": resp.json() if resp.ok else resp.text[:300]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+def update_balance_allowance(private_key, amount=None):
+    try:
+        import time, urllib.parse
+        creds = _get_api_creds(private_key)
+        clob_host = _clob().rstrip("/")
+        sess = _proxied_session()
+        now_ts = int(time.time())
+        params = {}
+        if amount: params["amount"] = str(amount)
+        param_str = ("?" + urllib.parse.urlencode(params)) if params else ""
+        l2_headers = _v2_l2_headers("GET", f"/balance-allowance/update{param_str}", "", creds, now_ts)
+        resp = sess.get(f"{clob_host}/balance-allowance/update{param_str}", headers=l2_headers, timeout=15)
+        return {"ok": resp.ok, "status": resp.status_code, "data": resp.json() if resp.ok else resp.text[:300]}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 def get_open_orders(private_key):
     try:
         import time

@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core.polymarket   import (run_poly_loop, get_cached, full_scan_and_cache,
                                 fetch_orderbook, fetch_clob_price, fetch_positions,
                                 place_order, cancel_order, get_open_orders,
+                                get_balance_allowance, update_balance_allowance,
                                 get_cache_age_minutes, get_proxy, set_proxy)
 from core.trade_engine import (get_picks, get_results, get_tracked,
                                 save_tracked, resolve_pick, reset_all)
@@ -429,6 +430,15 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/polymarket/orders":
             pk = get_pk()
             self._json({"orders": get_open_orders(pk) if pk else []})
+
+        elif path == "/api/polymarket/balance-allowance":
+            pk = get_pk()
+            self._json(get_balance_allowance(pk) if pk else {"error": "No key"})
+
+        elif path == "/api/polymarket/allowance-update":
+            pk = get_pk()
+            amount = qs.get("amount", [None])[0]
+            self._json(update_balance_allowance(pk, amount) if pk else {"error": "No key"})
 
         elif path == "/api/env":
             env  = load_env()
