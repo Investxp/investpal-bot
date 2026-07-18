@@ -472,6 +472,8 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/env":
             updates = {}
+            if "use_tor" in body:
+                updates["POLYMARKET_USE_TOR"] = "true" if body.get("use_tor") else ""
             pk_input = body.get("private_key", "").strip()
             if pk_input:
                 if len(pk_input.split()) >= 12:
