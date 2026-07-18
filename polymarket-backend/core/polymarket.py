@@ -7,7 +7,8 @@ from datetime import datetime,timezone
 
 log=logging.getLogger("polymarket")
 GAMMA="https://gamma-api.polymarket.com"
-CLOB="https://clob.polymarket.com"
+RELAY=os.environ.get("POLYMARKET_RELAY","") or ""
+CLOB=RELAY or "https://clob.polymarket.com"
 DATA_BASE="https://data-api.polymarket.com"
 CHAIN_ID=137
 DATA_DIR=os.path.join(os.path.dirname(__file__),'..','data')
