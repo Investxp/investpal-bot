@@ -646,7 +646,7 @@ def approve_usdc(private_key, amount=100):
         exchange = EXCHANGE_ADDR
         amt_hex = hex(amount * 10**6)[2:].zfill(64)
         spender_pad = exchange[2:].lower().zfill(64)
-        data = f"0x095ea7b3000000000000000000000000{spender_pad}{amt_hex}"
+        data = f"0x095ea7b3{spender_pad}{amt_hex}"
         nonce_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[addr,"latest"],"id":1}, timeout=30).json()
         if "error" in nonce_r: return {"ok": False, "error": f"RPC nonce: {nonce_r['error']}"}
         nonce = int(nonce_r["result"], 16)
