@@ -11,8 +11,9 @@ ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 echo "Starting Tor..."
 tor -f /app/torrc &
 TOR_PID=$!
-sleep 3
-echo "Tor started (PID $TOR_PID)"
+echo "Waiting 25s for Tor bootstrap..."
+sleep 25
+echo "Tor PID $TOR_PID (port 9050)"
 
 cd /app/polymarket-backend
 . venv/bin/activate
