@@ -450,7 +450,9 @@ def _get_api_creds(private_key):
     api_key = creds.get("apiKey", creds.get("api_key", ""))
     api_secret = creds.get("secret", creds.get("api_secret", ""))
     api_passphrase = creds.get("passphrase", creds.get("api_passphrase", ""))
-    return {"apiKey": api_key, "secret": api_secret, "passphrase": api_passphrase, "owner": api_key, "address": maker}
+    api_owner = creds.get("owner", api_key)
+    log.info(f"API creds: key={api_key[:12]}... owner={api_owner}")
+    return {"apiKey": api_key, "secret": api_secret, "passphrase": api_passphrase, "owner": api_owner, "address": maker}
 
 def _v2_l2_headers(method, path, body, creds, ts):
     """Build L2 headers for a V2 _clob() API request."""
