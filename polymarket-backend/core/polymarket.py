@@ -416,10 +416,12 @@ def _l1_sign(maker, private_key, ts, nonce):
     return signed.signature.hex()
 
 def _l2_sign(method, path, body, timestamp, secret):
-    """HMAC-SHA256 for _clob() V2 L2 auth."""
-    import hmac, hashlib
-    msg = f"{timestamp}{method}{path}{body}".encode()
-    return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+    """HMAC-SHA256 for _clob() V2 L2 auth — base64 secret+output as py-clob-client."""
+    import hmac, hashlib, base64
+    secret_bytes = base64.urlsafe_b64decode(secret)
+    msg = f"{timestamp}{method}{path}{body}".replace("'", '"')
+    h = hmac.new(secret_bytes, msg.encode("utf-8"), hashlib.sha256)
+    return base64.urlsafe_b64encode(h.digest()).decode("utf-8")
 
 def _get_api_creds(private_key):
     """Obtain or derive _clob() V2 API credentials (L1 auth). Returns {apiKey, secret, passphrase, owner}."""
@@ -442,11 +444,14 @@ def _get_api_creds(private_key):
     create = sess.post(f"{clob_host}/auth/api-key", json={"nonce": str(nonce)}, headers=headers, timeout=15)
     if create.ok:
         creds = create.json()
+        log.info(f"POST /auth/api-key ok: keys={list(creds.keys())}")
     else:
+        log.info(f"POST /auth/api-key failed ({create.status_code}), trying derive...")
         derive = sess.get(f"{clob_host}/auth/derive-api-key", params={"nonce": str(nonce)}, headers=headers, timeout=15)
         if not derive.ok:
             raise Exception(f"L1 auth failed: create={create.status_code} derive={derive.status_code}")
         creds = derive.json()
+        log.info(f"GET /auth/derive-api-key ok: keys={list(creds.keys())}")
     api_key = creds.get("apiKey", creds.get("api_key", ""))
     api_secret = creds.get("secret", creds.get("api_secret", ""))
     api_passphrase = creds.get("passphrase", creds.get("api_passphrase", ""))
@@ -486,9 +491,9 @@ def place_order(token_id, side, price, size_usdc, private_key, funder=None):
         log.info(f"neg_risk={neg_risk}")
         # Build and sign V2 order
         order_data = _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk)
-        order_data["owner"] = creds["owner"]
+        order_data["owner"] = creds["apiKey"]
         now_ts = int(time.time())
-        body_str = json.dumps(order_data)
+        body_str = json.dumps(order_data, separators=(",", ":"), ensure_ascii=False)
         l2_headers = _v2_l2_headers("POST", "/order", body_str, creds, now_ts)
         log.info(f"Posting V2 order to {clob_host}/order")
         order_resp = sess.post(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=30)
@@ -589,7 +594,7 @@ def cancel_order(order_id, private_key):
         clob_host = _clob().rstrip("/")
         sess = _proxied_session()
         now_ts = int(time.time())
-        body_str = json.dumps({"orderID": order_id})
+        body_str = json.dumps({"orderID": order_id}, separators=(",", ":"), ensure_ascii=False)
         l2_headers = _v2_l2_headers("DELETE", "/order", body_str, creds, now_ts)
         resp = sess.delete(f"{clob_host}/order", data=body_str, headers=l2_headers, timeout=15)
         return {"ok": resp.ok, "status": resp.status_code, "response": resp.json() if resp.ok else resp.text[:200]}
