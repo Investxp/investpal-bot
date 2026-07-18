@@ -9,10 +9,22 @@ ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Start Tor daemon
 echo "Starting Tor..."
+mkdir -p /tmp/tor
 tor -f /app/torrc &
 TOR_PID=$!
-echo "Waiting 25s for Tor bootstrap..."
-sleep 25
+
+echo "Waiting for Tor bootstrap on 127.0.0.1:9050..."
+for i in $(seq 1 60); do
+    if python3 -c "import socket; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1',9050)); s.close()" 2>/dev/null; then
+        echo "Tor ready after ${i}s"
+        break
+    fi
+    if ! kill -0 $TOR_PID 2>/dev/null; then
+        echo "Tor process died during bootstrap"
+        break
+    fi
+    sleep 1
+done
 echo "Tor PID $TOR_PID (port 9050)"
 
 cd /app/polymarket-backend

@@ -32,7 +32,16 @@ def _proxied_session():
     s = requests.Session()
     proxy = get_proxy()
     if os.environ.get("POLYMARKET_USE_TOR",""):
-        proxy = "socks5h://127.0.0.1:9050"
+        try:
+            import socket
+            sock = socket.socket()
+            sock.settimeout(2)
+            sock.connect(('127.0.0.1', 9050))
+            sock.close()
+            proxy = "socks5h://127.0.0.1:9050"
+            log.info("Tor available, routing through SOCKS5 127.0.0.1:9050")
+        except Exception as e:
+            log.warning(f"Tor unavailable (127.0.0.1:9050): {e}. Falling back to direct/proxy.")
     if proxy:
         s.proxies = {"http": proxy, "https": proxy}
     return s

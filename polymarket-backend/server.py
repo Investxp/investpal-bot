@@ -66,9 +66,15 @@ def load_env():
 
 def save_env(updates):
     env = load_env(); env.update(updates)
+    # Remove keys set to empty string (value cleared)
+    env = {k: v for k, v in env.items() if v}
     with open(ENV_FILE, 'w') as f:
         f.writelines(f"{k}={v}\n" for k, v in env.items())
-    for k, v in updates.items(): os.environ[k] = v
+    for k, v in updates.items():
+        if v:
+            os.environ[k] = v
+        else:
+            os.environ.pop(k, None)
 
 def get_pk():
     return load_env().get("POLYMARKET_PRIVATE_KEY", "") or os.getenv("POLYMARKET_PRIVATE_KEY", "")
@@ -616,8 +622,8 @@ class Handler(BaseHTTPRequestHandler):
             set_proxy(proxy_url)
             updates = {"POLYMARKET_PROXY": proxy_url}
             if relay_url is not None: updates["POLYMARKET_RELAY"] = relay_url
-            if use_tor: updates["POLYMARKET_USE_TOR"] = "true"
-            else: updates.pop("POLYMARKET_USE_TOR", None)
+            # Explicitly set or clear Tor env var
+            updates["POLYMARKET_USE_TOR"] = "true" if use_tor else ""
             save_env(updates)
             self._json({"ok": True, "proxy_url": proxy_url, "relay_url": relay_url, "use_tor": use_tor})
 

@@ -33,6 +33,7 @@ RUN python3 -m venv /app/polymarket-backend/venv && \
     /app/polymarket-backend/venv/bin/pip install -r /app/polymarket-backend/requirements.txt
 
 COPY nginx.conf /etc/nginx/sites-available/default.template
+COPY torrc /app/torrc
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
