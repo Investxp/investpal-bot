@@ -567,7 +567,7 @@ def _build_order_v2(token_id, side, price, size_usdc, private_key, neg_risk=Fals
             "makerAmount": str(maker_amount),
             "takerAmount": str(taker_amount),
             "side": "BUY" if order_side else "SELL",
-            "expiration": str(ts_ms // 1000 + 3600),
+            "expiration": "0",
             "timestamp": str(ts_ms),
             "metadata": "0x" + "0"*64,
             "builder": "0x" + "0"*64,
