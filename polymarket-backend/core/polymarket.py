@@ -663,6 +663,7 @@ def approve_usdc(private_key, amount=100):
         if isinstance(raw_tx, bytes): raw_hex = raw_tx.hex()
         else: raw_hex = raw_tx
         send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[raw_hex],"id":1}, timeout=30).json()
+        if "error" in send_r: return {"ok": False, "error": f"RPC send: {send_r['error']}"}
         return {"ok": True, "tx": send_r.get("result",""), "note": f"Approved {amount} USDC for exchange"}
     except Exception as e:
         import traceback; return {"ok": False, "error": str(e), "trace": traceback.format_exc()[:200]}
