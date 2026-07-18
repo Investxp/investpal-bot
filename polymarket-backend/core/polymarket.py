@@ -621,14 +621,42 @@ def update_balance_allowance(private_key, amount=None):
         clob_host = _clob().rstrip("/")
         sess = _proxied_session()
         now_ts = int(time.time())
-        params = {}
+        params = {"asset_type": "COLLATERAL", "signature_type": "0"}
         if amount: params["amount"] = str(amount)
-        param_str = ("?" + urllib.parse.urlencode(params)) if params else ""
+        param_str = "?" + urllib.parse.urlencode(params)
         l2_headers = _v2_l2_headers("GET", f"/balance-allowance/update{param_str}", "", creds, now_ts)
         resp = sess.get(f"{clob_host}/balance-allowance/update{param_str}", headers=l2_headers, timeout=15)
         return {"ok": resp.ok, "status": resp.status_code, "data": resp.json() if resp.ok else resp.text[:300]}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+def approve_usdc(private_key, amount=100):
+    """Approve USDC for the V2 exchange contract (on-chain tx via RPC)."""
+    try:
+        import requests as req
+        from eth_account import Account
+        Account.enable_unaudited_hdwallet_features()
+        acct = Account.from_key(private_key)
+        addr = acct.address
+        rpc = "https://polygon.gateway.tenderly.co"
+        usdc = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+        exchange = EXCHANGE_ADDR
+        amt_hex = hex(amount * 10**6)[2:].zfill(64)
+        # approve(address spender, uint256 amount) = 0x095ea7b3
+        spender_pad = exchange[2:].lower().zfill(64)
+        data = f"0x095ea7b3000000000000000000000000{spender_pad}{amt_hex}"
+        # Get nonce and gas
+        nonce_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[addr,"latest"],"id":1}, timeout=10).json()
+        nonce = int(nonce_r["result"], 16)
+        gas_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=10).json()
+        gas_price = int(gas_r["result"], 16)
+        tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price}
+        tx["gas"] = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_estimateGas","params":[tx],"id":1}, timeout=10).json().get("result", 100000)
+        signed = acct.sign_transaction(tx, chain_id=137)
+        send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[signed.rawTransaction.hex()],"id":1}, timeout=30).json()
+        return {"ok": True, "tx": send_r.get("result",""), "note": f"Approved {amount} USDC for exchange"}
+    except Exception as e:
+        import traceback; return {"ok": False, "error": str(e), "trace": traceback.format_exc()[:200]}
 
 def get_open_orders(private_key):
     try:
