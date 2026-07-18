@@ -661,10 +661,14 @@ def approve_usdc(private_key, amount=100):
         if not raw_tx:
             return {"ok": False, "error": f"Unknown signature attr: {[a for a in dir(signed) if not a.startswith('_')]}"}
         if isinstance(raw_tx, bytes): raw_hex = raw_tx.hex()
-        else: raw_hex = raw_tx
-        send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[raw_hex],"id":1}, timeout=30).json()
+        else: raw_hex = str(raw_tx)
+        if not raw_hex or raw_hex == "0x":
+            return {"ok": False, "error": f"Empty raw tx. attr={type(raw_tx)} value={str(raw_tx)[:100]}"}
+        if not raw_hex.startswith("0x"): raw_hex = "0x" + raw_hex
+        send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[raw_hex],"id":1}, timeout=60).json()
         if "error" in send_r: return {"ok": False, "error": f"RPC send: {send_r['error']}"}
-        return {"ok": True, "tx": send_r.get("result",""), "note": f"Approved {amount} USDC for exchange"}
+        tx_hash = send_r.get("result", "")
+        return {"ok": bool(tx_hash), "tx": tx_hash, "note": f"Approved {amount} USDC for exchange"}
     except Exception as e:
         import traceback; return {"ok": False, "error": str(e), "trace": traceback.format_exc()[:200]}
 
