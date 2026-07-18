@@ -610,11 +610,14 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/proxy":
             proxy_url = body.get("proxy_url", "")
             relay_url = body.get("relay_url", "")
+            use_tor = body.get("use_tor", "")
             set_proxy(proxy_url)
             updates = {"POLYMARKET_PROXY": proxy_url}
-            if relay_url: updates["POLYMARKET_RELAY"] = relay_url
+            if relay_url is not None: updates["POLYMARKET_RELAY"] = relay_url
+            if use_tor: updates["POLYMARKET_USE_TOR"] = "true"
+            else: updates.pop("POLYMARKET_USE_TOR", None)
             save_env(updates)
-            self._json({"ok": True, "proxy_url": proxy_url, "relay_url": relay_url})
+            self._json({"ok": True, "proxy_url": proxy_url, "relay_url": relay_url, "use_tor": use_tor})
 
         else:
             self._json({"error": "unknown endpoint"}, 404)
