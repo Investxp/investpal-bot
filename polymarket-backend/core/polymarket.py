@@ -627,7 +627,8 @@ def update_balance_allowance(private_key, amount=None):
         # HMAC path excludes query string (matches py-clob-client behavior)
         l2_headers = _v2_l2_headers("GET", "/balance-allowance/update", "", creds, now_ts)
         resp = sess.get(f"{clob_host}/balance-allowance/update{param_str}", headers=l2_headers, timeout=15)
-        return {"ok": resp.ok, "status": resp.status_code, "data": resp.json() if resp.ok else resp.text[:300]}
+        data = resp.text[:500] if resp.text.strip() else "(empty)"
+        return {"ok": resp.ok, "status": resp.status_code, "data": data}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -639,7 +640,8 @@ def approve_usdc(private_key, amount=100):
         Account.enable_unaudited_hdwallet_features()
         acct = Account.from_key(private_key)
         addr = acct.address
-        rpc = "https://polygon.gateway.tenderly.co"
+        # Use proxied session for RPC calls too (Tor doesn't affect RPC)
+        rpc = "https://polygon-rpc.com"
         usdc = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
         exchange = EXCHANGE_ADDR
         amt_hex = hex(amount * 10**6)[2:].zfill(64)
