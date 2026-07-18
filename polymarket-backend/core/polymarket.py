@@ -654,7 +654,12 @@ def approve_usdc(private_key, amount=100):
         tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price,"chainId":137}
         tx["gas"] = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_estimateGas","params":[tx],"id":1}, timeout=10).json().get("result", 100000)
         signed = acct.sign_transaction(tx)
-        send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[signed.rawTransaction.hex()],"id":1}, timeout=30).json()
+        raw_tx = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction', None)
+        if not raw_tx:
+            return {"ok": False, "error": f"Unknown signature attr: {[a for a in dir(signed) if not a.startswith('_')]}"}
+        if isinstance(raw_tx, bytes): raw_hex = raw_tx.hex()
+        else: raw_hex = raw_tx
+        send_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[raw_hex],"id":1}, timeout=30).json()
         return {"ok": True, "tx": send_r.get("result",""), "note": f"Approved {amount} USDC for exchange"}
     except Exception as e:
         import traceback; return {"ok": False, "error": str(e), "trace": traceback.format_exc()[:200]}
