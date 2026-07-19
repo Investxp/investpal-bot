@@ -714,6 +714,14 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
           <div><label class="me-lbl">Spread (per side)</label><input class="me-inp" id="botMmSpread" type="number" value="0.02" step="0.005" min="0.005" max="0.10"></div>
           <div><label class="me-lbl">Max MM Positions</label><input class="me-inp" id="botMmMaxPos" type="number" value="3" step="1" min="1" max="10"></div>
         </div>
+        <div style="margin-bottom:8px">
+          <label class="me-lbl" style="display:flex;align-items:center;gap:8px">
+            <div class="mode-toggle" id="botMartingaleToggle" onclick="toggleMartingale()">
+              <span id="botMartingaleIcon">⏸</span><div class="sw"></div>
+            </div>
+            <span id="botMartingaleLabel" style="font-size:11px">Martingale Recovery: OFF</span>
+          </label>
+        </div>
         </div>
         <div class="card" style="margin-top:8px;padding:10px;background:rgba(0,230,118,0.03);border-color:rgba(0,230,118,0.15)">
           <div style="font-size:10px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center">
@@ -1934,6 +1942,11 @@ async function loadBotConfig(){
   document.getElementById('botSportFilter').value=botConfig.sport_filter || '';
   if (botConfig.auto_fund === undefined) botConfig.auto_fund = true;
   autoFundEnabled = botConfig.auto_fund;
+  if (botConfig.martingale_recovery === undefined) botConfig.martingale_recovery = false;
+  martingaleRecovery = botConfig.martingale_recovery;
+  document.getElementById('botMartingaleToggle').classList.toggle('on', martingaleRecovery);
+  document.getElementById('botMartingaleLabel').textContent = 'Martingale Recovery: ' + (martingaleRecovery ? 'ON' : 'OFF');
+  document.getElementById('botMartingaleIcon').textContent = martingaleRecovery ? '▶' : '⏸';
   onStrategyChange();
   document.getElementById('botAutoFundToggle').classList.toggle('on', autoFundEnabled);
   document.getElementById('botAutoFundLabel').textContent = autoFundEnabled ? 'ON' : 'OFF';
@@ -1956,6 +1969,7 @@ async function saveBotConfig(){
   botConfig.mm_max_positions=parseInt(document.getElementById('botMmMaxPos').value)||3;
   botConfig.sport_filter=document.getElementById('botSportFilter').value;
   botConfig.auto_fund=autoFundEnabled;
+  botConfig.martingale_recovery=martingaleRecovery;
   
   // Sync back to main state!
   state.base_stake = botConfig.base_stake;
@@ -2638,6 +2652,17 @@ async function executeLiveOrder() {
 // POLY_1271 + DASHBOARD + POSITION MANAGER
 // ════════════════════════════════════════════════════════════════
 let autoFundEnabled = true;
+let martingaleRecovery = false;
+
+function toggleMartingale() {
+  martingaleRecovery = !martingaleRecovery;
+  const toggle = document.getElementById('botMartingaleToggle');
+  const label = document.getElementById('botMartingaleLabel');
+  toggle.classList.toggle('on', martingaleRecovery);
+  label.textContent = 'Martingale Recovery: ' + (martingaleRecovery ? 'ON' : 'OFF');
+  document.getElementById('botMartingaleIcon').textContent = martingaleRecovery ? '▶' : '⏸';
+  save();
+}
 
 function toggleAutoFund() {
   autoFundEnabled = !autoFundEnabled;

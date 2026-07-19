@@ -14,7 +14,8 @@ D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'strategy': 'hedge',
            'base_stake': 0.1, 'recovery_factor': 2.0, 'max_concurrent': 1,
            'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 60,
            'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0, 'sport_filter': '',
-           'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3}
+            'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+            'martingale_recovery': False}
 D_STATE = {'bankroll': 100.0, 'pnl': 0.0, 'active_bets': [],
            'cycles': 0, 'wins': 0, 'losses': 0, 'log': [],
            'streak_a': 0, 'streak_b': 0}
@@ -375,6 +376,9 @@ def _place_single_direction_orders(cands, slots, cfg, state, mode, active_market
     kelly_fraction = float(cfg.get('kelly_fraction', 0.25))
     min_edge = float(cfg.get('min_edge', 0.05))
     bankroll = state.get('bankroll', cfg.get('bankroll', 100.0))
+    factor = float(cfg.get('recovery_factor', 2.0))
+    max_steps = int(cfg.get('max_steps', 6) or 6)
+    use_martingale = cfg.get('martingale_recovery', False)
     placed = 0
     for m in cands:
         if placed >= slots: break
@@ -393,6 +397,12 @@ def _place_single_direction_orders(cands, slots, cfg, state, mode, active_market
             continue
         stake = _kelly_stake(best_edge * 100, best_odds, bankroll, kelly_fraction)
         if stake < 0.01: continue
+        if use_martingale:
+            streak = state.get(f'streak_{best_side.lower()}', 0)
+            multiplier = factor ** min(streak, max_steps)
+            stake = round(stake * multiplier, 2)
+            if multiplier > 1.0:
+                _log(state, f"MM recovery x{multiplier:.1f} on {m.get('slug','?')[:20]} (streak {streak})", 'debug')
         bankroll -= stake
         market_id = m.get('market_id')
         q = (m.get('question') or m.get('name', ''))[:60]
@@ -441,6 +451,9 @@ def _place_market_making_orders(cands, slots, cfg, state, mode, active_market_id
     spread = float(cfg.get('mm_spread', 0.02))
     max_pos = int(cfg.get('mm_max_positions', 3))
     bankroll = state.get('bankroll', cfg.get('bankroll', 100.0))
+    factor = float(cfg.get('recovery_factor', 2.0))
+    max_steps = int(cfg.get('max_steps', 6) or 6)
+    use_martingale = cfg.get('martingale_recovery', False)
     stake_per_side = min(bankroll * 0.05, 10.0)
     placed = 0
     for m in cands:
@@ -450,26 +463,36 @@ def _place_market_making_orders(cands, slots, cfg, state, mode, active_market_id
         n_bid = round(max(0.001, np - spread), 3)
         market_id = m.get('market_id')
         q = (m.get('question') or m.get('name', ''))[:60]
-        _log(state, f"[{mode.upper()}] MM {q[:35]} — Bid YES @{y_bid} Bid NO @{n_bid} | ${stake_per_side} each", 'info')
+        stake_a = stake_b = stake_per_side
+        if use_martingale:
+            streak_a = state.get('streak_a', 0)
+            streak_b = state.get('streak_b', 0)
+            mult_a = factor ** min(streak_a, max_steps)
+            mult_b = factor ** min(streak_b, max_steps)
+            stake_a = round(stake_per_side * mult_a, 2)
+            stake_b = round(stake_per_side * mult_b, 2)
+            if mult_a > 1 or mult_b > 1:
+                _log(state, f"MM recovery streaks A:{streak_a} B:{streak_b} → stakes ${stake_a}/${stake_b}", 'debug')
+        _log(state, f"[{mode.upper()}] MM {q[:35]} — Bid YES @{y_bid} (${stake_a}) Bid NO @{n_bid} (${stake_b})", 'info')
         if mode == 'live':
             pk = get_pk()
             if not pk: break
             tids = m.get('token_ids', [])
             if len(tids) < 2: continue
             fn = place_order_poly1271 if cfg.get('order_type') == 'poly1271' else place_order
-            for label, tid, p in [('A', tids[0], y_bid), ('B', tids[1], n_bid)]:
+            for label, tid, p, st in [('A', tids[0], y_bid, stake_a), ('B', tids[1], n_bid, stake_b)]:
                 if cfg.get('order_type') == 'poly1271':
                     dw = get_funder()
                     if not dw: continue
-                    res = fn(token_id=tid, side='BUY', price=p, size_usdc=stake_per_side, private_key=pk, deposit_wallet=dw)
+                    res = fn(token_id=tid, side='BUY', price=p, size_usdc=st, private_key=pk, deposit_wallet=dw)
                 else:
-                    res = fn(token_id=tid, side='BUY', price=p, size_usdc=stake_per_side, private_key=pk)
+                    res = fn(token_id=tid, side='BUY', price=p, size_usdc=st, private_key=pk)
                 if res.get('ok'):
                     oid = res.get('order_id', '')
-                    position_manager.record_order(tid, 'BUY', p, stake_per_side, oid, m)
+                    position_manager.record_order(tid, 'BUY', p, st, oid, m)
                     state['active_bets'].append({
                         'market_id':market_id,'name':q,'sport':m.get('sport',''),
-                        'side':label,'odds':1.0/p,'price':p,'stake':stake_per_side,
+                        'side':label,'odds':1.0/p,'price':p,'stake':st,
                         'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
                         'simulation':False,'order_id':oid,'end_date':m.get('end_date'),
                         'slug':m.get('slug',''),'strategy':'market_making',
@@ -478,19 +501,19 @@ def _place_market_making_orders(cands, slots, cfg, state, mode, active_market_id
                     _log(state, f"MM {label} failed: {res.get('error','?')}", 'error')
         else:
             main_s = get_main_state()
-            total_cost = stake_per_side * 2
+            total_cost = stake_a + stake_b
             main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - total_cost, 2)
             save_main_state(main_s)
             state['bankroll'] = main_s['bankroll']
-            for label, p in [('A', y_bid), ('B', n_bid)]:
+            for label, p, st in [('A', y_bid, stake_a), ('B', n_bid, stake_b)]:
                 state['active_bets'].append({
                     'market_id':market_id,'name':q,'sport':m.get('sport',''),
-                    'side':label,'odds':1.0/p,'price':p,'stake':stake_per_side,
+                    'side':label,'odds':1.0/p,'price':p,'stake':st,
                     'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
                     'simulation':True,'end_date':m.get('end_date'),
                     'slug':m.get('slug',''),'strategy':'market_making',
                 })
-            _log(state, f"[SIM] MM on {q[:35]} — YES ${stake_per_side} @{y_bid} NO ${stake_per_side} @{n_bid}", 'info')
+            _log(state, f"[SIM] MM on {q[:35]} — YES ${stake_a} @{y_bid} NO ${stake_b} @{n_bid}", 'info')
         placed += 1
 
 def reset_bot():
