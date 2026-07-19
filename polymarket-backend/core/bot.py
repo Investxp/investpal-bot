@@ -12,7 +12,7 @@ BOT_CFG   = os.path.join(DATA, 'bot_config.json')
 
 D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'base_stake': 0.1, 'recovery_factor': 2.0,
            'max_concurrent': 1, 'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 60,
-           'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0}
+           'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0, 'sport_filter': ''}
 D_STATE = {'bankroll': 100.0, 'pnl': 0.0, 'active_bets': [],
            'cycles': 0, 'wins': 0, 'losses': 0, 'log': [],
            'streak_a': 0, 'streak_b': 0}

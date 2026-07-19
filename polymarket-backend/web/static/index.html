@@ -662,10 +662,22 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
-            <label class="me-lbl">Order Type</label>
-            <select class="me-inp" id="botOrderType" style="width:100%">
-              <option value="standard">Standard (EOA)</option>
-              <option value="poly1271">POLY_1271 (Deposit Wallet)</option>
+            <label class="me-lbl">Sport Filter</label>
+            <select class="me-inp" id="botSportFilter" style="width:100%">
+              <option value="">All Sports</option>
+              <option value="Football">Football</option>
+              <option value="Basketball">Basketball</option>
+              <option value="Tennis">Tennis</option>
+              <option value="Cricket">Cricket</option>
+              <option value="UFC/Boxing">UFC/Boxing</option>
+              <option value="Soccer">Soccer</option>
+              <option value="NFL">NFL</option>
+              <option value="Baseball">Baseball</option>
+              <option value="Hockey">Hockey</option>
+              <option value="Golf">Golf</option>
+              <option value="Esports">Esports</option>
+              <option value="Racing">Racing</option>
+              <option value="Rugby">Rugby</option>
             </select>
           </div>
           <div>
@@ -675,8 +687,18 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
                 <span id="botAutoFundIcon">⏸</span><div class="sw"></div>
               </div>
               <span style="font-size:10px;font-weight:700;color:var(--text-dim)" id="botAutoFundLabel">OFF</span>
-            </div>
           </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="me-lbl">Order Type</label>
+            <select class="me-inp" id="botOrderType" style="width:100%">
+              <option value="standard">Standard (EOA)</option>
+              <option value="poly1271">POLY_1271 (Deposit Wallet)</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
         </div>
         <div class="card" style="margin-top:8px;padding:10px;background:rgba(0,230,118,0.03);border-color:rgba(0,230,118,0.15)">
           <div style="font-size:10px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center">
@@ -1142,7 +1164,7 @@ function getRecoverySuggestion(){
 // ════════════════════════════════════════════════════════════════
 // FEED — GET /api/feed
 // ════════════════════════════════════════════════════════════════
-async function loadFeed(){
+async function loadFeed(isInitial){
   document.getElementById('cuLoading').style.display='';
   document.getElementById('cuTable').style.display='none';
   document.getElementById('cuEmpty').style.display='none';
@@ -1161,7 +1183,7 @@ async function loadFeed(){
   document.getElementById('lastScan').textContent=ts;
   document.getElementById('lastScan2').textContent='Updated '+ts;
   renderFeed();
-  autoSelectBest();
+  if (isInitial) autoSelectBest();
   renderAll();
 }
 function normalizeMarket(m){
@@ -1880,6 +1902,7 @@ async function loadBotConfig(){
   document.getElementById('botMode').value=botConfig.bot_mode || 'simulation';
   document.getElementById('botInterval').value=botConfig.interval_seconds || 60;
   document.getElementById('botOrderType').value=botConfig.order_type || 'standard';
+  document.getElementById('botSportFilter').value=botConfig.sport_filter || '';
   if (botConfig.auto_fund === undefined) botConfig.auto_fund = true;
   autoFundEnabled = botConfig.auto_fund;
   document.getElementById('botAutoFundToggle').classList.toggle('on', autoFundEnabled);
@@ -1896,6 +1919,7 @@ async function saveBotConfig(){
   botConfig.bot_mode=document.getElementById('botMode').value;
   botConfig.interval_seconds=parseInt(document.getElementById('botInterval').value)||60;
   botConfig.order_type=document.getElementById('botOrderType').value;
+  botConfig.sport_filter=document.getElementById('botSportFilter').value;
   botConfig.auto_fund=autoFundEnabled;
   
   // Sync back to main state!
@@ -2662,7 +2686,7 @@ async function init(){
   const savedTab = localStorage.getItem('activeTab') || 'engine';
   showMainTab(savedTab);
 
-  await loadFeed();
+  await loadFeed(true);
   await loadBotConfig();
   await loadWalletConfig();
   await loadWalletBalances();
@@ -2672,7 +2696,7 @@ async function init(){
 
   setInterval(tickClock,1000);tickClock();
   setInterval(pollStatus,15000);
-  setInterval(loadFeed,60000);
+  setInterval(function(){loadFeed(false);},60000);
   setInterval(loadDashboard,30000);
   startBotAutoLoop();
 }
