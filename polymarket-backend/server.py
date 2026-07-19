@@ -923,6 +923,12 @@ def main():
     def warmup():
         try:
             log.info("Initial Polymarket scan starting…")
+            # Clear stale cache so fresh data is always fetched
+            import os as _os
+            from core.polymarket import CACHE as _CACHE
+            if _os.path.exists(_CACHE):
+                _os.remove(_CACHE)
+                log.info("Cleared stale market cache")
             full_scan_and_cache(enrich=True)
         except Exception as e:
             log.warning(f"Initial scan failed (expected on first run or no internet): {e}")

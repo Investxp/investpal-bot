@@ -382,7 +382,14 @@ def _write_cache(markets):
 
 def get_cached():
     try:
-        with open(CACHE) as f: return json.load(f).get("markets",[])
+        with open(CACHE) as f: d=json.load(f)
+        updated=d.get("updated","")
+        if updated:
+            age=datetime.now(timezone.utc)-datetime.fromisoformat(updated.replace('Z','+00:00'))
+            if age.total_seconds()>3600:
+                log.info("Cache >1h old, clearing for fresh fetch")
+                return []
+        return d.get("markets",[])
     except: return []
 
 def get_cache_age_minutes():
