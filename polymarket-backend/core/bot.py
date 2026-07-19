@@ -15,7 +15,8 @@ D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'strategy': 'hedge',
            'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 14400,
            'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0, 'sport_filter': '',
            'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
-           'martingale_recovery': False}
+           'martingale_recovery': False,
+           'telegram_signals': False, 'telegram_bot_token': '', 'telegram_chat_id': ''}
 
 STRAT_DEFAULTS = {
     'hedge': {
@@ -23,18 +24,21 @@ STRAT_DEFAULTS = {
         'bankroll': 1000.0, 'interval_seconds': 14400,
         'martingale_recovery': True,
         'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+        'telegram_signals': False, 'telegram_bot_token': '', 'telegram_chat_id': '',
     },
     'single': {
         'base_stake': 10, 'recovery_factor': 2.0, 'max_concurrent': 1,
         'bankroll': 100.0, 'interval_seconds': 14400,
         'martingale_recovery': False,
         'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+        'telegram_signals': False, 'telegram_bot_token': '', 'telegram_chat_id': '',
     },
     'market_making': {
         'base_stake': 10, 'recovery_factor': 2.0, 'max_concurrent': 3,
         'bankroll': 100.0, 'interval_seconds': 14400,
         'martingale_recovery': False,
         'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+        'telegram_signals': False, 'telegram_bot_token': '', 'telegram_chat_id': '',
     },
 }
 D_STATE = {'bankroll': 100.0, 'pnl': 0.0, 'active_bets': [],
@@ -337,6 +341,26 @@ def run_cycle(markets):
         else:
             _place_hedge_orders(cands, slots_available, cfg, state, mode, active_market_ids, utc_now)
 
+        if cfg.get('telegram_signals'):
+            from core.telegram_signals import send_signal
+            for bet in state.get('active_bets', []):
+                if bet.get('telegram_sent'): continue
+                bet['telegram_sent'] = True
+                try:
+                    send_signal(cfg,
+                        market_name=bet.get('name', ''),
+                        side=bet.get('side', '?'),
+                        price=bet.get('price', 0),
+                        stake=bet.get('stake', 0),
+                        edge=bet.get('edge', 0),
+                        odds=bet.get('odds', 0),
+                        end_date=bet.get('end_date', ''),
+                        slug=bet.get('slug', ''),
+                        strategy=cfg.get('strategy', 'hedge'),
+                    )
+                except Exception as ex:
+                    log.error(f"Signal failed: {ex}")
+
     _log(state, f"Cycle done. Bankroll: ${state['bankroll']:,.2f} | Active: {len(state['active_bets'])}", 'info')
     _w(BOT_STATE, state); return state
 
@@ -454,7 +478,7 @@ def _place_single_direction_orders(cands, slots, cfg, state, mode, active_market
                     'side':best_side,'odds':best_odds,'price':best_price,'stake':stake,
                     'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
                     'simulation':False,'order_id':oid,'end_date':m.get('end_date'),
-                    'slug':m.get('slug',''),'strategy':'single',
+                    'slug':m.get('slug',''),'strategy':'single','edge':best_edge,
                 })
             else:
                 _log(state, f"LIVE SINGLE failed: {res.get('error','?')}", 'error')
@@ -469,7 +493,7 @@ def _place_single_direction_orders(cands, slots, cfg, state, mode, active_market
                 'side':best_side,'odds':best_odds,'price':best_price,'stake':stake,
                 'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
                 'simulation':True,'end_date':m.get('end_date'),
-                'slug':m.get('slug',''),'strategy':'single',
+                'slug':m.get('slug',''),'strategy':'single','edge':best_edge,
             })
         placed += 1
 

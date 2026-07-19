@@ -734,6 +734,19 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
           <button class="btn btn-gold btn-sm" onclick="saveBotConfig()" style="flex:1">Save Bot Config</button>
         </div>
       </div>
+      <div class="card" style="margin-top:6px">
+        <div class="sec-lbl" style="margin-bottom:6px"><span>📡 Telegram Signals</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+          <div><label class="me-lbl">Bot Token</label><input class="me-inp" id="botTelegramToken" type="text" placeholder="123456:ABC-DEF..."></div>
+          <div><label class="me-lbl">Chat ID</label><input class="me-inp" id="botTelegramChatId" type="text" placeholder="-1001234567890"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="mode-toggle" id="botTelegramToggle" onclick="toggleTelegram()">
+            <span id="botTelegramIcon">⏸</span><div class="sw"></div>
+          </div>
+          <span style="font-size:10px;font-weight:700;color:var(--text-dim)" id="botTelegramLabel">Signals: OFF</span>
+        </div>
+      </div>
       <div class="card">
         <div class="sec-lbl" style="margin-bottom:8px"><span>Bot Performance</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -967,9 +980,9 @@ let lastHotIds=new Set();
 let botConfig={base_stake:50,recovery_factor:2.0,max_concurrent_bets:3,bankroll:2000,bot_enabled:false};
 let botState={bankroll:2000,pnl:0,active_bets:[],cycles:0,log:[]};
 const STRAT_DEFAULTS={
-  hedge:{base_stake:10,recovery_factor:2.0,max_concurrent:3,bankroll:1000,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:true},
-  single:{base_stake:10,recovery_factor:2.0,max_concurrent:1,bankroll:100,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:false},
-  market_making:{base_stake:10,recovery_factor:2.0,max_concurrent:3,bankroll:100,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:false},
+  hedge:{base_stake:10,recovery_factor:2.0,max_concurrent:3,bankroll:1000,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:true,telegram_signals:false},
+  single:{base_stake:10,recovery_factor:2.0,max_concurrent:1,bankroll:100,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:false,telegram_signals:false},
+  market_making:{base_stake:10,recovery_factor:2.0,max_concurrent:3,bankroll:100,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:false,telegram_signals:false},
 };
 
 // ── Fallback seed markets (used when backend /api/feed is unreachable) ──
@@ -1967,6 +1980,13 @@ async function loadBotConfig(){
   document.getElementById('botMartingaleToggle').classList.toggle('on', martingaleRecovery);
   document.getElementById('botMartingaleLabel').textContent = 'Martingale Recovery: ' + (martingaleRecovery ? 'ON' : 'OFF');
   document.getElementById('botMartingaleIcon').textContent = martingaleRecovery ? '▶' : '⏸';
+  document.getElementById('botTelegramToken').value=botConfig.telegram_bot_token || '';
+  document.getElementById('botTelegramChatId').value=botConfig.telegram_chat_id || '';
+  if (botConfig.telegram_signals === undefined) botConfig.telegram_signals = false;
+  telegramSignals = botConfig.telegram_signals;
+  document.getElementById('botTelegramToggle').classList.toggle('on', telegramSignals);
+  document.getElementById('botTelegramLabel').textContent = 'Signals: ' + (telegramSignals ? 'ON' : 'OFF');
+  document.getElementById('botTelegramIcon').textContent = telegramSignals ? '▶' : '⏸';
   onStrategyChange();
   document.getElementById('botAutoFundToggle').classList.toggle('on', autoFundEnabled);
   document.getElementById('botAutoFundLabel').textContent = autoFundEnabled ? 'ON' : 'OFF';
@@ -1990,6 +2010,9 @@ async function saveBotConfig(){
   botConfig.sport_filter=document.getElementById('botSportFilter').value;
   botConfig.auto_fund=autoFundEnabled;
   botConfig.martingale_recovery=martingaleRecovery;
+  botConfig.telegram_bot_token=document.getElementById('botTelegramToken').value;
+  botConfig.telegram_chat_id=document.getElementById('botTelegramChatId').value;
+  botConfig.telegram_signals=telegramSignals;
   
   // Sync back to main state!
   state.base_stake = botConfig.base_stake;
@@ -2673,6 +2696,15 @@ async function executeLiveOrder() {
 // ════════════════════════════════════════════════════════════════
 let autoFundEnabled = true;
 let martingaleRecovery = false;
+let telegramSignals = false;
+
+function toggleTelegram() {
+  telegramSignals = !telegramSignals;
+  document.getElementById('botTelegramToggle').classList.toggle('on', telegramSignals);
+  document.getElementById('botTelegramLabel').textContent = 'Signals: ' + (telegramSignals ? 'ON' : 'OFF');
+  document.getElementById('botTelegramIcon').textContent = telegramSignals ? '▶' : '⏸';
+  save();
+}
 
 function toggleMartingale() {
   martingaleRecovery = !martingaleRecovery;
