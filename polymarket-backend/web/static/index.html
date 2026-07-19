@@ -274,7 +274,7 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
 
 <!-- ═══════════════ 7 MAIN TABS ═══════════════ -->
 <div class="main-tabs">
-  <button class="mtab on" onclick="showMainTab('engine')">🎯 Trade Engine</button>
+  <button class="mtab" onclick="showMainTab('engine')">🎯 Trade Engine</button>
   <button class="mtab" onclick="showMainTab('feed')">📡 Polymarket Feed</button>
   <button class="mtab" onclick="showMainTab('tracker')">📋 Tracker</button>
   <button class="mtab" onclick="showMainTab('results')">📊 Results</button>
@@ -285,7 +285,7 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
 </div>
 
 <!-- ═══════════════ TAB 1: TRADE ENGINE ═══════════════ -->
-<div id="tab-engine" class="tab-panel on">
+<div id="tab-engine" class="tab-panel">
 
 <div class="settings-row">
   <div class="sg"><label>Base Stake (USDC)</label><input id="cfgStake" type="number" value="100" step="1" min="1"></div>
@@ -1023,6 +1023,7 @@ function showMainTab(id){
   const tabs=['engine','feed','tracker','results','martingale','reports','bot','wallet'];
   document.querySelectorAll('.mtab')[tabs.indexOf(id)].classList.add('on');
   document.getElementById('tab-'+id).classList.add('on');
+  localStorage.setItem('activeTab', id);
   if(id==='martingale') renderMartingaleDemo();
   if(id==='reports') renderReports();
   if(id==='bot') renderBotTab();
@@ -1402,6 +1403,7 @@ function selectFromFeed(id){
   }
 
   // Auto-switch to engine tab
+  // (intentional — user clicked a market in the feed)
   showMainTab('engine');
 }
 
@@ -2656,6 +2658,9 @@ async function init(){
   document.getElementById('dimToggle').classList.toggle('on',dimOn);
   document.getElementById('soundToggle').classList.toggle('on',soundOn);
   document.getElementById('soundIcon').textContent=soundOn?'🔔':'🔕';
+
+  const savedTab = localStorage.getItem('activeTab') || 'engine';
+  showMainTab(savedTab);
 
   await loadFeed();
   await loadBotConfig();
