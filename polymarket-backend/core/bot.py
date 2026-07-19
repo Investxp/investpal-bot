@@ -98,6 +98,7 @@ def _place_poly1271_hedge(m, stake_a, stake_b, pk, dw, state, cfg):
                 'simulation': False, 'order_id': oid, 'end_date': m.get('end_date'),
                 'token_id': token_ids[0 if side_label == 'A' else 1],
                 'order_type': 'poly1271',
+                'slug': m.get('slug', ''),
             })
         _log(state, f"POLY_1271 Hedge placed on {q[:30]}!", 'info')
         return {"orders": [res_a, res_b], "prices": [price_a, price_b], "stakes": [stake_a, stake_b]}
@@ -314,6 +315,7 @@ def run_cycle(markets):
                                 'placed': datetime.now().strftime('%H:%M'), 'ts': time.time(),
                                 'simulation': False, 'order_id': oid, 'end_date': m.get('end_date'),
                                 'order_type': 'standard',
+                                'slug': m.get('slug', ''),
                             })
                         _log(state, f"LIVE Hedge placed on {q[:30]}!", 'info')
                     else:
@@ -329,13 +331,15 @@ def run_cycle(markets):
                     'market_id': market_id, 'name': q, 'sport': m.get('sport', ''),
                     'side': 'A', 'odds': m.get('oA'), 'stake': stake_a,
                     'placed': datetime.now().strftime('%H:%M'), 'ts': time.time(),
-                    'simulation': True, 'end_date': m.get('end_date')
+                    'simulation': True, 'end_date': m.get('end_date'),
+                    'slug': m.get('slug', ''),
                 })
                 state['active_bets'].append({
                     'market_id': market_id, 'name': q, 'sport': m.get('sport', ''),
                     'side': 'B', 'odds': m.get('oB'), 'stake': stake_b,
                     'placed': datetime.now().strftime('%H:%M'), 'ts': time.time(),
-                    'simulation': True, 'end_date': m.get('end_date')
+                    'simulation': True, 'end_date': m.get('end_date'),
+                    'slug': m.get('slug', ''),
                 })
                 _log(state, f"[SIM] HEDGE on {q[:35]} | A: ${stake_a} @{m.get('oA')} | B: ${stake_b} @{m.get('oB')}", 'info')
         if not cands and active_events_count == 0:
