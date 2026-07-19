@@ -1,0 +1,87 @@
+[
+  {
+    "type": "bet_settled",
+    "message": "\ud83c\udfc6 Test Bet Settled: WIN on sxbet-hedge | PnL: +5.20 USDC",
+    "details": {
+      "line_id": "sxbet-hedge",
+      "outcome": "win",
+      "pnl": 5.2
+    },
+    "ts": "2026-06-21T15:57:32.225309Z",
+    "read": true
+  },
+  {
+    "type": "bet_settled",
+    "message": "\ud83c\udfc6 Test Bet Settled: WIN on sxbet-hedge | PnL: +5.20 USDC",
+    "details": {
+      "line_id": "sxbet-hedge",
+      "outcome": "win",
+      "pnl": 5.2
+    },
+    "ts": "2026-06-21T15:57:34.332878Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on MAINNET",
+    "details": {
+      "network": "mainnet"
+    },
+    "ts": "2026-06-21T22:18:41.429654Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on TESTNET",
+    "details": {
+      "network": "testnet"
+    },
+    "ts": "2026-06-21T22:27:35.800656Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on MAINNET",
+    "details": {
+      "network": "mainnet"
+    },
+    "ts": "2026-06-21T23:01:15.481644Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on TESTNET",
+    "details": {
+      "network": "testnet"
+    },
+    "ts": "2026-06-21T23:06:00.636721Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on MAINNET",
+    "details": {
+      "network": "mainnet"
+    },
+    "ts": "2026-06-21T23:23:41.403359Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on TESTNET",
+    "details": {
+      "network": "testnet"
+    },
+    "ts": "2026-06-28T15:08:34.440632Z",
+    "read": true
+  },
+  {
+    "type": "system_alert",
+    "message": "\u2699\ufe0f Network switched: Live runner active on MAINNET",
+    "details": {
+      "network": "mainnet"
+    },
+    "ts": "2026-07-19T17:38:15.709697Z",
+    "read": true
+  }
+]

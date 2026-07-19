@@ -1,11 +1,15 @@
 {
   "bot_enabled": true,
   "bot_mode": "simulation",
-  "base_stake": 10,
-  "recovery_factor": 2.5,
-  "max_concurrent": 3,
-  "bankroll": 10000,
+  "base_stake": 0.1,
+  "recovery_factor": 2,
+  "max_concurrent": 1,
+  "bankroll": 100,
   "balance_filter": 0.3,
   "interval_seconds": 60,
-  "max_concurrent_bets": 10
+  "order_type": "poly1271",
+  "auto_fund": true,
+  "min_pusd": 1,
+  "sport_filter": "",
+  "max_concurrent_bets": 2
 }

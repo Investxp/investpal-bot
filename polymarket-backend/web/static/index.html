@@ -691,13 +691,28 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div>
+            <label class="me-lbl">Strategy</label>
+            <select class="me-inp" id="botStrategy" style="width:100%" onchange="onStrategyChange()">
+              <option value="hedge">Hedge (Both Sides)</option>
+              <option value="single">Single Direction (Kelly)</option>
+              <option value="market_making">Market Making (Spread)</option>
+            </select>
+          </div>
+          <div>
             <label class="me-lbl">Order Type</label>
             <select class="me-inp" id="botOrderType" style="width:100%">
               <option value="standard">Standard (EOA)</option>
               <option value="poly1271">POLY_1271 (Deposit Wallet)</option>
             </select>
           </div>
-          <div></div>
+        </div>
+        <div id="kellyConfig" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label class="me-lbl">Kelly Fraction</label><input class="me-inp" id="botKellyFraction" type="number" value="0.25" step="0.05" min="0.05" max="1.0"></div>
+          <div><label class="me-lbl">Min Edge (%)</label><input class="me-inp" id="botMinEdge" type="number" value="5" step="1" min="1" max="50"></div>
+        </div>
+        <div id="mmConfig" style="display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><label class="me-lbl">Spread (per side)</label><input class="me-inp" id="botMmSpread" type="number" value="0.02" step="0.005" min="0.005" max="0.10"></div>
+          <div><label class="me-lbl">Max MM Positions</label><input class="me-inp" id="botMmMaxPos" type="number" value="3" step="1" min="1" max="10"></div>
         </div>
         </div>
         <div class="card" style="margin-top:8px;padding:10px;background:rgba(0,230,118,0.03);border-color:rgba(0,230,118,0.15)">
@@ -1894,6 +1909,11 @@ function renderBotLog(){
     || '<div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Bot initialized. Awaiting configuration.</span></div>';
 }
 
+function onStrategyChange(){
+  const s=document.getElementById('botStrategy').value;
+  document.getElementById('kellyConfig').style.display=s==='single'?'grid':'none';
+  document.getElementById('mmConfig').style.display=s==='market_making'?'grid':'none';
+}
 async function loadBotConfig(){
   try{
     const d=await apiGet('/api/bot/config');
@@ -1906,9 +1926,15 @@ async function loadBotConfig(){
   document.getElementById('botMode').value=botConfig.bot_mode || 'simulation';
   document.getElementById('botInterval').value=botConfig.interval_seconds || 60;
   document.getElementById('botOrderType').value=botConfig.order_type || 'standard';
+  document.getElementById('botStrategy').value=botConfig.strategy || 'hedge';
+  document.getElementById('botKellyFraction').value=botConfig.kelly_fraction || 0.25;
+  document.getElementById('botMinEdge').value=(botConfig.min_edge || 0.05) * 100;
+  document.getElementById('botMmSpread').value=botConfig.mm_spread || 0.02;
+  document.getElementById('botMmMaxPos').value=botConfig.mm_max_positions || 3;
   document.getElementById('botSportFilter').value=botConfig.sport_filter || '';
   if (botConfig.auto_fund === undefined) botConfig.auto_fund = true;
   autoFundEnabled = botConfig.auto_fund;
+  onStrategyChange();
   document.getElementById('botAutoFundToggle').classList.toggle('on', autoFundEnabled);
   document.getElementById('botAutoFundLabel').textContent = autoFundEnabled ? 'ON' : 'OFF';
   document.getElementById('botAutoFundIcon').textContent = autoFundEnabled ? '▶' : '⏸';
@@ -1923,6 +1949,11 @@ async function saveBotConfig(){
   botConfig.bot_mode=document.getElementById('botMode').value;
   botConfig.interval_seconds=parseInt(document.getElementById('botInterval').value)||60;
   botConfig.order_type=document.getElementById('botOrderType').value;
+  botConfig.strategy=document.getElementById('botStrategy').value;
+  botConfig.kelly_fraction=parseFloat(document.getElementById('botKellyFraction').value)||0.25;
+  botConfig.min_edge=(parseFloat(document.getElementById('botMinEdge').value)||5)/100;
+  botConfig.mm_spread=parseFloat(document.getElementById('botMmSpread').value)||0.02;
+  botConfig.mm_max_positions=parseInt(document.getElementById('botMmMaxPos').value)||3;
   botConfig.sport_filter=document.getElementById('botSportFilter').value;
   botConfig.auto_fund=autoFundEnabled;
   

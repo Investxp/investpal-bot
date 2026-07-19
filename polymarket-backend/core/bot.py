@@ -1,4 +1,4 @@
-import json, os, logging, time, random
+import json, os, logging, time, random, math
 from datetime import datetime, timezone, timedelta
 from core.polymarket import place_order, check_market_resolution, place_order_poly1271, get_deposit_wallet_balance, ensure_deposit_balance
 from core.martingale import get_state as get_main_state, _w as save_main_state
@@ -10,9 +10,11 @@ DATA      = os.path.join(os.path.dirname(__file__), '..', 'data')
 BOT_STATE = os.path.join(DATA, 'bot_state.json')
 BOT_CFG   = os.path.join(DATA, 'bot_config.json')
 
-D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'base_stake': 0.1, 'recovery_factor': 2.0,
-           'max_concurrent': 1, 'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 60,
-           'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0, 'sport_filter': ''}
+D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'strategy': 'hedge',
+           'base_stake': 0.1, 'recovery_factor': 2.0, 'max_concurrent': 1,
+           'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 60,
+           'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0, 'sport_filter': '',
+           'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3}
 D_STATE = {'bankroll': 100.0, 'pnl': 0.0, 'active_bets': [],
            'cycles': 0, 'wins': 0, 'losses': 0, 'log': [],
            'streak_a': 0, 'streak_b': 0}
@@ -85,6 +87,12 @@ def get_rec(oA, oB):
     except: pass
     return "SKIP"
 
+def _kelly_stake(edge_pct, odds, bankroll, fraction=0.25):
+    b = odds - 1.0
+    if b <= 0: return 0
+    kelly_pct = (edge_pct / 100.0) / b
+    return round(bankroll * min(kelly_pct * fraction, 0.15), 2)
+
 def _place_poly1271_hedge(m, stake_a, stake_b, pk, dw, state, cfg):
     token_ids = m.get('token_ids', [])
     if len(token_ids) < 2:
@@ -115,6 +123,17 @@ def _place_poly1271_hedge(m, stake_a, stake_b, pk, dw, state, cfg):
     _log(state, f"POLY_1271 Hedge failed: {err}", 'error')
     return None
 
+def _check_resolve_sim(bet, utc_now):
+    end_date_str = bet.get('end_date')
+    if end_date_str:
+        try:
+            dt = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+            if utc_now >= dt: return True
+        except: return True
+    else:
+        if time.time() - bet.get('ts', time.time()) > 600: return True
+    return False
+
 def run_cycle(markets):
     cfg   = get_config()
     state = get_bot_state()
@@ -128,6 +147,7 @@ def run_cycle(markets):
                 if r.ok: bet['slug'] = r.json().get('slug', '')
             except: pass
     state['cycles'] = state.get('cycles', 0) + 1
+    strategy = cfg.get('strategy', 'hedge')
     mode = cfg.get('bot_mode', 'simulation')
     order_type = cfg.get('order_type', 'standard')
     use_poly1271 = (order_type == 'poly1271' and mode == 'live')
@@ -135,7 +155,7 @@ def run_cycle(markets):
         _log(state, "Market cache empty. Warmup in progress.", "warn")
     state.setdefault('streak_a', 0)
     state.setdefault('streak_b', 0)
-    _log(state, f"Cycle #{state['cycles']} ({mode.upper()}/{order_type}) — Streaks: A={state['streak_a']} B={state['streak_b']} | {len(markets)} markets", 'info')
+    _log(state, f"Cycle #{state['cycles']} ({mode.upper()}/{strategy}) — | {len(markets)} markets", 'info')
     active_bets = state.get('active_bets', [])
     still_active = []
     grouped_bets = {}
@@ -239,6 +259,7 @@ def run_cycle(markets):
     active_events_count = len(active_market_ids)
     max_concurrent = int(cfg.get('max_concurrent', 3) or 3)
     slots_available = max_concurrent - active_events_count
+
     if slots_available > 0 and mode == 'live' and use_poly1271:
         pk = get_pk()
         dw = get_funder()
@@ -259,6 +280,7 @@ def run_cycle(markets):
                     _log(state, f"Funded! Balance: {fund_res.get('balance_after', 0)/1e6:.4f} pUSD", 'info')
                 else:
                     _log(state, f"Auto-fund failed: {fund_res.get('error', 'unknown')}", 'error')
+
     if slots_available > 0:
         cutoff = utc_now + timedelta(hours=72)
         cands = []
@@ -280,87 +302,196 @@ def run_cycle(markets):
                         cands.append(m)
             except: continue
         cands.sort(key=lambda x: x.get('end_date', '9999'))
-        for m in cands[:slots_available]:
-            market_id = m.get('market_id')
-            main_s = get_main_state()
-            factor = float(cfg.get('factor', main_s.get('factor', 2.1)))
-            base_stake = float(cfg.get('base_stake', main_s.get('base_stake', 10.0)))
-            max_steps = int(cfg.get('max_steps', main_s.get('max_steps', 6)))
-            stake_a = round(base_stake * (factor ** min(main_s.get('streak_a', 0), max_steps)), 2)
-            stake_b = round(base_stake * (factor ** min(main_s.get('streak_b', 0), max_steps)), 2)
-            total_stake = round(stake_a + stake_b, 2)
-            if mode == 'simulation':
-                if main_s.get('bankroll', 200.0) < total_stake:
-                    _log(state, f"Insufficient demo bankroll: {total_stake} USDC needed", 'error')
-                    break
-            if mode == 'live':
-                pk = get_pk()
-                if not pk:
-                    _log(state, 'Live: No private key configured.', 'error')
-                    break
-                token_ids = m.get('token_ids', [])
-                if len(token_ids) < 2:
-                    _log(state, 'Live: Market missing token IDs', 'error')
-                elif use_poly1271:
-                    dw = get_funder()
-                    if not dw:
-                        _log(state, 'POLY_1271: No deposit wallet configured.', 'error')
-                    else:
-                        result = _place_poly1271_hedge(m, stake_a, stake_b, pk, dw, state, cfg)
-                        if result:
-                            main_s = get_main_state()
-                            main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - total_stake, 2)
-                            save_main_state(main_s)
-                            state['bankroll'] = main_s['bankroll']
-                else:
-                    price_a = m.get('yes_price', 0.5)
-                    price_b = m.get('no_price', 0.5)
-                    funder = get_funder()
-                    _log(state, f"Placing LIVE HEDGE: A @{price_a} (${stake_a}) & B @{price_b} (${stake_b})", 'info')
-                    res_a = place_order(token_id=token_ids[0], side='BUY', price=price_a, size_usdc=stake_a, private_key=pk, funder=funder)
-                    res_b = place_order(token_id=token_ids[1], side='BUY', price=price_b, size_usdc=stake_b, private_key=pk, funder=funder)
-                    if res_a.get('ok') and res_b.get('ok'):
-                        q = (m.get('question') or m.get('name', ''))[:60]
-                        for side_label, res, st, pr in [('A', res_a, stake_a, price_a), ('B', res_b, stake_b, price_b)]:
-                            oid = res.get('order_id', '')
-                            position_manager.record_order(token_ids[0 if side_label == 'A' else 1], 'BUY', pr, st, oid, m)
-                            state['active_bets'].append({
-                                'market_id': market_id, 'name': q, 'sport': m.get('sport', ''),
-                                'side': side_label, 'odds': m.get(f'o{side_label}'), 'price': pr, 'stake': st,
-                                'placed': datetime.now().strftime('%H:%M'), 'ts': time.time(),
-                                'simulation': False, 'order_id': oid, 'end_date': m.get('end_date'),
-                                'order_type': 'standard',
-                                'slug': m.get('slug', ''),
-                            })
-                        _log(state, f"LIVE Hedge placed on {q[:30]}!", 'info')
-                    else:
-                        err = f"A: {res_a.get('error') or 'OK'} | B: {res_b.get('error') or 'OK'}"
-                        _log(state, f"LIVE Hedge failed: {err}", 'error')
-            else:
-                main_s = get_main_state()
-                main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - total_stake, 2)
-                save_main_state(main_s)
-                state['bankroll'] = main_s['bankroll']
-                q = (m.get('question') or m.get('name', ''))[:60]
-                state['active_bets'].append({
-                    'market_id': market_id, 'name': q, 'sport': m.get('sport', ''),
-                    'side': 'A', 'odds': m.get('oA'), 'stake': stake_a,
-                    'placed': datetime.now().strftime('%H:%M'), 'ts': time.time(),
-                    'simulation': True, 'end_date': m.get('end_date'),
-                    'slug': m.get('slug', ''),
-                })
-                state['active_bets'].append({
-                    'market_id': market_id, 'name': q, 'sport': m.get('sport', ''),
-                    'side': 'B', 'odds': m.get('oB'), 'stake': stake_b,
-                    'placed': datetime.now().strftime('%H:%M'), 'ts': time.time(),
-                    'simulation': True, 'end_date': m.get('end_date'),
-                    'slug': m.get('slug', ''),
-                })
-                _log(state, f"[SIM] HEDGE on {q[:35]} | A: ${stake_a} @{m.get('oA')} | B: ${stake_b} @{m.get('oB')}", 'info')
-        if not cands and active_events_count == 0:
-            _log(state, "No upcoming non-skip Polymarket sports events in window.", "debug")
+
+        if strategy == 'market_making':
+            _place_market_making_orders(cands, slots_available, cfg, state, mode, active_market_ids, utc_now)
+        elif strategy == 'single':
+            _place_single_direction_orders(cands, slots_available, cfg, state, mode, active_market_ids, utc_now)
+        else:
+            _place_hedge_orders(cands, slots_available, cfg, state, mode, active_market_ids, utc_now)
+
     _log(state, f"Cycle done. Bankroll: ${state['bankroll']:,.2f} | Active: {len(state['active_bets'])}", 'info')
     _w(BOT_STATE, state); return state
+
+def _place_hedge_orders(cands, slots, cfg, state, mode, active_market_ids, utc_now):
+    for m in cands[:slots]:
+        market_id = m.get('market_id')
+        main_s = get_main_state()
+        factor = float(cfg.get('recovery_factor', 2.1))
+        base_stake = float(cfg.get('base_stake', 10.0))
+        max_steps = int(cfg.get('max_steps', 6))
+        stake_a = round(base_stake * (factor ** min(main_s.get('streak_a', 0), max_steps)), 2)
+        stake_b = round(base_stake * (factor ** min(main_s.get('streak_b', 0), max_steps)), 2)
+        total_stake = round(stake_a + stake_b, 2)
+        if mode == 'simulation' and main_s.get('bankroll', 200.0) < total_stake:
+            _log(state, f"Insufficient demo bankroll: {total_stake} USDC needed", 'error')
+            break
+        order_type = cfg.get('order_type', 'standard')
+        if mode == 'live' and order_type == 'poly1271':
+            pk = get_pk(); dw = get_funder()
+            if pk and dw:
+                result = _place_poly1271_hedge(m, stake_a, stake_b, pk, dw, state, cfg)
+                if result:
+                    main_s = get_main_state()
+                    main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - total_stake, 2)
+                    save_main_state(main_s)
+                    state['bankroll'] = main_s['bankroll']
+        elif mode == 'live':
+            pk = get_pk()
+            if pk and len(m.get('token_ids',[])) >= 2:
+                tids = m['token_ids']
+                pa = m.get('yes_price',0.5); pb = m.get('no_price',0.5)
+                ra = place_order(token_id=tids[0],side='BUY',price=pa,size_usdc=stake_a,private_key=pk)
+                rb = place_order(token_id=tids[1],side='BUY',price=pb,size_usdc=stake_b,private_key=pk)
+                if ra.get('ok') and rb.get('ok'):
+                    q=(m.get('question') or m.get('name',''))[:60]
+                    for sl,r,st,pr in [('A',ra,stake_a,pa),('B',rb,stake_b,pb)]:
+                        oid=r.get('order_id','')
+                        position_manager.record_order(tids[0 if sl=='A' else 1],'BUY',pr,st,oid,m)
+                        state['active_bets'].append({
+                            'market_id':market_id,'name':q,'sport':m.get('sport',''),
+                            'side':sl,'odds':m.get(f'o{sl}'),'price':pr,'stake':st,
+                            'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
+                            'simulation':False,'order_id':oid,'end_date':m.get('end_date'),
+                            'slug':m.get('slug',''),
+                        })
+        else:
+            main_s = get_main_state()
+            main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - total_stake, 2)
+            save_main_state(main_s)
+            state['bankroll'] = main_s['bankroll']
+            q=(m.get('question') or m.get('name',''))[:60]
+            for sl,st in [('A',stake_a),('B',stake_b)]:
+                state['active_bets'].append({
+                    'market_id':market_id,'name':q,'sport':m.get('sport',''),
+                    'side':sl,'odds':m.get(f'o{sl}'),'stake':st,
+                    'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
+                    'simulation':True,'end_date':m.get('end_date'),
+                    'slug':m.get('slug',''),
+                })
+            _log(state, f"[SIM] HEDGE on {q[:35]} | A: ${stake_a} @{m.get('oA')} | B: ${stake_b} @{m.get('oB')}", 'info')
+
+def _place_single_direction_orders(cands, slots, cfg, state, mode, active_market_ids, utc_now):
+    kelly_fraction = float(cfg.get('kelly_fraction', 0.25))
+    min_edge = float(cfg.get('min_edge', 0.05))
+    bankroll = state.get('bankroll', cfg.get('bankroll', 100.0))
+    placed = 0
+    for m in cands:
+        if placed >= slots: break
+        oA = m.get('oA', 0); oB = m.get('oB', 0)
+        yp = m.get('yes_price', 0.5); np = m.get('no_price', 0.5)
+        ipA = 1.0 / oA if oA else 0.5
+        ipB = 1.0 / oB if oB else 0.5
+        edgeA = abs(yp - ipA)
+        edgeB = abs(np - ipB)
+        best_side = 'A' if edgeA >= edgeB else 'B'
+        best_edge = max(edgeA, edgeB)
+        best_price = yp if best_side == 'A' else np
+        best_odds = oA if best_side == 'A' else oB
+        if best_edge < min_edge:
+            _log(state, f"SKIP {m.get('slug','?')[:30]}: edge {best_edge:.3f} < min {min_edge}", 'debug')
+            continue
+        stake = _kelly_stake(best_edge * 100, best_odds, bankroll, kelly_fraction)
+        if stake < 0.01: continue
+        bankroll -= stake
+        market_id = m.get('market_id')
+        q = (m.get('question') or m.get('name', ''))[:60]
+        _log(state, f"[{mode.upper()}] SINGLE {best_side} on {q[:35]} — ${stake} @{best_price} (edge {best_edge:.3f})", 'info')
+        if mode == 'live':
+            pk = get_pk()
+            if not pk: break
+            tids = m.get('token_ids', [])
+            if len(tids) < 2: continue
+            tid = tids[0] if best_side == 'A' else tids[1]
+            fn = place_order_poly1271 if cfg.get('order_type') == 'poly1271' else place_order
+            if cfg.get('order_type') == 'poly1271':
+                dw = get_funder()
+                if not dw: continue
+                res = fn(token_id=tid, side='BUY', price=best_price, size_usdc=stake, private_key=pk, deposit_wallet=dw)
+            else:
+                res = fn(token_id=tid, side='BUY', price=best_price, size_usdc=stake, private_key=pk)
+            if res.get('ok'):
+                oid = res.get('order_id', '')
+                position_manager.record_order(tid, 'BUY', best_price, stake, oid, m)
+                state['active_bets'].append({
+                    'market_id':market_id,'name':q,'sport':m.get('sport',''),
+                    'side':best_side,'odds':best_odds,'price':best_price,'stake':stake,
+                    'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
+                    'simulation':False,'order_id':oid,'end_date':m.get('end_date'),
+                    'slug':m.get('slug',''),'strategy':'single',
+                })
+            else:
+                _log(state, f"LIVE SINGLE failed: {res.get('error','?')}", 'error')
+                bankroll += stake
+        else:
+            main_s = get_main_state()
+            main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - stake, 2)
+            save_main_state(main_s)
+            state['bankroll'] = main_s['bankroll']
+            state['active_bets'].append({
+                'market_id':market_id,'name':q,'sport':m.get('sport',''),
+                'side':best_side,'odds':best_odds,'price':best_price,'stake':stake,
+                'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
+                'simulation':True,'end_date':m.get('end_date'),
+                'slug':m.get('slug',''),'strategy':'single',
+            })
+        placed += 1
+
+def _place_market_making_orders(cands, slots, cfg, state, mode, active_market_ids, utc_now):
+    spread = float(cfg.get('mm_spread', 0.02))
+    max_pos = int(cfg.get('mm_max_positions', 3))
+    bankroll = state.get('bankroll', cfg.get('bankroll', 100.0))
+    stake_per_side = min(bankroll * 0.05, 10.0)
+    placed = 0
+    for m in cands:
+        if placed >= min(slots, max_pos): break
+        yp = m.get('yes_price', 0.5); np = m.get('no_price', 0.5)
+        y_bid = round(max(0.001, yp - spread), 3)
+        n_bid = round(max(0.001, np - spread), 3)
+        market_id = m.get('market_id')
+        q = (m.get('question') or m.get('name', ''))[:60]
+        _log(state, f"[{mode.upper()}] MM {q[:35]} — Bid YES @{y_bid} Bid NO @{n_bid} | ${stake_per_side} each", 'info')
+        if mode == 'live':
+            pk = get_pk()
+            if not pk: break
+            tids = m.get('token_ids', [])
+            if len(tids) < 2: continue
+            fn = place_order_poly1271 if cfg.get('order_type') == 'poly1271' else place_order
+            for label, tid, p in [('A', tids[0], y_bid), ('B', tids[1], n_bid)]:
+                if cfg.get('order_type') == 'poly1271':
+                    dw = get_funder()
+                    if not dw: continue
+                    res = fn(token_id=tid, side='BUY', price=p, size_usdc=stake_per_side, private_key=pk, deposit_wallet=dw)
+                else:
+                    res = fn(token_id=tid, side='BUY', price=p, size_usdc=stake_per_side, private_key=pk)
+                if res.get('ok'):
+                    oid = res.get('order_id', '')
+                    position_manager.record_order(tid, 'BUY', p, stake_per_side, oid, m)
+                    state['active_bets'].append({
+                        'market_id':market_id,'name':q,'sport':m.get('sport',''),
+                        'side':label,'odds':1.0/p,'price':p,'stake':stake_per_side,
+                        'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
+                        'simulation':False,'order_id':oid,'end_date':m.get('end_date'),
+                        'slug':m.get('slug',''),'strategy':'market_making',
+                    })
+                else:
+                    _log(state, f"MM {label} failed: {res.get('error','?')}", 'error')
+        else:
+            main_s = get_main_state()
+            total_cost = stake_per_side * 2
+            main_s['bankroll'] = round(main_s.get('bankroll', 200.0) - total_cost, 2)
+            save_main_state(main_s)
+            state['bankroll'] = main_s['bankroll']
+            for label, p in [('A', y_bid), ('B', n_bid)]:
+                state['active_bets'].append({
+                    'market_id':market_id,'name':q,'sport':m.get('sport',''),
+                    'side':label,'odds':1.0/p,'price':p,'stake':stake_per_side,
+                    'placed':datetime.now().strftime('%H:%M'),'ts':time.time(),
+                    'simulation':True,'end_date':m.get('end_date'),
+                    'slug':m.get('slug',''),'strategy':'market_making',
+                })
+            _log(state, f"[SIM] MM on {q[:35]} — YES ${stake_per_side} @{y_bid} NO ${stake_per_side} @{n_bid}", 'info')
+        placed += 1
 
 def reset_bot():
     cfg = get_config()

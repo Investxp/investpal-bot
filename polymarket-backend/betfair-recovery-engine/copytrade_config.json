@@ -1,0 +1,10 @@
+{
+    "enabled": true,
+    "user_multiplier": 1.0,
+    "master_wallet_address": "0xc0A0c47B4C62112D9AaC1265a59676e59AdA728F",
+    "follower_wallet_address": "0xc0a0c47b4c62112d9aac1265a59676e59ada728f",
+    "auto_execution": true,
+    "follower_vault_address": "",
+    "allow_in_play": true,
+    "network": "mainnet"
+}

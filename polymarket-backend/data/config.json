@@ -2,12 +2,12 @@
   "base_stake": 10,
   "factor": 2.1,
   "max_steps": 6,
-  "bankroll": 10000,
+  "bankroll": 100,
   "alert_mins": 60,
   "balance_filter": 0.3,
   "martingale": {
-    "base_stake_fixed": 10,
-    "factor": 2.5,
-    "max_steps": 10
+    "base_stake_fixed": 0.1,
+    "factor": 2,
+    "max_steps": 2
   }
 }
