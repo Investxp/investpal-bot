@@ -11,11 +11,32 @@ BOT_STATE = os.path.join(DATA, 'bot_state.json')
 BOT_CFG   = os.path.join(DATA, 'bot_config.json')
 
 D_CFG   = {'bot_enabled': False, 'bot_mode': 'simulation', 'strategy': 'hedge',
-           'base_stake': 0.1, 'recovery_factor': 2.0, 'max_concurrent': 1,
-           'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 60,
+           'base_stake': 10, 'recovery_factor': 2.0, 'max_concurrent': 3,
+           'bankroll': 100.0, 'balance_filter': 0.30, 'interval_seconds': 14400,
            'order_type': 'poly1271', 'auto_fund': True, 'min_pusd': 1.0, 'sport_filter': '',
-            'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
-            'martingale_recovery': False}
+           'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+           'martingale_recovery': False}
+
+STRAT_DEFAULTS = {
+    'hedge': {
+        'base_stake': 10, 'recovery_factor': 2.0, 'max_concurrent': 3,
+        'bankroll': 1000.0, 'interval_seconds': 14400,
+        'martingale_recovery': True,
+        'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+    },
+    'single': {
+        'base_stake': 10, 'recovery_factor': 2.0, 'max_concurrent': 1,
+        'bankroll': 100.0, 'interval_seconds': 14400,
+        'martingale_recovery': False,
+        'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+    },
+    'market_making': {
+        'base_stake': 10, 'recovery_factor': 2.0, 'max_concurrent': 3,
+        'bankroll': 100.0, 'interval_seconds': 14400,
+        'martingale_recovery': False,
+        'kelly_fraction': 0.25, 'min_edge': 0.05, 'mm_spread': 0.02, 'mm_max_positions': 3,
+    },
+}
 D_STATE = {'bankroll': 100.0, 'pnl': 0.0, 'active_bets': [],
            'cycles': 0, 'wins': 0, 'losses': 0, 'log': [],
            'streak_a': 0, 'streak_b': 0}
@@ -30,7 +51,12 @@ def _w(f, d):
     with open(f, 'w') as fp: json.dump(d, fp, indent=2)
 
 def get_config():    return _r(BOT_CFG,   D_CFG)
-def save_config(c):  _w(BOT_CFG, {**D_CFG, **c})
+def save_config(c):
+    existing = get_config()
+    strategy = c.get('strategy', existing.get('strategy', 'hedge'))
+    sd = STRAT_DEFAULTS.get(strategy, {})
+    merged = {**D_CFG, **sd, **existing, **c}
+    _w(BOT_CFG, merged)
 def get_bot_state():
     state = _r(BOT_STATE, D_STATE)
     import requests as _req

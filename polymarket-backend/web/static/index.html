@@ -966,6 +966,11 @@ let dimOn=false;
 let lastHotIds=new Set();
 let botConfig={base_stake:50,recovery_factor:2.0,max_concurrent_bets:3,bankroll:2000,bot_enabled:false};
 let botState={bankroll:2000,pnl:0,active_bets:[],cycles:0,log:[]};
+const STRAT_DEFAULTS={
+  hedge:{base_stake:10,recovery_factor:2.0,max_concurrent:3,bankroll:1000,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:true},
+  single:{base_stake:10,recovery_factor:2.0,max_concurrent:1,bankroll:100,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:false},
+  market_making:{base_stake:10,recovery_factor:2.0,max_concurrent:3,bankroll:100,interval_seconds:14400,kelly_fraction:0.25,min_edge:0.05,mm_spread:0.02,mm_max_positions:3,martingale_recovery:false},
+};
 
 // ── Fallback seed markets (used when backend /api/feed is unreachable) ──
 const FALLBACK_MARKETS = [
@@ -1921,6 +1926,21 @@ function onStrategyChange(){
   const s=document.getElementById('botStrategy').value;
   document.getElementById('kellyConfig').style.display=s==='single'?'grid':'none';
   document.getElementById('mmConfig').style.display=s==='market_making'?'grid':'none';
+  const d=STRAT_DEFAULTS[s];
+  if(!d)return;
+  document.getElementById('botBaseStake').value=d.base_stake;
+  document.getElementById('botRecoveryFactor').value=d.recovery_factor;
+  document.getElementById('botMaxConcurrent').value=d.max_concurrent;
+  document.getElementById('botBankroll').value=d.bankroll;
+  document.getElementById('botKellyFraction').value=d.kelly_fraction;
+  document.getElementById('botMinEdge').value=d.min_edge*100;
+  document.getElementById('botMmSpread').value=d.mm_spread;
+  document.getElementById('botMmMaxPos').value=d.mm_max_positions;
+  martingaleRecovery=d.martingale_recovery;
+  document.getElementById('botMartingaleToggle').classList.toggle('on',martingaleRecovery);
+  document.getElementById('botMartingaleLabel').textContent='Martingale Recovery: '+(martingaleRecovery?'ON':'OFF');
+  document.getElementById('botMartingaleIcon').textContent=martingaleRecovery?'▶':'⏸';
+  document.getElementById('botInterval').value=d.interval_seconds;
 }
 async function loadBotConfig(){
   try{
