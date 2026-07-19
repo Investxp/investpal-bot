@@ -272,3 +272,59 @@ These apply regardless of strategy:
 | `bankroll` | `100.0` | Total capital allocation for the bot |
 | `martingale_recovery` | `false` | Enable martingale compounding for Single/MM |
 | `recovery_factor` | `2.0` | Multiplier per consecutive loss (when recovery is on) |
+
+---
+
+## Roadmap — Getting Started with $100
+
+### Step 1: Fund the EOA
+
+Send **$100 USDC** on Polygon mainnet to EOA:
+```
+0xf6B58dE5Cb1c736C3af6cff1e2817B4F2A84a344
+```
+The **deposit wallet** (`POLYMARKET_FUNDER_ADDRESS`) stays at its current value:
+```
+0x74Ba73A15F217C82bC57fFE92A9ba06e1CB6eF69
+```
+These are two different wallets and both are needed. Do not change the funder address.
+
+EOA already has ~$7.90 MATIC — enough for gas.
+
+### Step 2: Set environment on Render
+
+| Variable | Value |
+|---|---|
+| `POLYMARKET_PRIVATE_KEY` | Private key for `0xf6B58d...` (sync: false) |
+| `POLYMARKET_FUNDER_ADDRESS` | `0x74Ba73A15F217C82bC57fFE92A9ba06e1CB6eF69` |
+| `POLYMARKET_USE_TOR` | `true` |
+
+### Step 3: Configure bot
+
+1. Go to **`https://investpal-bot.onrender.com`** → Bot tab
+2. Strategy → **Single Direction (Kelly)** (fields auto-populate)
+3. Bot Mode → **Simulation**
+4. Click **Save Bot Config**, then enable the bot
+
+### Step 4: Run simulation for 1 week
+
+Let the bot cycle every 4 hours. Check:
+- Does it find markets with edge > 5%?
+- What's the simulated win rate?
+- Are there any 403 geo-block errors in the log?
+
+### Step 5: Flip to Live
+
+If simulation looks consistent:
+1. Change Bot Mode → **Live**
+2. Save and enable
+
+The auto-fund system pushes $2 from EOA → deposit wallet on the first cycle, then top-ups as needed.
+
+### Step 6: Revisit
+
+After 2–4 weeks of live trading:
+- Review P&L and drawdown
+- Adjust `kelly_fraction` or `min_edge` if needed
+- Once bankroll hits $300–500, consider scaling to 2 concurrent positions or trying Hedge
+- Revisit this guide for the next level

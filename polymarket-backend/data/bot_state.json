@@ -27,10 +27,40 @@
       "end_date": "2026-07-19T22:15:00Z"
     }
   ],
-  "cycles": 1322,
+  "cycles": 1325,
   "wins": 16,
   "losses": 28,
   "log": [
+    {
+      "time": "00:01:49",
+      "msg": "Cycle done. Bankroll: $98.53 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "00:01:49",
+      "msg": "Cycle #1325 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2909 markets",
+      "type": "info"
+    },
+    {
+      "time": "00:00:48",
+      "msg": "Cycle done. Bankroll: $98.53 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "00:00:48",
+      "msg": "Cycle #1324 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2909 markets",
+      "type": "info"
+    },
+    {
+      "time": "23:59:48",
+      "msg": "Cycle done. Bankroll: $98.53 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "23:59:48",
+      "msg": "Cycle #1323 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2909 markets",
+      "type": "info"
+    },
     {
       "time": "23:58:48",
       "msg": "Cycle done. Bankroll: $98.53 | Active: 2",
@@ -499,36 +529,6 @@
     {
       "time": "23:12:39",
       "msg": "Cycle #1276 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2903 markets",
-      "type": "info"
-    },
-    {
-      "time": "23:11:39",
-      "msg": "Cycle done. Bankroll: $98.53 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "23:11:39",
-      "msg": "Cycle #1275 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2929 markets",
-      "type": "info"
-    },
-    {
-      "time": "23:10:39",
-      "msg": "Cycle done. Bankroll: $98.53 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "23:10:39",
-      "msg": "[SIM] HEDGE on Map 3 Total Rounds: Over/Under 20.5 | A: $0.1 @2.02 | B: $0.21 @1.98",
-      "type": "info"
-    },
-    {
-      "time": "23:10:39",
-      "msg": "[SIM] Resolved: San Francisco Giants vs. Seattle Mariners: 1s | A:WON \u2713 (+0.19 USDC), B:LOST \u2717 (-0.10 USDC) | Net PnL: +0.09 USDC (Winner: YES)",
-      "type": "info"
-    },
-    {
-      "time": "23:10:39",
-      "msg": "Cycle #1274 (SIMULATION/poly1271) \u2014 Streaks: A=1 B=0 | 2929 markets",
       "type": "info"
     }
   ],
