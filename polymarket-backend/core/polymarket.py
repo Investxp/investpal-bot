@@ -40,7 +40,8 @@ def get_proxy():
     if env_proxy: return env_proxy
     try:
         with open(PROXY_FILE) as f: return json.load(f).get("proxy_url","") or ""
-    except: return ""
+    except Exception:
+        return ""
 
 def set_proxy(url):
     os.makedirs(DATA_DIR,exist_ok=True)
@@ -203,14 +204,16 @@ def fetch_clob_price(token_id):
             if r.ok: out[side]=float(r.json().get("price",0.5))
         if out["buy"] and out["sell"]: out["mid"]=round((out["buy"]+out["sell"])/2,4)
         elif out["buy"]: out["mid"]=out["buy"]
-    except: pass
+    except Exception:
+        pass
     return out
 
 def fetch_orderbook(token_id):
     try:
         r=S.get(f"{_clob()}/book",params={"token_id":token_id},timeout=10)
         r.raise_for_status(); return r.json()
-    except: return {}
+    except Exception:
+        return {}
 
 def fetch_positions(addr):
     try:
@@ -224,7 +227,8 @@ def _parse_end(end_date):
     try:
         dt=datetime.fromisoformat(end_date.replace("Z","+00:00"))
         return dt.strftime("%H:%M"),dt.strftime("%a %d %b")
-    except: return end_date[11:16] if len(end_date)>16 else "-",end_date[:10]
+    except Exception:
+        return end_date[11:16] if len(end_date)>16 else "-",end_date[:10]
 
 def _p2o(p):
     if p<=0.001: return 999.0
@@ -258,16 +262,19 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
         outcomes=raw.get("outcomes",[])
         if isinstance(outcomes,str):
             try: outcomes=json.loads(outcomes)
-            except: outcomes=["Yes","No"]
+            except Exception:
+                outcomes=["Yes","No"]
         if len(outcomes)<2: return None
         prices_raw=raw.get("outcomePrices",[])
         if isinstance(prices_raw,str):
             try: prices_raw=json.loads(prices_raw)
-            except: prices_raw=["0.5","0.5"]
+            except Exception:
+                prices_raw=["0.5","0.5"]
         prices=[]
         for p in prices_raw[:2]:
             try: prices.append(float(p))
-            except: prices.append(0.5)
+            except Exception:
+                prices.append(0.5)
         while len(prices)<2: prices.append(0.5)
         yp=max(0.001,min(0.999,prices[0])); np=max(0.001,min(0.999,prices[1]))
         yo=_p2o(yp); no=_p2o(np)
@@ -277,7 +284,8 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
         tids_raw=raw.get("clobTokenIds",raw.get("clob_token_ids",[]))
         if isinstance(tids_raw, str):
             try: tids=json.loads(tids_raw)
-            except: tids=[]
+            except Exception:
+                tids=[]
         elif isinstance(tids_raw, list):
             tids=tids_raw
         else:
@@ -390,7 +398,8 @@ def get_cached():
                 log.info("Cache >1h old, clearing for fresh fetch")
                 return []
         return d.get("markets",[])
-    except: return []
+    except Exception:
+        return []
 
 def get_cache_age_minutes():
     try:
@@ -399,7 +408,8 @@ def get_cache_age_minutes():
         if not updated: return 999
         dt=datetime.fromisoformat(updated.replace("Z","+00:00"))
         return (datetime.now(timezone.utc)-dt).total_seconds()/60
-    except: return 999
+    except Exception:
+        return 999
 
 def run_poly_loop(stop_event,interval=90):
     while not stop_event.is_set():
@@ -685,7 +695,7 @@ def approve_usdc(private_key, amount=100):
         gas_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}, timeout=30).json()
         if "error" in gas_r: return {"ok": False, "error": f"RPC gas: {gas_r['error']}"}
         gas_price = int(gas_r["result"], 16)
-        tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price,"chainId":137}
+        tx = {"from":addr,"to":usdc,"data":data,"nonce":nonce,"gasPrice":gas_price,"chainId":chain_id()}
         gas_est = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_estimateGas","params":[tx],"id":1}, timeout=30).json()
         tx["gas"] = gas_est.get("result", 100000)
         signed = acct.sign_transaction(tx)
@@ -862,8 +872,18 @@ def _send_tx(to, data, private_key, value=0, gas_limit=None):
     if "error" in send:
         raise Exception(f"RPC send: {send['error']}")
     tx_hash = send.get("result", "")
-    log.info(f"Tx sent: {tx_hash[:66]}")
-    return tx_hash
+    log.info(f"Tx sent: {tx_hash[:66]}, waiting for confirmation...")
+    for _ in range(90):
+        time.sleep(1)
+        rc = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":[tx_hash],"id":1}, timeout=10).json()
+        receipt = rc.get("result")
+        if receipt:
+            status = int(receipt.get("status", "0x0"), 16)
+            if status == 1:
+                log.info(f"Tx confirmed: {tx_hash[:66]}")
+                return tx_hash
+            raise Exception(f"Tx reverted: {tx_hash[:66]}")
+    raise Exception(f"Tx timeout waiting for confirmation: {tx_hash[:66]}")
 
 def _erc20_approve_calldata(spender, amount=10**6):
     """Encode ERC-20 approve() calldata."""
@@ -905,7 +925,7 @@ def swap_native_usdc_for_usdce(private_key, amount_usdc=1):
     Account.enable_unaudited_hdwallet_features()
     acct = Account.from_key(private_key)
     addr = acct.address
-    amt = int(int(amount_usdc) * 10**6)
+    amt = int(amount_usdc * 10**6)
 
     usdc_n = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
     usdc_e = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
@@ -1074,7 +1094,7 @@ def _round_tick(price):
     tick = 0.0025
     return round(price / tick) * tick
 
-def _build_poly1271_order(token_id, side, price, size_usdc, deposit_wallet, neg_risk=False):
+def _build_poly1271_order(token_id, side, price, size_usdc, deposit_wallet, neg_risk=False, private_key=None):
     """Build a fully signed POLY_1271 order payload using the installed SDK."""
     from py_clob_client_v2.order_utils import ExchangeOrderBuilderV2, Side as SDK_Side
     from py_clob_client_v2.order_utils.model.order_data_v2 import OrderDataV2
@@ -1083,7 +1103,7 @@ def _build_poly1271_order(token_id, side, price, size_usdc, deposit_wallet, neg_
     Account.enable_unaudited_hdwallet_features()
     import time, math
 
-    pk = os.getenv("POLYMARKET_PRIVATE_KEY", "")
+    pk = private_key or os.getenv("POLYMARKET_PRIVATE_KEY", "")
     if not pk:
         raise Exception("No private key for order signing")
 
@@ -1271,7 +1291,7 @@ def place_order_poly1271(token_id, side, price, size_usdc, private_key, deposit_
         log.info(f"neg_risk={neg_risk}")
 
         # Build fully signed order via SDK
-        signed = _build_poly1271_order(token_id, side, price, size_usdc, deposit_wallet, neg_risk)
+        signed = _build_poly1271_order(token_id, side, price, size_usdc, deposit_wallet, neg_risk, private_key)
         salt = int(signed.salt)
         ts_ms = int(signed.timestamp)
         maker_amount_str = signed.makerAmount
@@ -1337,7 +1357,7 @@ def get_deposit_wallet_balance(deposit_wallet):
     try:
         import requests as req
         rpc = _rpc()
-        pusd = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
+        pusd = V2_COLLATERAL
         sel = "0x70a08231" + deposit_wallet[2:].lower().zfill(64)
         r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_call","params":[{"to": pusd, "data": sel}, "latest"],"id":1}, timeout=10)
         if r.ok:
@@ -1353,14 +1373,14 @@ def check_market_resolution(market_id):
         r = S.get(f"{GAMMA}/markets/{market_id}", timeout=10)
         if r.ok:
             data = r.json()
-            if data.get("closed") or data.get("resolved"):
+            if data.get("resolved"):
                 outcome = data.get("consensus_outcome")
                 if outcome is not None:
                     try:
                         idx = int(float(outcome))
                         winner = data.get("outcomes")[idx] if data.get("outcomes") and 0 <= idx < len(data.get("outcomes")) else None
                         return {"resolved": True, "outcome": idx, "winner": winner}
-                    except:
+                    except Exception:
                         pass
                 return {"resolved": True, "outcome": outcome, "winner": None}
         return {"resolved": False}
