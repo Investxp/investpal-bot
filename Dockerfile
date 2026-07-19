@@ -30,7 +30,8 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY polymarket-backend /app/polymarket-backend
 
 RUN python3 -m venv /app/polymarket-backend/venv && \
-    /app/polymarket-backend/venv/bin/pip install -r /app/polymarket-backend/requirements.txt
+    /app/polymarket-backend/venv/bin/pip install -r /app/polymarket-backend/requirements.txt && \
+    /app/polymarket-backend/venv/bin/pip install flask flask-cors betfairlightweight web3 eth-account
 
 COPY nginx.conf /etc/nginx/sites-available/default.template
 COPY torrc /app/torrc

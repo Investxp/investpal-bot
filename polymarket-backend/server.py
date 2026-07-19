@@ -553,6 +553,12 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/orders":
             self._json({"orders": position_manager.get_orders()})
 
+        elif path in ("/pharmacy", "/pharmacy/"):
+            self._static("/pharmacy.html")
+
+        elif path in ("/bets", "/bets/"):
+            self._static("/bets.html")
+
         elif path.startswith("/api/"):
             self._json({"error": "unknown endpoint"}, 404)
 

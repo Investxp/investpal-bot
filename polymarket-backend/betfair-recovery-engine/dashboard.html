@@ -1,0 +1,4017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Investpal Smart Odds — Crypto Arbitrage & Recovery Terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #07090E;
+    --bg-card: #0E131F;
+    --bg-panel: #131A2B;
+    --bg-input: #1B243B;
+    --border: rgba(255, 255, 255, 0.05);
+    --border-glow: rgba(0, 242, 254, 0.25);
+    
+    --text-primary: #FFFFFF;
+    --text-secondary: #8E9CAE;
+    --text-muted: #566474;
+    
+    /* Premium Crypto Accents */
+    --cyan: #00F2FE;
+    --blue: #3B82F6;
+    --green: #10E3A5;
+    --red: #FF4D6D;
+    --amber: #F59E0B;
+    
+    /* Gradients */
+    --brand-grad: linear-gradient(135deg, #00F2FE 0%, #3B82F6 100%);
+    --card-grad: linear-gradient(180deg, #111726 0%, #0E131F 100%);
+    --panel-glow: radial-gradient(circle at 50% -20%, rgba(0, 242, 254, 0.08) 0%, rgba(7, 9, 14, 0) 80%);
+    
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'Plus Jakarta Sans', sans-serif;
+    --font-display: 'Space Grotesk', sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--bg-dark);
+    background-image: var(--panel-glow);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    padding: 24px 24px 80px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* Header Styles */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    background: rgba(14, 19, 31, 0.85);
+    border: 1px solid var(--border);
+    padding: 16px 28px;
+    border-radius: 20px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    background: var(--brand-grad);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: #07090E;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, #FFFFFF, #B0C4DE);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 1px;
+    font-weight: 500;
+  }
+
+  .wallet-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .wallet-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .wallet-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .wallet-addr {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--cyan);
+  }
+
+  .wallet-balance {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  /* Rabby Wallet Buttons & dApp Link */
+  .rabby-btn {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .rabby-btn.connect {
+    background: var(--brand-grad);
+    color: #07090E;
+    box-shadow: 0 4px 14px rgba(0, 242, 254, 0.2);
+  }
+
+  .rabby-btn.connect:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 242, 254, 0.35);
+  }
+
+  .rabby-btn.disconnect {
+    background: rgba(255, 77, 109, 0.1);
+    color: var(--red);
+    border: 1px solid rgba(255, 77, 109, 0.25);
+    box-shadow: none;
+  }
+
+  .rabby-btn.disconnect:hover {
+    background: rgba(255, 77, 109, 0.2);
+    box-shadow: 0 0 15px rgba(255, 77, 109, 0.2);
+    transform: translateY(-1px);
+  }
+
+  /* SX Bet Link Button */
+  .sxlink-btn {
+    background: rgba(0, 242, 254, 0.08);
+    color: var(--cyan);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: 1px solid rgba(0, 242, 254, 0.25);
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sxlink-btn:hover {
+    background: var(--brand-grad);
+    color: #07090E;
+    border-color: transparent;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 242, 254, 0.3);
+  }
+
+  /* Autopilot Card Styling */
+  .autopilot-panel {
+    background: linear-gradient(135deg, #0d1627 0%, #07090e 100%);
+    border: 1px solid rgba(0, 242, 254, 0.15) !important;
+    border-radius: 20px;
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0, 242, 254, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 8px;
+  }
+
+  .autopilot-panel.active {
+    border-color: rgba(0, 242, 254, 0.4) !important;
+    box-shadow: 0 0 30px rgba(0, 242, 254, 0.15);
+  }
+
+  .autopilot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .autopilot-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .scanner-container {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 242, 254, 0.05);
+    border: 1px solid rgba(0, 242, 254, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scanner-icon {
+    color: var(--text-muted);
+    transition: color 0.3s;
+  }
+
+  .autopilot-panel.active .scanner-icon {
+    color: var(--cyan);
+    animation: spin 3s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .autopilot-pulse-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  .autopilot-panel.active .autopilot-pulse-dot {
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  .autopilot-pulse-ring {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid var(--cyan);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .autopilot-panel.active .autopilot-pulse-ring {
+    animation: autopilot-pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  }
+
+  @keyframes autopilot-pulse-ring {
+    0% { transform: scale(0.6); opacity: 0; }
+    50% { opacity: 0.4; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  .autopilot-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: block;
+  }
+
+  .autopilot-status-text {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .autopilot-panel.active .autopilot-status-text {
+    color: var(--cyan);
+  }
+
+  .autopilot-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .autopilot-mode-badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+
+  .autopilot-panel.active .autopilot-mode-badge {
+    background: rgba(0, 242, 254, 0.1);
+    color: var(--cyan);
+    border-color: rgba(0, 242, 254, 0.25);
+    animation: text-pulse 2s infinite;
+  }
+
+  @keyframes text-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .autopilot-details {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .autopilot-details {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .autopilot-details .detail-row {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .autopilot-details .detail-row .label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .autopilot-details .detail-row .value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .autopilot-panel.active .detail-row {
+    border-color: rgba(0, 242, 254, 0.08);
+  }
+
+  /* Interactive glow transition on hover */
+  .monitor-card {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, border-color 0.3s;
+  }
+  .monitor-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 242, 254, 0.08);
+    border-color: rgba(0, 242, 254, 0.2);
+  }
+  .hedge-card {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s, border-color 0.3s;
+  }
+  .hedge-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 35px rgba(16, 227, 165, 0.08);
+    border-color: rgba(16, 227, 165, 0.2);
+  }
+
+  /* Stat refresh flash animation */
+  @keyframes flash-cyan {
+    0% { background-color: rgba(0, 242, 254, 0.25); color: #fff; }
+    100% { background-color: transparent; }
+  }
+  @keyframes flash-green {
+    0% { background-color: rgba(16, 227, 165, 0.25); color: #fff; }
+    100% { background-color: transparent; }
+  }
+  .flash-update-cyan {
+    animation: flash-cyan 0.8s ease-out;
+  }
+  .flash-update-green {
+    animation: flash-green 0.8s ease-out;
+  }
+
+  .conn-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--red);
+    box-shadow: 0 0 8px var(--red);
+  }
+
+  .conn-dot.connected {
+    background-color: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Main Layout Grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 1100px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Panel Common Styles */
+  .panel {
+    background: var(--bg-card);
+    background-image: var(--card-grad);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s;
+  }
+
+  .panel:hover {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+  }
+
+  .panel-title .badge {
+    background: rgba(0, 242, 254, 0.1);
+    color: var(--cyan);
+    border: 1px solid var(--border-glow);
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+  }
+
+  /* Copy Trading Panel */
+  .copytrade-panel {
+    margin-bottom: 24px;
+    background: linear-gradient(180deg, #121C30 0%, #0E1321 100%);
+    border-color: rgba(0, 242, 254, 0.15);
+  }
+
+  .copytrade-title {
+    color: var(--cyan);
+  }
+
+  .toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .toggle-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toggle-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .toggle-desc {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+  }
+
+  /* Switch widget styling */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--bg-input);
+    transition: .3s;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--text-secondary);
+    transition: .3s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: var(--green);
+    border-color: transparent;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(24px);
+    background-color: #07090E;
+  }
+
+  /* Stats grid for Copytrade */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .stat-card .val {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .stat-card .val.positive {
+    color: var(--green);
+  }
+
+  .fee-notice {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Configuration Panel Inputs */
+  .config-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    background: rgba(0, 0, 0, 0.15);
+    padding: 4px;
+    border-radius: 10px;
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    flex: 1;
+    text-align: center;
+  }
+
+  .tab-btn.active {
+    background: var(--bg-input);
+    color: var(--cyan);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+
+  input, select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--cyan);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.15);
+  }
+
+  .save-btn {
+    width: 100%;
+    background: var(--brand-grad);
+    color: #07090E;
+    font-weight: 700;
+    font-family: var(--font-sans);
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(0, 242, 254, 0.25);
+  }
+
+  .save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 242, 254, 0.4);
+  }
+
+  /* Martingale Demo Calculator */
+  .demo-calc {
+    margin-top: 24px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .demo-calc h3 {
+    font-size: 0.85rem;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cyan);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .demo-calc-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .demo-calc-inputs input {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+    border-radius: 6px;
+  }
+
+  .demo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+  }
+
+  .demo-table th {
+    text-align: left;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+
+  .demo-table td {
+    padding: 8px 4px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.02);
+  }
+
+  .demo-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .demo-table tr.active-stage td {
+    color: var(--cyan);
+    font-weight: 700;
+    background: rgba(0, 242, 254, 0.05);
+  }
+
+  /* Right Column Layout */
+  .monitor-col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .section-label {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Single Leg Grid */
+  .single-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .single-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Monitor Card Common */
+  .monitor-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .monitor-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: transparent;
+    transition: background 0.3s;
+  }
+
+  .monitor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .monitor-card.running::before {
+    background: var(--brand-grad);
+  }
+
+  .monitor-card.paused::before {
+    background: var(--amber);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .line-id {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+  }
+
+  .line-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .line-badge {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  .line-badge.side-a {
+    color: var(--cyan);
+    border-color: rgba(0, 242, 254, 0.2);
+  }
+
+  .line-badge.side-b {
+    color: var(--blue);
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+
+  .status-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .status-pill.running {
+    background: rgba(16, 227, 165, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(16, 227, 165, 0.25);
+  }
+
+  .status-pill.paused {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+
+  /* Staircase widget */
+  .staircase-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .staircase {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 3px;
+    width: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .rung {
+    height: 6px;
+    border-radius: 2px;
+    background: #192133;
+    transition: all 0.3s;
+  }
+
+  .rung.ok {
+    background: var(--cyan);
+    box-shadow: 0 0 8px rgba(0, 242, 254, 0.5);
+  }
+
+  .rung.warn {
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+  }
+
+  .rung.danger {
+    background: var(--red);
+    box-shadow: 0 0 8px rgba(255, 77, 109, 0.5);
+  }
+
+  .staircase-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+
+  /* Card Body */
+  .card-body {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .card-stats {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .mini-stat .label {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  .mini-stat .value {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  .value.positive {
+    color: var(--green);
+  }
+
+  .value.negative {
+    color: var(--red);
+  }
+
+  /* Form Pip outcomes */
+  .pip-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+  }
+
+  .pip-label {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .pips-row {
+    display: flex;
+    gap: 5px;
+  }
+
+  .pip {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .pip.win {
+    background: var(--green);
+    box-shadow: 0 0 6px rgba(16, 227, 165, 0.4);
+  }
+
+  .pip.loss {
+    background: var(--red);
+    box-shadow: 0 0 6px rgba(255, 77, 109, 0.4);
+  }
+
+  .pip.empty {
+    border: 1px solid var(--text-muted);
+  }
+
+  .pause-reason {
+    font-size: 0.72rem;
+    color: var(--amber);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    margin-bottom: 14px;
+  }
+
+  /* Action Buttons */
+  .card-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .act-btn {
+    flex: 1;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-primary);
+    padding: 9px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .act-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .act-btn.resume {
+    background: rgba(16, 227, 165, 0.15);
+    color: var(--green);
+    border-color: rgba(16, 227, 165, 0.25);
+  }
+
+  .act-btn.resume:hover {
+    background: var(--green);
+    color: #07090E;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(16, 227, 165, 0.3);
+  }
+
+  .act-btn.reset {
+    color: var(--red);
+    border-color: rgba(255, 77, 109, 0.15);
+  }
+
+  .act-btn.reset:hover {
+    background: var(--red);
+    color: #FFFFFF;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
+  }
+
+  /* Hedge Mode Dual Monitor Card */
+  .hedge-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(0, 242, 254, 0.15);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hedge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+  }
+
+  .hedge-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hedge-logo {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--green) 100%);
+    color: #07090E;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-family: var(--font-display);
+  }
+
+  .hedge-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  @media (max-width: 650px) {
+    .hedge-body {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .hedge-leg {
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .hedge-leg-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Tabs/Feeds Panel */
+  .feeds-container {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+  }
+
+  .feed-tabs {
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .feed-tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+
+  .feed-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .feed-tab.active {
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  .feed-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -13px; left: 0; right: 0; height: 2px;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  .feed-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .feed-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    text-align: left;
+  }
+
+  .feed-table th {
+    color: var(--text-secondary);
+    font-weight: 700;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .feed-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  }
+
+  .feed-table tr:hover td {
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  .feed-table td.mono {
+    font-family: var(--font-mono);
+  }
+
+  .feed-table a {
+    color: var(--cyan);
+    text-decoration: none;
+  }
+
+  .feed-table a:hover {
+    text-decoration: underline;
+  }
+
+  .outcome-badge {
+    font-weight: 700;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+
+  .outcome-badge.win {
+    background: rgba(16, 227, 165, 0.15);
+    color: var(--green);
+    border: 1px solid rgba(16, 227, 165, 0.25);
+  }
+
+  .outcome-badge.loss {
+    background: rgba(255, 77, 109, 0.15);
+    color: var(--red);
+    border: 1px solid rgba(255, 77, 109, 0.25);
+  }
+
+  .outcome-badge.pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+  }
+
+  /* Toast Notification System */
+  #toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 360px;
+  }
+
+  .toast {
+    background: rgba(14, 19, 31, 0.97);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0,242,254,0.05);
+    animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    backdrop-filter: blur(20px);
+    cursor: pointer;
+  }
+
+  .toast.bet_settled.win { border-color: rgba(16, 227, 165, 0.4); }
+  .toast.bet_settled.loss { border-color: rgba(255, 77, 109, 0.35); }
+  .toast.hedge_placed { border-color: rgba(59, 130, 246, 0.35); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(60px) scale(0.9); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(0) scale(1); max-height: 100px; margin-bottom: 0; }
+    to   { opacity: 0; transform: translateX(60px) scale(0.9); max-height: 0; margin-bottom: -10px; }
+  }
+
+  .toast.removing {
+    animation: toastOut 0.3s ease forwards;
+  }
+
+  .toast-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .toast-body {
+    flex: 1;
+  }
+
+  .toast-title {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+
+  .toast-msg {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .toast-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* Strategy Tuner Panel */
+  .tuner-panel {
+    background: var(--bg-card);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .tuner-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tuner-badge {
+    background: linear-gradient(135deg, #3B82F6, #00F2FE);
+    color: #07090E;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .tuner-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .tuner-item label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .tuner-item label span {
+    font-family: var(--font-mono);
+    color: var(--cyan);
+    font-size: 0.8rem;
+  }
+
+  .tuner-item input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.08);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .tuner-item input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px rgba(0,242,254,0.6);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .tuner-item input[type=range]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .tuner-apply {
+    margin-top: 18px;
+    width: 100%;
+    background: linear-gradient(135deg, #3B82F6, #00F2FE);
+    color: #07090E;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 11px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+
+  .tuner-apply:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* Follower Panel */
+  .follower-panel {
+    background: var(--bg-card);
+    border: 1px solid rgba(16, 227, 165, 0.15);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .follower-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .follower-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .settle-btn {
+    background: rgba(16, 227, 165, 0.12);
+    color: var(--green);
+    border: 1px solid rgba(16, 227, 165, 0.25);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .settle-btn:hover {
+    background: var(--green);
+    color: #07090E;
+    border-color: transparent;
+  }
+
+  .follower-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .follower-stat {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .follower-stat .fs-label {
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .follower-stat .fs-val {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .settlement-report {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(16,227,165,0.1);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.78rem;
+    display: none;
+  }
+
+  .settlement-report.visible {
+    display: block;
+  }
+
+  .report-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .report-line:last-child { border-bottom: none; }
+
+  .report-line .rl-key { color: var(--text-secondary); }
+  .report-line .rl-val { font-family: var(--font-mono); font-weight: 600; }
+  .report-line .rl-val.green { color: var(--green); }
+  .report-line .rl-val.amber { color: var(--amber); }
+
+  .empty-feed {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px;
+  }
+
+  /* ===== Dashboard v2 Additions ===== */
+
+  /* Network status pill */
+  .net-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 20px;
+    background: rgba(0, 242, 254, 0.07);
+    border: 1px solid rgba(0, 242, 254, 0.2);
+    color: var(--cyan);
+    letter-spacing: 0.04em;
+  }
+  .net-pill .net-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite ease-in-out;
+  }
+
+  /* Market Scanner Panel */
+  .scanner-panel {
+    background: linear-gradient(180deg, #0a1220 0%, #0e131f 100%);
+    border: 1px solid rgba(0, 242, 254, 0.12);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+
+  .scanner-panel-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+
+  .scanner-badge-live {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    background: rgba(16, 227, 165, 0.12);
+    color: var(--green);
+    border: 1px solid rgba(16, 227, 165, 0.25);
+    padding: 2px 8px;
+    border-radius: 6px;
+    animation: text-pulse 2s infinite;
+  }
+
+  .scanner-feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .scanner-event {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    background: rgba(0,0,0,0.2);
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.75rem;
+    transition: border-color 0.2s;
+  }
+  .scanner-event:hover { border-color: rgba(0,242,254,0.12); }
+
+  .scanner-event-status {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    text-transform: uppercase;
+  }
+  .scanner-event-status.candidate {
+    background: rgba(0,242,254,0.12);
+    color: var(--cyan);
+    border: 1px solid rgba(0,242,254,0.2);
+  }
+  .scanner-event-status.skipped {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .scanner-event-status.bet_placed {
+    background: rgba(16,227,165,0.15);
+    color: var(--green);
+    border: 1px solid rgba(16,227,165,0.25);
+  }
+
+  /* PnL Sparkline */
+  .sparkline-wrapper {
+    margin-top: 10px;
+    margin-bottom: 4px;
+  }
+  .sparkline-label {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .sparkline-svg {
+    width: 100%;
+    height: 38px;
+    overflow: visible;
+  }
+
+  /* Bet Ticker Strip */
+  .ticker-strip {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 36px;
+    background: rgba(7, 9, 14, 0.96);
+    border-top: 1px solid rgba(0, 242, 254, 0.12);
+    backdrop-filter: blur(16px);
+    z-index: 8888;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .ticker-label {
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--cyan);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: rgba(0, 242, 254, 0.08);
+    padding: 4px 14px;
+    border-right: 1px solid rgba(0, 242, 254, 0.15);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    min-width: 90px;
+  }
+  .ticker-scroll {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+  }
+  .ticker-inner {
+    display: inline-block;
+    animation: ticker-scroll 30s linear infinite;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: inline-block;
+    margin-right: 48px;
+  }
+  .ticker-item .t-id { color: var(--cyan); font-weight: 700; }
+  .ticker-item .t-win { color: var(--green); font-weight: 700; }
+  .ticker-item .t-loss { color: var(--red); font-weight: 700; }
+  .ticker-item .t-pend { color: var(--amber); font-weight: 700; }
+</style>
+</head>
+<body>
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="logo-container">
+        <div class="logo-icon">I</div>
+        <div>
+          <h1>INVESTPAL SMART ODDS</h1>
+          <div class="subtitle">Decentralized Martingale Arbitrage & Copy Trading Monitor</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="wallet-group">
+      <!-- Master Wallet -->
+      <div class="wallet-info">
+        <span class="wallet-label">Master Agent Wallet</span>
+        <span class="wallet-addr" title="SX Bet Wallet Address">0xc0A0c47B4C62...728F</span>
+        <span class="wallet-balance" id="walletBalance">Loading Balance...</span>
+      </div>
+
+      <!-- Connected Follower Wallet -->
+      <div class="wallet-info" id="followerWalletCard" style="display: none;">
+        <span class="wallet-label">Your Connected Wallet</span>
+        <span class="wallet-addr" id="followerWalletAddr">0x...</span>
+        <span class="wallet-balance" id="followerWalletBalance">0.00 USDC | 0.00 SX</span>
+      </div>
+
+      <!-- Connect button -->
+      <button id="connectRabbyBtn" class="rabby-btn connect" onclick="connectRabbyWallet()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4M3 10h18v11H3z"/></svg>
+        <span>Connect Wallet (MetaMask/Rabby)</span>
+      </button>
+      
+      <!-- Disconnect button -->
+      <button id="disconnectRabbyBtn" class="rabby-btn disconnect" style="display: none;" onclick="disconnectRabbyWallet()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span>Disconnect Wallet</span>
+      </button>
+
+      <!-- Network Toggle Switcher Button -->
+      <button id="netToggleBtn" class="sxlink-btn" style="background: rgba(245,158,11,0.08); color: var(--amber); border-color: rgba(245,158,11,0.25);" onclick="toggleNetwork()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M12 4v16M2 12h20"/></svg>
+        <span id="netToggleBtnText">Switch Network</span>
+      </button>
+
+      <!-- Launch SX dApp Link Button -->
+      <a id="sxdAppBtn" class="sxlink-btn" href="https://toronto.sx.bet" target="_blank" title="Launch SX Bet dApp">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+        <span>Launch SX Bet</span>
+      </a>
+    </div>
+
+    <div class="conn-status">
+      <span class="conn-dot" id="connDot"></span>
+      <span id="connText">Connecting API...</span>
+    </div>
+    <span class="net-pill" id="netPill">
+      <span class="net-dot" id="netPillDot"></span>
+      <span id="netPillText">MAINNET ● SCANNING</span>
+    </span>
+  </header>
+
+  <!-- Tab Switcher -->
+  <div style="max-width: 1400px; margin: 0 auto 20px; display: flex; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+    <button id="tabMonitorBtn" class="rabby-btn connect" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; font-weight: 600;" onclick="switchTab('monitor')">
+      🔍 Agent Monitor
+    </button>
+    <button id="tabAdminBtn" class="sxlink-btn" style="padding: 8px 16px; font-size: 0.8rem; border-radius: 8px; font-weight: 600;" onclick="switchTab('admin')">
+      ⚙️ Admin & Analytics
+    </button>
+  </div>
+
+  <!-- Main Grid -->
+  <div id="monitorTabContent" class="main-grid">
+    <!-- Left Column: Copy Trading + settings -->
+    <div>
+      <!-- Web3 Copy Trading Card -->
+      <div class="panel copytrade-panel">
+        <div class="panel-title copytrade-title">
+          <span>Web3 Copy Trading Pool</span>
+          <span class="badge">Active settlement</span>
+        </div>
+
+        <div class="toggle-container">
+          <div class="toggle-label">
+            <span class="toggle-title">Enable Copy Trading</span>
+            <span class="toggle-desc">Automatically mirror Master Wallet stakes</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="copyEnabled" onchange="saveCopytradeConfig()">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="copyMultiplier">Copy Multiplier</label>
+            <input type="number" id="copyMultiplier" min="0.1" max="100.0" step="0.1" value="1.0" onchange="saveCopytradeConfig()">
+          </div>
+          <div class="form-group">
+            <label>Master profit Share Fee</label>
+            <input type="text" value="5.0% USDC" disabled style="background: rgba(0,0,0,0.25); color: var(--amber);">
+          </div>
+        </div>
+
+        <!-- Copy Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="wallet-label">Copied Vol.</span>
+            <div class="val" id="copyVolume">0.00 USDC</div>
+          </div>
+          <div class="stat-card">
+            <span class="wallet-label">Net Copied Profit</span>
+            <div class="val positive" id="copyProfit">0.00 USDC</div>
+          </div>
+        </div>
+
+        <!-- Vault Management Section -->
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px; margin-top: 16px; margin-bottom: 16px;">
+          <label style="color: var(--cyan); margin-bottom: 10px; font-weight: 700;">Vault Smart Contract (Option A)</label>
+          
+          <div id="vaultSetupContainer">
+            <button class="save-btn" id="deployVaultBtn" style="background: linear-gradient(135deg, var(--cyan) 0%, var(--green) 100%); margin-top: 0;" onclick="simulateVaultDeployment()">
+              Deploy Personal Copy Vault
+            </button>
+          </div>
+
+          <div id="vaultActiveContainer" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.8rem;">
+              <span style="color: var(--text-secondary);">Vault Address:</span>
+              <span id="vaultAddressText" class="mono" style="color: var(--cyan); font-weight: 600;">0x...</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 0.8rem;">
+              <span style="color: var(--text-secondary);">Vault Balance:</span>
+              <span id="vaultBalanceText" class="mono" style="color: var(--green); font-weight: 700;">0.00 USDC</span>
+            </div>
+            
+            <div class="form-row" style="margin-bottom: 8px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <input type="number" id="vaultDepositAmt" placeholder="Amount (USDC)" step="10" min="5" style="padding: 8px;">
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <button class="act-btn resume" style="padding: 8px;" onclick="simulateVaultDeposit()">Deposit USDC</button>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom: 0;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <input type="number" id="vaultWithdrawAmt" placeholder="Amount (USDC)" step="10" min="5" style="padding: 8px;">
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <button class="act-btn reset" style="padding: 8px;" onclick="simulateVaultWithdraw()">Withdraw USDC</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fee-notice" style="margin-bottom: 16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>5% profit-share fee is settled dynamically on-chain to the Master wallet upon each winning settlement.</span>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; font-size: 0.78rem; text-align: center;">
+          <a href="file:///C:/Users/SAMM/.gemini/antigravity-ide/brain/aa04a5d4-0b60-4336-ae58-1c0a892379cb/investpal_setup_guide.md" target="_blank" style="color: var(--cyan); text-decoration: none; font-weight: 600;">
+            ➔ Open Production Setup Guide
+          </a>
+        </div>
+      </div>
+
+      <!-- Line Settings Card -->
+      <div class="panel" style="margin-bottom: 24px;">
+        <div class="panel-title">
+          <span>Target Line Settings</span>
+          <span class="badge" id="activeConfigId">sxbet-single-A</span>
+        </div>
+
+        <div class="config-tabs">
+          <button class="tab-btn active" id="tabA" onclick="selectLine('sxbet-single-A')">Single A</button>
+          <button class="tab-btn" id="tabB" onclick="selectLine('sxbet-single-B')">Single B</button>
+          <button class="tab-btn" id="tabHedge" onclick="selectLine('sxbet-hedge')">⟷ Hedge (Unified)</button>
+        </div>
+
+        <form id="configForm" onsubmit="saveConfig(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="sport">Target Sport</label>
+              <select id="sport" onchange="updateDemoCalculator()">
+                <option value="soccer">Soccer</option>
+                <option value="basketball">Basketball</option>
+                <option value="tennis">Tennis</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="maxStage">Max Stage Cap</label>
+              <input type="number" id="maxStage" min="1" max="10" value="6" required oninput="updateDemoCalculator()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="baseStake">Base Stake (USDC)</label>
+              <input type="number" id="baseStake" step="0.1" min="0.1" value="1.0" required oninput="updateDemoCalculator()">
+            </div>
+            <div class="form-group">
+              <label for="targetMargin">Target Margin (USDC)</label>
+              <input type="number" id="targetMargin" step="0.1" min="0.1" value="0.5" required oninput="updateDemoCalculator()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="minOdds">Min Odds Window</label>
+              <input type="number" id="minOdds" step="0.05" min="1.05" value="1.30" required>
+            </div>
+            <div class="form-group">
+              <label for="maxOdds">Max Odds Window</label>
+              <input type="number" id="maxOdds" step="0.1" min="1.5" value="10.0" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="minVol">Minimum Matched Volume (USDC)</label>
+            <input type="number" id="minVol" min="1" value="200" required>
+          </div>
+
+          <button type="submit" class="save-btn">Save Line Config</button>
+        </form>
+
+        <!-- Martingale Demo Calculator -->
+        <div class="demo-calc">
+          <h3>Martingale Simulator</h3>
+          <div class="demo-calc-inputs">
+            <div>
+              <label for="simOdds">Simulate Odds</label>
+              <input type="number" id="simOdds" step="0.05" min="1.1" value="2.0" oninput="updateDemoCalculator()">
+            </div>
+            <div>
+              <label>Current Stage</label>
+              <input type="text" id="simCurStage" value="0" disabled style="background: rgba(0,0,0,0.2);">
+            </div>
+          </div>
+          <table class="demo-table">
+            <thead>
+              <tr>
+                <th>Stage</th>
+                <th>Stake</th>
+                <th>Cum. Loss</th>
+                <th>Net Win PnL</th>
+              </tr>
+            </thead>
+            <tbody id="demoCalculatorBody">
+              <!-- Populated via script -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Active Monitors & Feeds -->
+    <div class="monitor-col">
+      <!-- Strategy Tuner Panel (Unified Hedge) -->
+      <div class="tuner-panel">
+        <div class="tuner-title">
+          <span>⟷ Hedge Strategy Tuner</span>
+          <span class="tuner-badge">LIVE — No Restart</span>
+        </div>
+        <div class="tuner-grid">
+          <div class="tuner-item">
+            <label>Base Stake <span id="tunerBaseStakeVal">1.0 USDC</span></label>
+            <input type="range" id="tunerBaseStake" min="0.5" max="50" step="0.5" value="1.0"
+              oninput="document.getElementById('tunerBaseStakeVal').textContent = parseFloat(this.value).toFixed(1) + ' USDC'">
+          </div>
+          <div class="tuner-item">
+            <label>Max Stage <span id="tunerMaxStageVal">6</span></label>
+            <input type="range" id="tunerMaxStage" min="2" max="12" step="1" value="6"
+              oninput="document.getElementById('tunerMaxStageVal').textContent = this.value">
+          </div>
+          <div class="tuner-item">
+            <label>Min Odds <span id="tunerMinOddsVal">1.10</span></label>
+            <input type="range" id="tunerMinOdds" min="1.05" max="3.0" step="0.05" value="1.10"
+              oninput="document.getElementById('tunerMinOddsVal').textContent = parseFloat(this.value).toFixed(2)">
+          </div>
+          <div class="tuner-item">
+            <label>Max Odds <span id="tunerMaxOddsVal">10.00</span></label>
+            <input type="range" id="tunerMaxOdds" min="2.0" max="25.0" step="0.5" value="10.0"
+              oninput="document.getElementById('tunerMaxOddsVal').textContent = parseFloat(this.value).toFixed(2)">
+          </div>
+        </div>
+        <button class="tuner-apply" onclick="applyHedgeTuning()">
+          ⚡ Apply to Both Hedge Legs Now
+        </button>
+      </div>
+
+      <!-- Follower Panel -->
+      <div class="follower-panel">
+        <div class="follower-header">
+          <span class="follower-title">👥 Follower Portfolio</span>
+          <button class="settle-btn" onclick="triggerSettlement()">💰 Run Settlement</button>
+        </div>
+        <div class="follower-stats">
+          <div class="follower-stat">
+            <div class="fs-label">Copied Vol</div>
+            <div class="fs-val" id="followerCopiedVol">—</div>
+          </div>
+          <div class="follower-stat">
+            <div class="fs-label">Net P&amp;L</div>
+            <div class="fs-val positive" id="followerNetPnl">—</div>
+          </div>
+          <div class="follower-stat">
+            <div class="fs-label">Fees Paid</div>
+            <div class="fs-val" style="color: var(--amber);" id="followerFees">—</div>
+          </div>
+        </div>
+        <div class="settlement-report" id="settlementReport">
+          <div class="report-line">
+            <span class="rl-key">Period</span>
+            <span class="rl-val" id="rptPeriod">—</span>
+          </div>
+          <div class="report-line">
+            <span class="rl-key">Bets Settled</span>
+            <span class="rl-val" id="rptBets">—</span>
+          </div>
+          <div class="report-line">
+            <span class="rl-key">Gross Profit</span>
+            <span class="rl-val green" id="rptGross">—</span>
+          </div>
+          <div class="report-line">
+            <span class="rl-key">5% Fee Collected</span>
+            <span class="rl-val amber" id="rptFee">—</span>
+          </div>
+          <div class="report-line">
+            <span class="rl-key">Net to Follower</span>
+            <span class="rl-val green" id="rptNet">—</span>
+          </div>
+        </div>
+      </div>
+      <!-- Engine Autopilot Controller -->
+      <div class="panel autopilot-panel" id="autopilotCard">
+        <div class="autopilot-header">
+          <div class="autopilot-title-group">
+            <div class="scanner-container">
+              <div class="autopilot-pulse-ring"></div>
+              <svg class="scanner-icon" id="autopilotScanner" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 2a10 10 0 0 1 10 10"/>
+                <path d="M12 12l7.07-7.07"/>
+              </svg>
+              <span class="autopilot-pulse-dot" id="autopilotPulse"></span>
+            </div>
+            <div>
+              <span class="autopilot-title">Engine Autopilot (Auto-Match & Execute)</span>
+              <div class="autopilot-status-text" id="autopilotStatusText">Initialising engine state...</div>
+            </div>
+          </div>
+          <div class="autopilot-action">
+            <span class="autopilot-mode-badge" id="autopilotModeBadge">STANDBY</span>
+            <label class="switch">
+              <input type="checkbox" id="autopilotSwitch" onchange="toggleAutopilot()">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="autopilot-details">
+          <div class="detail-row">
+            <span class="label">Scanning Status</span>
+            <span class="value" id="autoScanStatus">Searching active matches...</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Network Target</span>
+            <span class="value mono" id="autoNetwork">testnet (Toronto)</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Auto-Placing Specs</span>
+            <span class="value" id="autoSpecs">Min Vol: 200 USDC | Max Stage: 6</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Heartbeat</span>
+            <span class="value mono" id="autoHeartbeat">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Single Mode Legs -->
+      <div class="section-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>Single Leg Execution (Independent lines)</span>
+      </div>
+      <div class="single-grid" id="singleMonitorCards">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Section: Hedge Mode Linked Pair -->
+      <div class="section-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+        <span>Simultaneous Hedge Mode Pair (linked execution)</span>
+      </div>
+      <div id="hedgeMonitorCard">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Market Scanner Panel -->
+      <div class="scanner-panel">
+        <div class="scanner-panel-title">
+          <span>📡 Market Scanner Feed</span>
+          <span class="scanner-badge-live" id="scannerBadge">LIVE</span>
+        </div>
+        <div class="scanner-feed-list" id="scannerFeedList">
+          <div class="empty-feed" style="padding: 20px; color: var(--text-secondary); font-size: 0.8rem; text-align: center;">
+            Waiting for first scanner tick (30s interval)...
+          </div>
+        </div>
+      </div>
+
+      <!-- Feeds Panel -->
+      <div class="feeds-container">
+        <div class="feed-tabs">
+          <button class="feed-tab active" id="tabFeedMaster" onclick="setFeedTab('master')">Master Agent activity</button>
+          <button class="feed-tab" id="tabFeedCopy" onclick="setFeedTab('copy')">Your Copied activity (5% Profit-Share Fee)</button>
+        </div>
+
+        <div class="feed-table-wrapper">
+          <table class="feed-table">
+            <thead id="feedTableHeader">
+              <!-- Dynamic Headers -->
+            </thead>
+            <tbody id="feedTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin & Analytics Content -->
+  <div id="adminTabContent" style="display: none; max-width: 1400px; margin: 0 auto; padding-top: 10px;">
+    <!-- Performance Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px;">
+      <div class="panel" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 120px;">
+        <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Win Rate</span>
+        <span id="adminWinRate" style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 700; color: var(--green); margin-top: 8px;">0.0%</span>
+        <span id="adminWinDetails" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">0 wins / 0 settled</span>
+      </div>
+      <div class="panel" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 120px;">
+        <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Avg Recovery Stage</span>
+        <span id="adminAvgStage" style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 700; color: var(--cyan); margin-top: 8px;">Stage 0.0</span>
+        <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">Lower is safer</span>
+      </div>
+      <div class="panel" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 120px;">
+        <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Traded Volume</span>
+        <span id="adminTradedVol" style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 700; color: var(--blue); margin-top: 8px;">0.00 USDC</span>
+        <span style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">USDC exchange volume</span>
+      </div>
+      <div class="panel" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 120px;">
+        <span style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Net User Profit</span>
+        <span id="adminNetProfit" style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 700; color: var(--green); margin-top: 8px;">0.00 USDC</span>
+        <span id="adminFeesCollected" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">0.00 USDC fees paid</span>
+      </div>
+    </div>
+
+    <!-- Admin controls & Audit Trail log in a 2-column layout -->
+    <div style="display: grid; grid-template-columns: 440px 1fr; gap: 24px;">
+      <!-- Strategy Control Panel -->
+      <div class="panel">
+        <div class="panel-title">
+          <span>Strategic Controls</span>
+          <span class="badge">SYSTEM PRESETS</span>
+        </div>
+
+        <!-- Allow in-play betting switcher -->
+        <div class="toggle-container" style="margin-bottom: 20px;">
+          <div class="toggle-label">
+            <span class="toggle-title">Allow In-Play Betting</span>
+            <span class="toggle-desc">Bet on games in-progress (higher speed/volatility)</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="adminAllowInPlay" onchange="saveAdminSettings()">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Default Mode Config -->
+        <div class="toggle-container" style="margin-bottom: 20px; border-top: 1px solid var(--border); padding-top: 16px;">
+          <div class="toggle-label">
+            <span class="toggle-title">Default to Hedged Mode</span>
+            <span class="toggle-desc">Automatically pauses Single lines to prioritize Hedge</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="adminDefaultHedge" onchange="toggleDefaultHedgeMode()">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Strategy presets descriptions -->
+        <div class="fee-notice" style="margin-bottom: 0; margin-top: 12px; background: rgba(0,242,254,0.04); border-color: rgba(0,242,254,0.15);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span style="color: var(--cyan); font-weight: 500;">Martingale Recovery Safe Guards are active. Maximum stake is capped based on configured max stage (31x base max drawdown).</span>
+        </div>
+      </div>
+
+      <!-- Audit Logs Table Panel -->
+      <div class="panel">
+        <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+          <span>📋 System Audit Trail Logs</span>
+          <button class="act-btn resume" style="padding: 6px 12px; font-size: 0.72rem; border-radius: 6px;" onclick="refreshAuditTrail()">🔄 Refresh Logs</button>
+        </div>
+
+        <div class="feed-table-wrapper" style="max-height: 380px; overflow-y: auto;">
+          <table class="feed-table">
+            <thead>
+              <tr>
+                <th style="width: 180px;">Timestamp</th>
+                <th style="width: 150px;">Action</th>
+                <th>Details / Status Code Summary</th>
+              </tr>
+            </thead>
+            <tbody id="auditTrailBody">
+              <!-- Dynamically populated audit events -->
+              <tr><td colspan="3" class="empty-feed">No audit trail events found. Start the runner to log events.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Live Bet Ticker Strip -->
+<div class="ticker-strip">
+  <span class="ticker-label">📈 LIVE</span>
+  <div class="ticker-scroll">
+    <div class="ticker-inner" id="tickerInner">
+      <span class="ticker-item"><span class="t-id">sxbet-single-A</span> | <span class="t-pend">WAITING</span> | Stage 0 | — USDC</span>
+      <span class="ticker-item"><span class="t-id">sxbet-single-B</span> | <span class="t-pend">SCANNING</span> | Stage 0 | — USDC</span>
+      <span class="ticker-item"><span class="t-id">sxbet-hedge-A</span> | <span class="t-pend">HEDGE ACTIVE</span> | Stage 0 | — USDC</span>
+      <!-- repeated for seamless scroll -->
+      <span class="ticker-item"><span class="t-id">sxbet-single-A</span> | <span class="t-pend">WAITING</span> | Stage 0 | — USDC</span>
+      <span class="ticker-item"><span class="t-id">sxbet-single-B</span> | <span class="t-pend">SCANNING</span> | Stage 0 | — USDC</span>
+      <span class="ticker-item"><span class="t-id">sxbet-hedge-A</span> | <span class="t-pend">HEDGE ACTIVE</span> | Stage 0 | — USDC</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = window.location.origin && window.location.origin.startsWith("http") ? window.location.origin : "http://127.0.0.1:5070";
+let activeLineId = "sxbet-single-A";
+let linesData = [];
+let copytradeState = null;
+let currentFeedTab = "master";
+
+// Tabbed config fields setup
+function selectLine(lineId) {
+  activeLineId = lineId;
+  document.getElementById("activeConfigId").textContent = lineId;
+  
+  // Update tabs styling — unified hedge replaces hedge-A and hedge-B
+  const tabs = [
+    { id: "tabA",     lineId: "sxbet-single-A" },
+    { id: "tabB",     lineId: "sxbet-single-B" },
+    { id: "tabHedge", lineId: "sxbet-hedge" },
+  ];
+  tabs.forEach(t => {
+    const el = document.getElementById(t.id);
+    if (el) el.className = t.lineId === lineId ? "tab-btn active" : "tab-btn";
+  });
+  
+  const line = linesData.find(l => l.line_id === lineId);
+  if (line) {
+    document.getElementById("sport").value = line.sport;
+    document.getElementById("maxStage").value = line.max_stage;
+    document.getElementById("baseStake").value = line.base_stake;
+    
+    // We attach raw configs
+    const config = line._config_raw || {};
+    document.getElementById("targetMargin").value = config.target_margin || 0.5;
+    document.getElementById("minOdds").value = config.min_odds || 1.1;
+    document.getElementById("maxOdds").value = config.max_odds || 10.0;
+    document.getElementById("minVol").value = config.min_matched_volume || 1.0;
+    
+    document.getElementById("simCurStage").value = line.stage;
+  }
+  
+  updateDemoCalculator();
+}
+
+function updateDemoCalculator() {
+  const baseStake = parseFloat(document.getElementById("baseStake").value) || 1.0;
+  const targetMargin = parseFloat(document.getElementById("targetMargin").value) || 0.5;
+  const maxStage = parseInt(document.getElementById("maxStage").value) || 6;
+  const simOdds = parseFloat(document.getElementById("simOdds").value) || 2.0;
+  
+  const targetLineData = linesData.find(l => l.line_id === activeLineId);
+  const currentStage = targetLineData ? targetLineData.stage : 0;
+  
+  let cumLoss = 0;
+  let html = "";
+  
+  for (let s = 0; s <= maxStage; s++) {
+    // math: stake = (cumLoss + targetMargin) / (odds - 1.0)
+    const factor = simOdds - 1.0;
+    const stake = factor > 0 ? (cumLoss + targetMargin) / factor : 0;
+    cumLoss += stake;
+    
+    const isCurrent = s === currentStage;
+    html += `
+      <tr class="${isCurrent ? 'active-stage' : ''}">
+        <td>Stage ${s}${isCurrent ? ' ➔' : ''}</td>
+        <td>${stake.toFixed(2)} USDC</td>
+        <td>${(cumLoss - stake).toFixed(2)} USDC</td>
+        <td>+${(stake * factor - (cumLoss - stake)).toFixed(2)} USDC</td>
+      </tr>
+    `;
+  }
+  document.getElementById("demoCalculatorBody").innerHTML = html;
+}
+
+async function saveConfig(event) {
+  event.preventDefault();
+  
+  const payload = {
+    sport: document.getElementById("sport").value,
+    max_stage: parseInt(document.getElementById("maxStage").value),
+    base_stake: parseFloat(document.getElementById("baseStake").value),
+    target_margin: parseFloat(document.getElementById("targetMargin").value),
+    min_odds: parseFloat(document.getElementById("minOdds").value),
+    max_odds: parseFloat(document.getElementById("maxOdds").value),
+    min_matched_volume: parseFloat(document.getElementById("minVol").value)
+  };
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/lines/${activeLineId}/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      alert(`Configuration updated for ${activeLineId}!`);
+      refresh();
+    } else {
+      alert("Error saving configuration");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("API connection failed");
+  }
+}
+
+async function sendCommand(lineId, action) {
+  try {
+    await fetch(`${API_BASE}/api/lines/${lineId}/${action}`, { method: "POST" });
+    await refresh();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function sendHedgeCommand(action) {
+  try {
+    // Unified hedge commands go to the auto-generated leg IDs
+    await Promise.all([
+      fetch(`${API_BASE}/api/lines/sxbet-hedge-A/${action}`, { method: "POST" }),
+      fetch(`${API_BASE}/api/lines/sxbet-hedge-B/${action}`, { method: "POST" })
+    ]);
+    await refresh();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// styling helpers
+function stageColor(stage, maxStage) {
+  const ratio = stage / Math.max(maxStage, 1);
+  if (ratio >= 0.8) return "danger";
+  if (ratio >= 0.4) return "warn";
+  return "ok";
+}
+
+function renderStaircase(stage, maxStage, label = "Rungs") {
+  let html = "";
+  for (let i = 0; i < maxStage; i++) {
+    const filled = i < stage;
+    html += `<div class="rung ${filled ? stageColor(stage, maxStage) : ''}"></div>`;
+  }
+  return `
+    <div class="staircase-wrapper">
+      <div class="staircase">${html}</div>
+      <span class="staircase-label">${label}</span>
+    </div>
+  `;
+}
+
+function renderFormStrip(history) {
+  const slots = 10;
+  const padded = Array(Math.max(0, slots - history.length)).fill(null).concat(history);
+  
+  const pipsHtml = padded.map(h => {
+    if (!h) return `<div class="pip empty"></div>`;
+    const cls = h.outcome === "win" ? "win" : (h.outcome === "loss" ? "loss" : "empty");
+    return `<div class="pip ${cls}" title="${h.outcome || 'pending'} stake=${h.stake} odds=${h.odds}"></div>`;
+  }).join("");
+
+  return `
+    <div class="pip-form">
+      <span class="pip-label">Outcome Form</span>
+      <div class="pips-row">${pipsHtml}</div>
+    </div>
+  `;
+}
+
+// PnL Sparkline generator
+function renderPnlSparkline(history) {
+  if (!history || history.length < 2) return '';
+  // Build running PnL series
+  let running = 0;
+  const points = history.filter(h => h.pnl != null).map(h => { running += h.pnl; return running; });
+  if (points.length < 2) return '';
+  const min = Math.min(...points, 0);
+  const max = Math.max(...points, 0.01);
+  const W = 200, H = 36, PAD = 2;
+  const xs = points.map((_, i) => PAD + (i / (points.length - 1)) * (W - PAD * 2));
+  const ys = points.map(p => PAD + (1 - (p - min) / (max - min)) * (H - PAD * 2));
+  const pathD = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const lastVal = points[points.length - 1];
+  const lineColor = lastVal >= 0 ? 'var(--green)' : 'var(--red)';
+  const fillId = `sparkfill-${Math.random().toString(36).slice(2,7)}`;
+  // Baseline Y (zero line)
+  const baseY = (PAD + (1 - (0 - min) / (max - min)) * (H - PAD * 2)).toFixed(1);
+  const fillPath = pathD + ` L${xs[xs.length-1].toFixed(1)},${baseY} L${xs[0].toFixed(1)},${baseY} Z`;
+  return `
+    <div class="sparkline-wrapper">
+      <div class="sparkline-label">PnL Trend</div>
+      <svg class="sparkline-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="${fillId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${fillPath}" fill="url(#${fillId})" />
+        <path d="${pathD}" stroke="${lineColor}" stroke-width="1.5" fill="none" />
+        <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="2.5" fill="${lineColor}" />
+      </svg>
+    </div>
+  `;
+}
+
+// Single Leg Renderer
+function renderSingleCard(line, history) {
+  const isRunning = !line.paused;
+  const cardClass = isRunning ? "running" : "paused";
+  const pnlClass = line.total_realized_pnl >= 0 ? "positive" : "negative";
+  const pnlSign = line.total_realized_pnl > 0 ? "+" : "";
+  const sideName = line.current_side || (line.line_id.endsWith("-A") ? "A" : "B");
+  
+  return `
+    <div class="monitor-card ${cardClass}">
+      <div class="card-header">
+        <div>
+          <div class="line-id">${line.line_id}</div>
+          <div class="line-badges">
+            <span class="line-badge">${line.sport.toUpperCase()}</span>
+            <span class="line-badge side-${sideName.toLowerCase()}">SIDE ${sideName}</span>
+          </div>
+        </div>
+        <span class="status-pill ${isRunning ? 'running' : 'paused'}">
+          ${isRunning ? 'RUNNING' : 'PAUSED'}
+        </span>
+      </div>
+
+      <div class="card-body">
+        ${renderStaircase(line.stage, line.max_stage, "Recovery")}
+        <div class="card-stats">
+          <div class="mini-stat">
+            <div class="label">Stage</div>
+            <div class="value">${line.stage} / ${line.max_stage}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Base Stake</div>
+            <div class="value">${line.base_stake.toFixed(1)} USDC</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Cum. Loss</div>
+            <div class="value">${line.cumulative_loss.toFixed(2)} USDC</div>
+          </div>
+          <div class="mini-stat">
+            <div class="label">Realized PnL</div>
+            <div class="value ${pnlClass}">${pnlSign}${line.total_realized_pnl.toFixed(2)} USDC</div>
+          </div>
+        </div>
+      </div>
+
+      ${renderFormStrip(history)}
+      ${renderPnlSparkline(history)}
+      ${line.pause_reason ? `<div class="pause-reason">${line.pause_reason}</div>` : ''}
+
+      <div class="card-actions">
+        ${line.paused
+          ? `<button class="act-btn resume" onclick="sendCommand('${line.line_id}','resume')">Resume</button>`
+          : `<button class="act-btn" onclick="sendCommand('${line.line_id}','pause')">Pause</button>`}
+        <button class="act-btn reset" onclick="sendCommand('${line.line_id}','reset')">Reset</button>
+      </div>
+    </div>
+  `;
+}
+
+// Hedge Leg Renderer (Unified side-by-side card)
+function renderHedgeCard(lineA, lineB, historyA, historyB) {
+  if (!lineA || !lineB) return '';
+  const isAActive = !lineA.paused;
+  const isBActive = !lineB.paused;
+  const bothActive = isAActive && isBActive;
+  
+  const pnlAClass = lineA.total_realized_pnl >= 0 ? "positive" : "negative";
+  const pnlBClass = lineB.total_realized_pnl >= 0 ? "positive" : "negative";
+  const totalPnL = lineA.total_realized_pnl + lineB.total_realized_pnl;
+  const totalPnLClass = totalPnL >= 0 ? "positive" : "negative";
+  
+  return `
+    <div class="hedge-card">
+      <div class="hedge-header">
+        <div class="hedge-title-group">
+          <span class="hedge-logo">INVESTPAL SMART HEDGE</span>
+          <div class="line-id">Pair Leg A (Side A) + Pair Leg B (Side B)</div>
+        </div>
+        <div>
+          <span class="status-pill ${bothActive ? 'running' : 'paused'}">
+            ${bothActive ? 'FULLY HEDGED' : (isAActive || isBActive ? 'PARTIALLY ACTIVE' : 'PAUSED')}
+          </span>
+        </div>
+      </div>
+
+      <div class="hedge-body">
+        <!-- Leg A Column -->
+        <div class="hedge-leg">
+          <div class="hedge-leg-title">
+            <span>LEG A (Home Side)</span>
+            <span class="status-pill ${isAActive ? 'running' : 'paused'}">${isAActive ? 'ACTIVE' : 'PAUSED'}</span>
+          </div>
+          <div class="card-body">
+            ${renderStaircase(lineA.stage, lineA.max_stage, "Side A")}
+            <div class="card-stats">
+              <div class="mini-stat">
+                <div class="label">Stage</div>
+                <div class="value">${lineA.stage} / ${lineA.max_stage}</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Cumulative Loss</div>
+                <div class="value">${lineA.cumulative_loss.toFixed(2)} USDC</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Realized PnL</div>
+                <div class="value ${pnlAClass}">${lineA.total_realized_pnl >= 0 ? '+' : ''}${lineA.total_realized_pnl.toFixed(2)} USDC</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Total Bets</div>
+                <div class="value">${lineA.bets_placed} Placed</div>
+              </div>
+            </div>
+          </div>
+          ${renderFormStrip(historyA)}
+          ${lineA.pause_reason ? `<div class="pause-reason">${lineA.pause_reason}</div>` : ''}
+          <div class="card-actions">
+            ${lineA.paused
+              ? `<button class="act-btn resume" onclick="sendCommand('${lineA.line_id}','resume')">Resume A</button>`
+              : `<button class="act-btn" onclick="sendCommand('${lineA.line_id}','pause')">Pause A</button>`}
+            <button class="act-btn reset" onclick="sendCommand('${lineA.line_id}','reset')">Reset A</button>
+          </div>
+        </div>
+
+        <!-- Leg B Column -->
+        <div class="hedge-leg">
+          <div class="hedge-leg-title">
+            <span>LEG B (Away Side)</span>
+            <span class="status-pill ${isBActive ? 'running' : 'paused'}">${isBActive ? 'ACTIVE' : 'PAUSED'}</span>
+          </div>
+          <div class="card-body">
+            ${renderStaircase(lineB.stage, lineB.max_stage, "Side B")}
+            <div class="card-stats">
+              <div class="mini-stat">
+                <div class="label">Stage</div>
+                <div class="value">${lineB.stage} / ${lineB.max_stage}</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Cumulative Loss</div>
+                <div class="value">${lineB.cumulative_loss.toFixed(2)} USDC</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Realized PnL</div>
+                <div class="value ${pnlBClass}">${lineB.total_realized_pnl >= 0 ? '+' : ''}${lineB.total_realized_pnl.toFixed(2)} USDC</div>
+              </div>
+              <div class="mini-stat">
+                <div class="label">Total Bets</div>
+                <div class="value">${lineB.bets_placed} Placed</div>
+              </div>
+            </div>
+          </div>
+          ${renderFormStrip(historyB)}
+          ${lineB.pause_reason ? `<div class="pause-reason">${lineB.pause_reason}</div>` : ''}
+          <div class="card-actions">
+            ${lineB.paused
+              ? `<button class="act-btn resume" onclick="sendCommand('${lineB.line_id}','resume')">Resume B</button>`
+              : `<button class="act-btn" onclick="sendCommand('${lineB.line_id}','pause')">Pause B</button>`}
+            <button class="act-btn reset" onclick="sendCommand('${lineB.line_id}','reset')">Reset B</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pair Control and Aggregate stats -->
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <span class="wallet-label">Hedge Pair Combined PnL:</span>
+          <span class="value ${totalPnLClass}" style="font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; margin-left: 8px;">
+            ${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)} USDC
+          </span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="act-btn resume" style="padding: 10px 20px;" onclick="sendHedgeCommand('resume')">Resume Both</button>
+          <button class="act-btn" style="padding: 10px 20px;" onclick="sendHedgeCommand('pause')">Pause Both</button>
+          <button class="act-btn reset" style="padding: 10px 20px;" onclick="sendHedgeCommand('reset')">Reset Both</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Feed Tab Controls
+function setFeedTab(tabName) {
+  currentFeedTab = tabName;
+  document.getElementById("tabFeedMaster").className = tabName === "master" ? "feed-tab active" : "feed-tab";
+  document.getElementById("tabFeedCopy").className = tabName === "copy" ? "feed-tab active" : "feed-tab";
+  renderFeeds();
+}
+
+function renderFeeds() {
+  const header = document.getElementById("feedTableHeader");
+  const body = document.getElementById("feedTableBody");
+  
+  if (currentFeedTab === "master") {
+    header.innerHTML = `
+      <tr>
+        <th>Line ID</th>
+        <th>Event Hash</th>
+        <th>Side</th>
+        <th>Stake</th>
+        <th>Odds</th>
+        <th>Stage</th>
+        <th>Outcome</th>
+        <th>Master PnL</th>
+      </tr>
+    `;
+    
+    // Flatten linesData histories
+    let allBets = [];
+    linesData._histories?.forEach(hist => {
+      allBets = allBets.concat(hist);
+    });
+    allBets.sort((a, b) => b.id - a.id);
+    
+    if (allBets.length === 0) {
+      body.innerHTML = `<tr><td colspan="8" class="empty-feed">No active or settled bets yet on the Master agent.</td></tr>`;
+      return;
+    }
+    
+    body.innerHTML = allBets.slice(0, 10).map(b => {
+      const pnlSign = b.pnl > 0 ? "+" : "";
+      const pnlClass = b.pnl > 0 ? "positive" : (b.pnl < 0 ? "negative" : "");
+      const outcomeClass = b.outcome === "win" ? "win" : (b.outcome === "loss" ? "loss" : "pending");
+      const shortEvent = b.event_id.slice(0, 10) + "..." + b.event_id.slice(-6);
+      const explorerUrl = `https://explorerl2.toronto.sx.technology/tx/${b.bet_id || ''}`;
+      
+      return `
+        <tr>
+          <td class="mono">${b.line_id}</td>
+          <td class="mono">
+            ${b.bet_id ? `<a href="${explorerUrl}" target="_blank" title="View Tx">${shortEvent}</a>` : shortEvent}
+          </td>
+          <td>Side ${b.side}</td>
+          <td>${b.stake.toFixed(2)} USDC</td>
+          <td class="mono">${b.odds.toFixed(2)}</td>
+          <td>Stage ${b.stage}</td>
+          <td><span class="outcome-badge ${outcomeClass}">${b.outcome || 'pending'}</span></td>
+          <td class="mono ${pnlClass}">${b.pnl ? pnlSign + b.pnl.toFixed(2) + " USDC" : "—"}</td>
+        </tr>
+      `;
+    }).join("");
+    
+  } else {
+    // Copy trade feeds
+    header.innerHTML = `
+      <tr>
+        <th>Line ID</th>
+        <th>Event Hash</th>
+        <th>Side</th>
+        <th>Copied Stake</th>
+        <th>Odds</th>
+        <th>Outcome</th>
+        <th>Net User PnL</th>
+        <th>Dev Fee Settled</th>
+      </tr>
+    `;
+    
+    if (!copytradeState || !copytradeState.copied_trades || copytradeState.copied_trades.length === 0) {
+      body.innerHTML = `<tr><td colspan="8" class="empty-feed">No copied trades found. Make sure Copy Trading is enabled and Master Agent executes trades.</td></tr>`;
+      return;
+    }
+    
+    body.innerHTML = copytradeState.copied_trades.map(t => {
+      const pnlClass = t.copied_pnl_net > 0 ? "positive" : (t.copied_pnl_net < 0 ? "negative" : "");
+      const pnlSign = t.copied_pnl_net > 0 ? "+" : "";
+      const outcomeClass = t.outcome === "win" ? "win" : (t.outcome === "loss" ? "loss" : "pending");
+      const shortEvent = t.event_id.slice(0, 10) + "..." + t.event_id.slice(-6);
+      const explorerUrl = `https://explorerl2.toronto.sx.technology/tx/${t.bet_id || ''}`;
+      
+      return `
+        <tr>
+          <td class="mono">${t.line_id}</td>
+          <td class="mono">
+            ${t.bet_id ? `<a href="${explorerUrl}" target="_blank" title="View Tx">${shortEvent}</a>` : shortEvent}
+          </td>
+          <td>Side ${t.side}</td>
+          <td>${t.copied_stake.toFixed(2)} USDC <span style="color: var(--text-muted); font-size: 0.7rem;">(${copytradeState.user_multiplier}x)</span></td>
+          <td class="mono">${t.odds.toFixed(2)}</td>
+          <td><span class="outcome-badge ${outcomeClass}">${t.outcome || 'pending'}</span></td>
+          <td class="mono ${pnlClass}">${t.outcome ? pnlSign + t.copied_pnl_net.toFixed(2) + " USDC" : "—"}</td>
+          <td class="mono" style="color: var(--amber); font-weight: 600;">
+            ${t.fee_paid > 0 ? `${t.fee_paid.toFixed(2)} USDC` : '—'}
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+}
+
+// Rabby wallet login connection management
+let rabbyConnected = false;
+let userAddress = "";
+
+async function checkPersistedWallet() {
+  try {
+    const res = await fetch(`${API_BASE}/api/copytrade/config`);
+    if (res.ok) {
+      const config = await res.json();
+      if (config.follower_wallet_address) {
+        userAddress = config.follower_wallet_address;
+        rabbyConnected = true;
+        updateWalletUI();
+      }
+    }
+  } catch (e) {
+    console.error("Wallet check failed:", e);
+  }
+}
+
+async function ensureCorrectChain() {
+  if (typeof window.ethereum === "undefined") return;
+  try {
+    const res = await fetch(`${API_BASE}/api/engine/status`);
+    if (!res.ok) return;
+    const status = await res.json();
+    const isTestnet = (status.network !== "mainnet");
+    
+    const provider = window.rabby || window.ethereum;
+    const targetChainId = isTestnet ? 79479957 : 4162;
+    const targetChainIdHex = "0x" + targetChainId.toString(16);
+    
+    try {
+      await provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: targetChainIdHex }],
+      });
+    } catch (switchError) {
+      if (switchError.code === 4902) {
+        const chainConfig = isTestnet ? {
+          chainId: targetChainIdHex,
+          chainName: "SX Toronto Testnet",
+          nativeCurrency: { name: "SX Token", symbol: "SX", decimals: 18 },
+          rpcUrls: ["https://rpc-rollup.toronto.sx.technology"],
+          blockExplorerUrls: ["https://explorerl2.toronto.sx.technology"]
+        } : {
+          chainId: targetChainIdHex,
+          chainName: "SX Network Mainnet",
+          nativeCurrency: { name: "SX Token", symbol: "SX", decimals: 18 },
+          rpcUrls: ["https://rpc.sx.technology"],
+          blockExplorerUrls: ["https://explorer.sx.technology"]
+        };
+        await provider.request({
+          method: "wallet_addEthereumChain",
+          params: [chainConfig],
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Failed to switch/add Ethereum chain:", e);
+  }
+}
+
+async function connectRabbyWallet() {
+  if (typeof window.ethereum === "undefined") {
+    alert("Web3 Wallet (MetaMask / Rabby) extension not detected!\n\nTo use your wallet on mobile or tablet browser, open this URL inside your Web3 wallet's built-in browser (MetaMask or Rabby).");
+    return;
+  }
+  
+  try {
+    // Automatically prompt to add or switch to the correct SX network/testnet
+    await ensureCorrectChain();
+    
+    const provider = window.rabby || window.ethereum;
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    if (accounts.length === 0) return;
+    
+    const address = accounts[0];
+    const message = `Sign this message to register and login to Investpal Smart Odds.\n\nWallet Address: ${address}\nTimestamp: ${Date.now()}`;
+    const hexMessage = "0x" + Array.from(new TextEncoder().encode(message)).map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    const signature = await provider.request({
+      method: "personal_sign",
+      params: [hexMessage, address]
+    });
+    
+    // Login to backend
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, signature })
+    });
+    
+    if (res.ok) {
+      userAddress = address;
+      rabbyConnected = true;
+      updateWalletUI();
+      await refresh();
+    } else {
+      alert("Web3 authentication signature validation failed.");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Web3 Wallet connection failed: " + e.message);
+  }
+}
+
+async function disconnectRabbyWallet() {
+  try {
+    await fetch(`${API_BASE}/api/copytrade/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ follower_wallet_address: "" })
+    });
+    userAddress = "";
+    rabbyConnected = false;
+    
+    // Clear local storage and vault variables on disconnect
+    localStorage.removeItem("investpal_vault_address");
+    localStorage.removeItem("investpal_vault_balance");
+    personalVaultAddress = null;
+    personalVaultBalance = 0.00;
+    
+    // Reset Vault UI widgets
+    document.getElementById("deployVaultBtn").style.display = "block";
+    document.getElementById("vaultActiveContainer").style.display = "none";
+    
+    updateWalletUI();
+    refreshCopytrade();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function updateWalletUI() {
+  const connBtn = document.getElementById("connectRabbyBtn");
+  const discBtn = document.getElementById("disconnectRabbyBtn");
+  
+  if (rabbyConnected) {
+    connBtn.style.display = "none";
+    discBtn.style.display = "inline-flex";
+    const shortAddr = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+    discBtn.querySelector("span").textContent = `Disconnect Wallet (${shortAddr})`;
+  } else {
+    connBtn.style.display = "inline-flex";
+    discBtn.style.display = "none";
+  }
+}
+
+// Dynamic value update flash highlighter helper
+function updateTextWithFlash(elementId, newText, flashClass = "flash-update-cyan") {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const currentText = el.textContent;
+  if (currentText !== newText) {
+    el.textContent = newText;
+    el.classList.remove(flashClass);
+    void el.offsetWidth; // force reflow
+    el.classList.add(flashClass);
+  }
+}
+
+// Autopilot control and polling
+async function refreshEngineStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/api/engine/status`);
+    if (res.ok) {
+      const data = await res.json();
+      
+      const autopilotSwitch = document.getElementById("autopilotSwitch");
+      if (autopilotSwitch) autopilotSwitch.checked = data.auto_execution;
+      
+      const autopilotCard = document.getElementById("autopilotCard");
+      const modeBadge = document.getElementById("autopilotModeBadge");
+      const statusText = document.getElementById("autopilotStatusText");
+      const scanStatus = document.getElementById("autoScanStatus");
+      const networkVal = document.getElementById("autoNetwork");
+      const specsVal = document.getElementById("autoSpecs");
+      
+      if (data.auto_execution) {
+        if (autopilotCard) autopilotCard.classList.add("active");
+        if (modeBadge) modeBadge.textContent = "ACTIVE";
+        if (statusText) statusText.textContent = "Scanning active markets, placing matching bets autonomously.";
+        if (scanStatus) scanStatus.textContent = "Searching active matches...";
+      } else {
+        if (autopilotCard) autopilotCard.classList.remove("active");
+        if (modeBadge) modeBadge.textContent = "STANDBY";
+        if (statusText) statusText.textContent = "Autopilot standby. Running in Observation/Manual mode.";
+        if (scanStatus) scanStatus.textContent = "Observation Mode";
+      }
+      
+      const isTestnet = data.network !== "mainnet";
+      if (networkVal) networkVal.textContent = isTestnet ? "testnet (Toronto)" : "mainnet";
+      
+      // Update link target
+      const sxdAppBtn = document.getElementById("sxdAppBtn");
+      if (sxdAppBtn) {
+        const targetUrl = isTestnet ? "https://toronto.sx.bet" : "https://sx.bet";
+        sxdAppBtn.href = targetUrl;
+        sxdAppBtn.title = `Launch SX Bet dApp on ${data.network.toUpperCase()}`;
+      }
+      
+      // Dynamic specs update from lines Data if loaded
+      if (linesData && linesData.length > 0 && specsVal) {
+        const line = linesData[0];
+        specsVal.textContent = `Min Vol: ${line.min_matched_volume || 200} USDC | Max Stage: ${line.max_stage}`;
+      }
+      
+      const hb = document.getElementById("autoHeartbeat");
+      if (hb) hb.textContent = new Date().toLocaleTimeString();
+      
+      // Update top right network status pill dynamically
+      updateNetPill(data.network, data.auto_execution);
+    }
+  } catch (e) {
+    console.error("Failed to refresh engine status:", e);
+  }
+}
+
+async function toggleAutopilot() {
+  const switchEl = document.getElementById("autopilotSwitch");
+  if (!switchEl) return;
+  const active = switchEl.checked;
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/engine/toggle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auto_execution: active })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      switchEl.checked = data.auto_execution;
+      await refreshEngineStatus();
+    } else {
+      alert("Failed to toggle autopilot engine status.");
+    }
+  } catch (e) {
+    console.error("Error toggling autopilot:", e);
+    alert("Connection error toggling autopilot.");
+  }
+}
+
+async function saveCopytradeConfig() {
+  const enabled = document.getElementById("copyEnabled").checked;
+  const multiplier = parseFloat(document.getElementById("copyMultiplier").value) || 1.0;
+  
+  try {
+    await fetch(`${API_BASE}/api/copytrade/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        enabled: enabled,
+        user_multiplier: multiplier
+      })
+    });
+    await refreshCopytrade();
+  } catch (e) {
+    console.error("Failed to save copytrade config:", e);
+  }
+}
+
+async function refreshCopytrade() {
+  try {
+    const res = await fetch(`${API_BASE}/api/copytrade/state`);
+    if (!res.ok) throw new Error("API error");
+    copytradeState = await res.json();
+    
+    document.getElementById("copyEnabled").checked = copytradeState.enabled;
+    document.getElementById("copyMultiplier").value = copytradeState.user_multiplier;
+    
+    updateTextWithFlash("copyVolume", `${copytradeState.stats.total_copied_volume.toFixed(2)} USDC`, "flash-update-cyan");
+    updateTextWithFlash("copyProfit", `${copytradeState.stats.total_copied_profit >= 0 ? '+' : ''}${copytradeState.stats.total_copied_profit.toFixed(2)} USDC`, copytradeState.stats.total_copied_profit >= 0 ? "flash-update-green" : "flash-update-cyan");
+    
+    const profitVal = document.getElementById("copyProfit");
+    if (copytradeState.stats.total_copied_profit >= 0) {
+      profitVal.className = "val positive";
+    } else {
+      profitVal.className = "val negative";
+    }
+    
+    // Sync vault address from backend copytradeState
+    if (copytradeState.follower_vault_address && copytradeState.follower_vault_address !== personalVaultAddress) {
+      personalVaultAddress = copytradeState.follower_vault_address;
+      showActiveVault(personalVaultAddress, personalVaultBalance);
+      await pollVaultOnChainBalance();
+    }
+    
+    renderFeeds();
+    await refreshFollowerPanel(copytradeState);
+  } catch (e) {
+    console.error("Error pulling copytrade state:", e);
+  }
+}
+
+// Master refresh loops
+async function refresh() {
+  try {
+    // Refresh engine status first
+    await refreshEngineStatus();
+
+    const res = await fetch(`${API_BASE}/api/lines`);
+    if (!res.ok) throw new Error("bad response");
+    const data = await res.json();
+    
+    const sxbetLines = data.filter(l => l.line_id.startsWith("sxbet-"));
+    linesData = sxbetLines;
+    
+    document.getElementById("connDot").className = "conn-dot connected";
+    document.getElementById("connText").textContent = "Connected (Port 5070)";
+
+    // Update master and connected wallet balances dynamically from the blockchain
+    refreshOnChainBalances();
+
+    // Attach configs dynamically
+    for (let i = 0; i < sxbetLines.length; i++) {
+      const line = sxbetLines[i];
+      line._config_raw = {
+        target_margin: (line.target_margin !== undefined && line.target_margin !== null) ? line.target_margin : 0.5,
+        min_odds: (line.min_odds !== undefined && line.min_odds !== null) ? line.min_odds : 1.1,
+        max_odds: (line.max_odds !== undefined && line.max_odds !== null) ? line.max_odds : 10.0,
+        min_matched_volume: (line.min_matched_volume !== undefined && line.min_matched_volume !== null) ? line.min_matched_volume : 1.0
+      };
+    }
+
+    // Fetch histories
+    const histories = await Promise.all(sxbetLines.map(l =>
+      fetch(`${API_BASE}/api/lines/${l.line_id}/history?limit=10`).then(r => r.json()).catch(() => [])
+    ));
+    
+    // Attach histories to linesData object
+    linesData._histories = histories;
+
+    // Render Single Card Grid
+    const singleLines = sxbetLines.filter(l => l.line_id.includes("single"));
+    const singleHistories = histories.filter((h, idx) => sxbetLines[idx].line_id.includes("single"));
+    document.getElementById("singleMonitorCards").innerHTML = singleLines.map((l, i) => renderSingleCard(l, singleHistories[i])).join("");
+
+    // Render Hedge Pairs Card (unified bundle legs)
+    const hedgeA = sxbetLines.find(l => l.line_id === "sxbet-hedge-A");
+    const hedgeB = sxbetLines.find(l => l.line_id === "sxbet-hedge-B");
+    const hedgeAHist = histories[sxbetLines.findIndex(l => l.line_id === "sxbet-hedge-A")] || [];
+    const hedgeBHist = histories[sxbetLines.findIndex(l => l.line_id === "sxbet-hedge-B")] || [];
+    
+    if (hedgeA && hedgeB) {
+      document.getElementById("hedgeMonitorCard").innerHTML = renderHedgeCard(hedgeA, hedgeB, hedgeAHist, hedgeBHist);
+    } else {
+      document.getElementById("hedgeMonitorCard").innerHTML = `<div class="empty-feed" style="padding:20px; text-align:center; color: var(--text-secondary);">⟷ Unified Hedge bundle starting up — waiting for first runner tick...</div>`;
+    }
+    
+    // Re-fill form configuration inputs if not yet populated
+    if (!document.getElementById("baseStake").dataset.loaded && sxbetLines.length > 0) {
+      selectLine(activeLineId);
+      document.getElementById("baseStake").dataset.loaded = "true";
+    }
+
+    // Sync strategy tuner sliders from live hedge config
+    loadTunerFromCurrentConfig();
+
+    // Pull copy trading state too
+    await refreshCopytrade();
+
+  } catch(e) {
+    document.getElementById("connDot").className = "conn-dot";
+    document.getElementById("connText").textContent = "Disconnected — Server Down";
+    // Update net pill
+    const p = document.getElementById("netPill");
+    if (p) { p.style.borderColor = "rgba(255,77,109,0.3)"; p.style.background = "rgba(255,77,109,0.06)"; }
+    const pd = document.getElementById("netPillDot");
+    if (pd) { pd.style.background = "var(--red)"; pd.style.boxShadow = "0 0 8px var(--red)"; }
+    const pt = document.getElementById("netPillText");
+    if (pt) { pt.textContent = "OFFLINE"; pt.style.color = "var(--red)"; }
+    console.error(e);
+  }
+}
+
+// Vault On-Chain State and Web3 Helpers
+let personalVaultAddress = null;
+let personalVaultBalance = 0.00;
+
+function padAddress(addr) {
+  return addr.toLowerCase().replace("0x", "").padStart(64, "0");
+}
+
+function padUint256(amount) {
+  const value = BigInt(Math.round(amount * 1000000));
+  return value.toString(16).padStart(64, "0");
+}
+
+async function pollVaultOnChainBalance() {
+  if (!personalVaultAddress || typeof window.ethereum === "undefined") return;
+  try {
+    const provider = window.rabby || window.ethereum;
+    const chainId = await provider.request({ method: "eth_chainId" });
+    const isTestnet = (parseInt(chainId, 16) !== 4162);
+    const usdcAddr = isTestnet ? "0x1BC6326EA6aF2aB8E4b6Bc83418044B1923b2956" : "0x6629Ce1Cf35Cc1329ebB4F63202F3f197b3F050B";
+    
+    const balanceData = "0x70a08231" + padAddress(personalVaultAddress);
+    const hexBalance = await provider.request({
+      method: "eth_call",
+      params: [{
+        to: usdcAddr,
+        data: balanceData
+      }, "latest"]
+    });
+    
+    if (hexBalance && hexBalance !== "0x") {
+      const rawBalance = BigInt(hexBalance);
+      personalVaultBalance = Number(rawBalance) / 1000000;
+      document.getElementById("vaultBalanceText").textContent = `${personalVaultBalance.toFixed(2)} USDC`;
+    }
+  } catch (e) {
+    console.error("Failed to poll vault balance:", e);
+  }
+}
+
+async function getBalancesOnChain(walletAddr, isTestnet) {
+  const rpcUrl = isTestnet ? "https://rpc-rollup.toronto.sx.technology" : "https://rpc.sx.technology";
+  const usdcAddr = isTestnet ? "0x1BC6326EA6aF2aB8E4b6Bc83418044B1923b2956" : "0x6629Ce1Cf35Cc1329ebB4F63202F3f197b3F050B";
+  
+  try {
+    // 1. Get native SX balance
+    const nativeResp = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_getBalance",
+        params: [walletAddr, "latest"],
+        id: 1
+      })
+    });
+    const nativeData = await nativeResp.json();
+    const nativeHex = nativeData.result || "0x0";
+    const sxVal = Number(BigInt(nativeHex)) / 1e18;
+
+    // 2. Get USDC balance (decimals = 6)
+    const balanceData = "0x70a08231" + padAddress(walletAddr);
+    const usdcResp = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_call",
+        params: [{ to: usdcAddr, data: balanceData }, "latest"],
+        id: 2
+      })
+    });
+    const usdcData = await usdcResp.json();
+    const usdcHex = usdcData.result || "0x0";
+    const usdcVal = usdcHex !== "0x" ? Number(BigInt(usdcHex)) / 1e6 : 0.0;
+
+    return { sx: sxVal, usdc: usdcVal };
+  } catch (e) {
+    console.error("Error querying blockchain balances:", e);
+    return { sx: 0.0, usdc: 0.0 };
+  }
+}
+
+async function refreshOnChainBalances() {
+  let isTestnet = true;
+  if (linesData && linesData.length > 0) {
+    const networkVal = document.getElementById("autoNetwork")?.textContent || "";
+    isTestnet = !networkVal.includes("mainnet");
+  } else {
+    try {
+      const res = await fetch(`${API_BASE}/api/engine/status`);
+      if (res.ok) {
+        const data = await res.json();
+        isTestnet = (data.network !== "mainnet");
+      }
+    } catch(_) {}
+  }
+
+  // 1. Master Wallet Balance
+  const masterAddr = "0xc0A0c47B4C62112D9AaC1265a59676e59AdA728F";
+  const masterBal = await getBalancesOnChain(masterAddr, isTestnet);
+  updateTextWithFlash("walletBalance", `${masterBal.usdc.toFixed(2)} USDC | ${masterBal.sx.toFixed(2)} SX`, "flash-update-cyan");
+
+  // 2. Connected Follower Wallet Balance
+  const followerCard = document.getElementById("followerWalletCard");
+  if (rabbyConnected && userAddress) {
+    if (followerCard) {
+      followerCard.style.display = "block";
+      document.getElementById("followerWalletAddr").textContent = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
+      document.getElementById("followerWalletAddr").title = userAddress;
+    }
+    const followerBal = await getBalancesOnChain(userAddress, isTestnet);
+    updateTextWithFlash("followerWalletBalance", `${followerBal.usdc.toFixed(2)} USDC | ${followerBal.sx.toFixed(2)} SX`, "flash-update-green");
+  } else {
+    if (followerCard) followerCard.style.display = "none";
+  }
+}
+
+function checkPersistedVault() {
+  const savedAddr = localStorage.getItem("investpal_vault_address");
+  const savedBal = localStorage.getItem("investpal_vault_balance");
+  if (savedAddr) {
+    personalVaultAddress = savedAddr;
+    personalVaultBalance = parseFloat(savedBal || "0.00");
+    showActiveVault(personalVaultAddress, personalVaultBalance);
+    pollVaultOnChainBalance();
+  }
+}
+
+function showActiveVault(addr, balance) {
+  document.getElementById("deployVaultBtn").style.display = "none";
+  document.getElementById("vaultActiveContainer").style.display = "block";
+  document.getElementById("vaultAddressText").textContent = addr.slice(0, 8) + "..." + addr.slice(-6);
+  document.getElementById("vaultAddressText").title = addr;
+  document.getElementById("vaultBalanceText").textContent = `${balance.toFixed(2)} USDC`;
+}
+
+async function simulateVaultDeployment() {
+  if (!rabbyConnected) {
+    alert("Please connect your Web3 Wallet first before deploying your Copy Vault contract.");
+    return;
+  }
+  if (typeof window.ethereum === "undefined") {
+    alert("Web3 Wallet extension not detected.");
+    return;
+  }
+  
+  try {
+    const provider = window.rabby || window.ethereum;
+    const chainId = await provider.request({ method: "eth_chainId" });
+    const isTestnet = (parseInt(chainId, 16) !== 4162);
+    
+    const usdcAddr = isTestnet ? "0x1BC6326EA6aF2aB8E4b6Bc83418044B1923b2956" : "0x6629Ce1Cf35Cc1329ebB4F63202F3f197b3F050B";
+    const proxyAddr = isTestnet ? "0xD7cCD18d33d3EC2879A6DF8e82Ef81C8830c534F" : "0x38aef22152BC8965bf0af7Cf53586e4b0C4E9936";
+    const masterAddr = "0xc0A0c47B4C62112D9AaC1265a59676e59AdA728F";
+    
+    // Fetch bytecode/ABI from API
+    const res = await fetch(`${API_BASE}/api/copytrade/vault-contract`);
+    if (!res.ok) throw new Error("Failed to load compiled contract bytecode from backend.");
+    const contractMeta = await res.json();
+    const bytecode = contractMeta.bytecode;
+    
+    // Encode constructor args: _follower, _operator, _usdc, _tokenTransferProxy
+    const constructorArgs = padAddress(userAddress) + padAddress(masterAddr) + padAddress(usdcAddr) + padAddress(proxyAddr);
+    const txData = "0x" + bytecode + constructorArgs;
+    
+    alert("Confirm contract deployment in your Wallet (MetaMask / Rabby)...");
+    
+    const txHash = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: userAddress,
+        to: null,
+        data: txData
+      }]
+    });
+    
+    alert(`Deployment transaction submitted. Tx Hash: ${txHash}\nWaiting for block confirmation...`);
+    
+    // Poll for receipt
+    let receipt = null;
+    for (let i = 0; i < 30; i++) {
+      receipt = await provider.request({
+        method: "eth_getTransactionReceipt",
+        params: [txHash]
+      });
+      if (receipt && receipt.contractAddress) {
+        break;
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    
+    if (!receipt || !receipt.contractAddress) {
+      throw new Error("Timeout waiting for block confirmation or contract address not returned.");
+    }
+    
+    const vaultAddr = receipt.contractAddress;
+    personalVaultAddress = vaultAddr;
+    personalVaultBalance = 0.00;
+    
+    // Save locally
+    localStorage.setItem("investpal_vault_address", vaultAddr);
+    localStorage.setItem("investpal_vault_balance", "0.00");
+    
+    // Persist on backend config
+    await fetch(`${API_BASE}/api/copytrade/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ follower_vault_address: vaultAddr })
+    });
+    
+    showActiveVault(vaultAddr, 0.00);
+    alert(`Personal Vault successfully deployed on SX Network!\n\nContract Address: ${vaultAddr}`);
+  } catch(e) {
+    console.error(e);
+    alert("Deployment failed: " + e.message);
+  }
+}
+
+async function simulateVaultDeposit() {
+  const amt = parseFloat(document.getElementById("vaultDepositAmt").value);
+  if (!amt || amt <= 0) {
+    alert("Please enter a valid deposit amount.");
+    return;
+  }
+  if (!personalVaultAddress) {
+    alert("Deploy a copy vault first.");
+    return;
+  }
+  
+  try {
+    const provider = window.rabby || window.ethereum;
+    const chainId = await provider.request({ method: "eth_chainId" });
+    const isTestnet = (parseInt(chainId, 16) !== 4162);
+    const usdcAddr = isTestnet ? "0x1BC6326EA6aF2aB8E4b6Bc83418044B1923b2956" : "0x6629Ce1Cf35Cc1329ebB4F63202F3f197b3F050B";
+    
+    alert(`Step 1/2: Approve Vault to spend ${amt} USDC. Confirm in wallet...`);
+    const approveData = "0x095ea7b3" + padAddress(personalVaultAddress) + padUint256(amt);
+    const approveTx = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: userAddress,
+        to: usdcAddr,
+        data: approveData
+      }]
+    });
+    
+    alert(`Approval transaction submitted. Tx Hash: ${approveTx}\nWaiting for confirmation before initiating deposit...`);
+    
+    let approved = false;
+    for (let i = 0; i < 30; i++) {
+      const receipt = await provider.request({
+        method: "eth_getTransactionReceipt",
+        params: [approveTx]
+      });
+      if (receipt && receipt.status === "0x1") {
+        approved = true;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    
+    if (!approved) {
+      throw new Error("Approval transaction failed or timed out.");
+    }
+    
+    alert(`Step 2/2: Deposit ${amt} USDC into your vault. Confirm in wallet...`);
+    const depositData = "0xb6b55f25" + padUint256(amt);
+    const depositTx = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: userAddress,
+        to: personalVaultAddress,
+        data: depositData
+      }]
+    });
+    
+    alert(`Deposit transaction submitted. Tx Hash: ${depositTx}\nWaiting for block confirmation...`);
+    
+    let deposited = false;
+    for (let i = 0; i < 30; i++) {
+      const receipt = await provider.request({
+        method: "eth_getTransactionReceipt",
+        params: [depositTx]
+      });
+      if (receipt && receipt.status === "0x1") {
+        deposited = true;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    
+    if (!deposited) {
+      throw new Error("Deposit transaction failed or timed out.");
+    }
+    
+    document.getElementById("vaultDepositAmt").value = "";
+    await pollVaultOnChainBalance();
+    
+    // Save to local storage for quick offline display
+    localStorage.setItem("investpal_vault_balance", personalVaultBalance.toFixed(2));
+    
+    alert(`Successfully deposited ${amt} USDC into your Copy Vault!`);
+  } catch(e) {
+    console.error(e);
+    alert("Deposit failed: " + e.message);
+  }
+}
+
+async function simulateVaultWithdraw() {
+  const amt = parseFloat(document.getElementById("vaultWithdrawAmt").value);
+  if (!amt || amt <= 0) {
+    alert("Please enter a valid withdrawal amount.");
+    return;
+  }
+  if (amt > personalVaultBalance) {
+    alert("Insufficient vault balance.");
+    return;
+  }
+  if (!personalVaultAddress) return;
+  
+  try {
+    const provider = window.rabby || window.ethereum;
+    alert(`Confirm withdrawal of ${amt} USDC from your vault in wallet...`);
+    const withdrawData = "0x2e1a7d4d" + padUint256(amt);
+    const withdrawTx = await provider.request({
+      method: "eth_sendTransaction",
+      params: [{
+        from: userAddress,
+        to: personalVaultAddress,
+        data: withdrawData
+      }]
+    });
+    
+    alert(`Withdrawal transaction submitted. Tx Hash: ${withdrawTx}\nWaiting for block confirmation...`);
+    
+    let withdrawn = false;
+    for (let i = 0; i < 30; i++) {
+      const receipt = await provider.request({
+        method: "eth_getTransactionReceipt",
+        params: [withdrawTx]
+      });
+      if (receipt && receipt.status === "0x1") {
+        withdrawn = true;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    
+    if (!withdrawn) {
+      throw new Error("Withdrawal transaction failed or timed out.");
+    }
+    
+    document.getElementById("vaultWithdrawAmt").value = "";
+    await pollVaultOnChainBalance();
+    
+    localStorage.setItem("investpal_vault_balance", personalVaultBalance.toFixed(2));
+    
+    alert(`Successfully withdrew ${amt} USDC from your vault back to your wallet!`);
+  } catch(e) {
+    console.error(e);
+    alert("Withdrawal failed: " + e.message);
+  }
+}
+
+// On load
+checkPersistedWallet();
+checkPersistedVault();
+refresh();
+setInterval(refresh, 3000);
+
+// ============================================================
+// TOAST NOTIFICATION SYSTEM
+// ============================================================
+const toastTypeMap = {
+  bet_placed:   { icon: "📥", title: "Bet Placed" },
+  bet_settled:  { icon: "🏆", title: "Bet Settled" },
+  hedge_placed: { icon: "🔀", title: "Hedge Placed" },
+};
+
+function showToast(notification) {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const info = toastTypeMap[notification.type] || { icon: "🔔", title: "Alert" };
+  const details = notification.details || {};
+
+  // Derive win/loss class for styling
+  let extraClass = notification.type;
+  if (notification.type === "bet_settled") {
+    extraClass += " " + (details.outcome || "");
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast ${extraClass}`;
+  toast.innerHTML = `
+    <div class="toast-icon">${info.icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">${info.title}</div>
+      <div class="toast-msg">${notification.message}</div>
+    </div>
+    <button class="toast-close" onclick="dismissToast(this.parentElement)">✕</button>
+  `;
+  toast.onclick = (e) => {
+    if (!e.target.classList.contains("toast-close")) dismissToast(toast);
+  };
+
+  container.appendChild(toast);
+
+  // Auto-dismiss after 7 seconds
+  setTimeout(() => dismissToast(toast), 7000);
+}
+
+function dismissToast(toast) {
+  if (!toast || !toast.parentElement) return;
+  toast.classList.add("removing");
+  setTimeout(() => { if (toast.parentElement) toast.parentElement.removeChild(toast); }, 320);
+}
+
+async function pollNotifications() {
+  try {
+    const res = await fetch(`${API_BASE}/api/copytrade/notifications`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const unread = data.notifications || [];
+    if (unread.length > 0) {
+      unread.forEach(n => showToast(n));
+      // Mark all as read
+      await fetch(`${API_BASE}/api/copytrade/notifications/clear`, { method: "POST" });
+    }
+  } catch(e) {
+    // Silent — server may be restarting
+  }
+}
+
+// Poll notifications every 5s
+setInterval(pollNotifications, 5000);
+pollNotifications();  // immediate first check
+
+// ============================================================
+// STRATEGY TUNER (Unified Hedge)
+// ============================================================
+async function applyHedgeTuning() {
+  const baseStake   = parseFloat(document.getElementById("tunerBaseStake").value);
+  const maxStage    = parseInt(document.getElementById("tunerMaxStage").value);
+  const minOdds     = parseFloat(document.getElementById("tunerMinOdds").value);
+  const maxOdds     = parseFloat(document.getElementById("tunerMaxOdds").value);
+
+  const payload = { base_stake: baseStake, max_stage: maxStage, min_odds: minOdds, max_odds: maxOdds };
+
+  // Apply to unified hedge parent — API will cascade to both legs
+  try {
+    const res = await fetch(`${API_BASE}/api/lines/sxbet-hedge/config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Hedge parent config not found (may need first runner tick).");
+    showToast({
+      type: "bet_placed",
+      message: `Hedge tuner applied: Stake ${baseStake.toFixed(1)} USDC | Odds ${minOdds.toFixed(2)}–${maxOdds.toFixed(2)} | Max Stage ${maxStage}`,
+      details: {}
+    });
+  } catch(e) {
+    showToast({ type: "hedge_placed", message: `⚠️ Tuner error: ${e.message}`, details: {} });
+  }
+}
+
+function loadTunerFromCurrentConfig() {
+  // Pre-fill tuner from the hedge parent line if available
+  const hedge = linesData.find(l => l.line_id === "sxbet-hedge");
+  if (!hedge) return;
+  const cfg = hedge._config_raw || {};
+
+  const bs = cfg.base_stake || 1.0;
+  const ms = cfg.max_stage || 6;
+  const mn = cfg.min_odds || 1.1;
+  const mx = cfg.max_odds || 10.0;
+
+  document.getElementById("tunerBaseStake").value = bs;
+  document.getElementById("tunerBaseStakeVal").textContent = bs.toFixed(1) + " USDC";
+  document.getElementById("tunerMaxStage").value = ms;
+  document.getElementById("tunerMaxStageVal").textContent = ms;
+  document.getElementById("tunerMinOdds").value = mn;
+  document.getElementById("tunerMinOddsVal").textContent = mn.toFixed(2);
+  document.getElementById("tunerMaxOdds").value = mx;
+  document.getElementById("tunerMaxOddsVal").textContent = mx.toFixed(2);
+}
+
+// ============================================================
+// FOLLOWER PANEL + PROFIT SHARE SETTLEMENT
+// ============================================================
+async function refreshFollowerPanel(state) {
+  if (!state) return;
+  const stats = state.stats || {};
+  const vol = stats.total_copied_volume || 0;
+  const pnl = stats.total_copied_profit || 0;
+  const fees = stats.total_fees_paid || 0;
+
+  document.getElementById("followerCopiedVol").textContent = `$${vol.toFixed(2)}`;
+  const pnlEl = document.getElementById("followerNetPnl");
+  pnlEl.textContent = `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDC`;
+  pnlEl.style.color = pnl >= 0 ? "var(--green)" : "var(--red)";
+  document.getElementById("followerFees").textContent = `${fees.toFixed(4)} USDC`;
+}
+
+async function triggerSettlement() {
+  try {
+    const res = await fetch(`${API_BASE}/api/copytrade/settle`, { method: "POST" });
+    if (!res.ok) throw new Error("Settlement API error");
+    const data = await res.json();
+
+    document.getElementById("rptPeriod").textContent     = `Last ${data.period_hours}h`;
+    document.getElementById("rptBets").textContent       = data.bets_settled;
+    document.getElementById("rptGross").textContent      = `+${data.total_gross_profit.toFixed(4)} USDC`;
+    document.getElementById("rptFee").textContent        = `${data.total_fee_collected.toFixed(4)} USDC`;
+    document.getElementById("rptNet").textContent        = `+${data.total_net_to_follower.toFixed(4)} USDC`;
+
+    document.getElementById("settlementReport").classList.add("visible");
+
+    showToast({
+      type: "bet_settled",
+      message: `Settlement run: ${data.bets_settled} bets | Net follower gain: +${data.total_net_to_follower.toFixed(4)} USDC`,
+      details: {}
+    });
+  } catch(e) {
+    showToast({ type: "hedge_placed", message: `⚠️ Settlement failed: ${e.message}`, details: {} });
+  }
+}
+
+// ============================================================
+// SCANNER FEED + TICKER + INIT POLLING
+// ============================================================
+
+async function refreshScannerFeed() {
+  try {
+    const res = await fetch(`${API_BASE}/api/scanner/feed?limit=12`);
+    if (!res.ok) return;
+    const { events } = await res.json();
+    const list = document.getElementById('scannerFeedList');
+    if (!list) return;
+    if (!events || events.length === 0) return;
+
+    list.innerHTML = events.map(e => {
+      const statusClass = e.status === 'CANDIDATE' ? 'candidate' : (e.status === 'BET_PLACED' ? 'bet_placed' : 'skipped');
+      const oddsA = e.side_a_odds ? e.side_a_odds.toFixed(2) : '—';
+      const oddsB = e.side_b_odds ? e.side_b_odds.toFixed(2) : '—';
+      const volA = e.side_a_vol !== undefined ? e.side_a_vol.toFixed(1) : '—';
+      const ts = e.ts ? e.ts.slice(11,19) : '—';
+      const scoreTag = e.score !== undefined ? `<span style="color:var(--cyan);font-family:var(--font-mono);font-size:0.65rem;">score:${e.score}</span>` : '';
+      
+      // Match details mapping
+      const desc = e.description || e.line_id;
+      const leagueStr = e.league ? `<span style="color:var(--text-muted);font-size:0.65rem;">[${e.league}]</span>` : '';
+      const liveBadge = e.in_play ? `<span style="background:var(--red);color:white;font-size:0.58rem;font-weight:700;padding:1px 3px;border-radius:3px;margin-right:4px;animation:text-pulse 1s infinite;">LIVE</span>` : '';
+      
+      return `
+        <div class="scanner-event" style="flex-direction:column;align-items:flex-start;gap:4px;padding:8px 12px;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+            <span class="scanner-event-status ${statusClass}">${e.status}</span>
+            <span style="color:var(--text-muted);font-size:0.65rem;">${ts}</span>
+          </div>
+          <div style="font-family:var(--font-sans);font-weight:600;font-size:0.75rem;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;">
+            ${liveBadge}${desc}
+          </div>
+          <div style="display:flex;justify-content:space-between;width:100%;font-size:0.68rem;color:var(--text-secondary);">
+            <span>${leagueStr}</span>
+            <span style="font-family:var(--font-mono);">A:${oddsA} | B:${oddsB} | vol:${volA} ${scoreTag}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Scanner feed error:', e);
+  }
+}
+
+function updateTicker() {
+  const ticker = document.getElementById('tickerInner');
+  if (!ticker) return;
+  if (!linesData || linesData.length === 0) return;
+
+  // Build items from all line histories
+  const allHists = linesData._histories || [];
+  let allBets = [];
+  allHists.forEach((hist, idx) => {
+    if (!hist) return;
+    hist.forEach(b => allBets.push({ ...b, line_id: linesData[idx]?.line_id }));
+  });
+  allBets.sort((a,b) => b.id - a.id);
+
+  if (allBets.length === 0) return;
+
+  const items = allBets.slice(0, 8).map(b => {
+    const oc = b.outcome === 'win' ? 't-win' : (b.outcome === 'loss' ? 't-loss' : 't-pend');
+    const pnlStr = b.pnl != null ? `${b.pnl >= 0 ? '+' : ''}${b.pnl.toFixed(2)} USDC` : '— USDC';
+    return `<span class="ticker-item"><span class="t-id">${b.line_id||'?'}</span> | <span class="${oc}">${(b.outcome||'pending').toUpperCase()}</span> | Stage ${b.stage||0} | odds ${(b.odds||0).toFixed(2)} | ${pnlStr}</span>`;
+  });
+
+  // Duplicate for seamless loop
+  const html = items.join('') + items.join('');
+  ticker.innerHTML = html;
+}
+
+function updateNetPill(network, scanning) {
+  const pill = document.getElementById('netPill');
+  const dot = document.getElementById('netPillDot');
+  const text = document.getElementById('netPillText');
+  if (!pill || !dot || !text) return;
+  const isMain = network === 'mainnet';
+  pill.style.borderColor = isMain ? 'rgba(0,242,254,0.25)' : 'rgba(245,158,11,0.25)';
+  pill.style.background = isMain ? 'rgba(0,242,254,0.07)' : 'rgba(245,158,11,0.07)';
+  dot.style.background = scanning ? 'var(--green)' : 'var(--amber)';
+  dot.style.boxShadow = scanning ? '0 0 8px var(--green)' : '0 0 8px var(--amber)';
+  text.textContent = `${(network||'?').toUpperCase()} ● ${scanning ? 'SCANNING' : 'STANDBY'}`;
+  text.style.color = isMain ? 'var(--cyan)' : 'var(--amber)';
+  
+  // Also update network switcher button text
+  const toggleBtnText = document.getElementById("netToggleBtnText");
+  if (toggleBtnText) {
+    toggleBtnText.textContent = isMain ? "Switch to Testnet" : "Switch to Mainnet";
+  }
+}
+
+// Tab Switching
+function switchTab(tab) {
+  const monTab = document.getElementById("monitorTabContent");
+  const admTab = document.getElementById("adminTabContent");
+  const monBtn = document.getElementById("tabMonitorBtn");
+  const admBtn = document.getElementById("tabAdminBtn");
+  
+  if (tab === 'monitor') {
+    monTab.style.display = "grid";
+    admTab.style.display = "none";
+    monBtn.className = "rabby-btn connect";
+    admBtn.className = "sxlink-btn";
+  } else {
+    monTab.style.display = "none";
+    admTab.style.display = "block";
+    monBtn.className = "sxlink-btn";
+    admBtn.className = "rabby-btn connect";
+    refreshAdminData();
+    refreshAuditTrail();
+  }
+}
+
+// Network Toggle
+async function toggleNetwork() {
+  try {
+    const statusRes = await fetch(`${API_BASE}/api/engine/status`);
+    if (!statusRes.ok) return;
+    const currentStatus = await statusRes.json();
+    const targetNetwork = currentStatus.network === "mainnet" ? "testnet" : "mainnet";
+    
+    if (!confirm(`Are you sure you want to switch the engine network from ${currentStatus.network.toUpperCase()} to ${targetNetwork.toUpperCase()}?`)) {
+      return;
+    }
+    
+    const res = await fetch(`${API_BASE}/api/engine/network`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ network: targetNetwork })
+    });
+    if (res.ok) {
+      showToast({
+        type: "bet_placed",
+        message: `Network switched successfully to ${targetNetwork.toUpperCase()}`,
+        details: {}
+      });
+      // Prompt wallet switch/add network automatically
+      await ensureCorrectChain();
+      await refresh();
+    } else {
+      alert("Failed to switch network.");
+    }
+  } catch (e) {
+    console.error("Failed to switch network:", e);
+    alert("Connection error switching network.");
+  }
+}
+
+// Admin Settings Save
+async function saveAdminSettings() {
+  const allowInPlay = document.getElementById("adminAllowInPlay").checked;
+  try {
+    const res = await fetch(`${API_BASE}/api/engine/settings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allow_in_play: allowInPlay })
+    });
+    if (res.ok) {
+      showToast({
+        type: "bet_placed",
+        message: `In-play betting settings updated: ${allowInPlay ? "ENABLED" : "DISABLED"}`,
+        details: {}
+      });
+    }
+  } catch (e) {
+    console.error("Failed to save admin settings:", e);
+  }
+}
+
+// Default Hedge Mode Toggle
+async function toggleDefaultHedgeMode() {
+  const defaultHedge = document.getElementById("adminDefaultHedge").checked;
+  try {
+    // If defaulting to hedge, pause SINGLE A & B, unpause HEDGE
+    const stateA = defaultHedge ? "pause" : "resume";
+    const stateB = defaultHedge ? "pause" : "resume";
+    const stateH = defaultHedge ? "resume" : "pause";
+    
+    await fetch(`${API_BASE}/api/lines/sxbet-single-A/${stateA}`, { method: "POST" });
+    await fetch(`${API_BASE}/api/lines/sxbet-single-B/${stateB}`, { method: "POST" });
+    await fetch(`${API_BASE}/api/lines/sxbet-hedge/${stateH}`, { method: "POST" });
+    
+    showToast({
+      type: "hedge_placed",
+      message: defaultHedge ? "Priority set to HEDGE: Single lines A/B paused." : "Dual mode: Single and Hedge lines active.",
+      details: {}
+    });
+    await refresh();
+  } catch (e) {
+    console.error("Failed to toggle default hedge mode:", e);
+  }
+}
+
+// Audit Trail Refresh
+async function refreshAuditTrail() {
+  try {
+    const res = await fetch(`${API_BASE}/api/audit/logs?limit=25`);
+    if (!res.ok) return;
+    const { logs } = await res.json();
+    const body = document.getElementById("auditTrailBody");
+    if (!body) return;
+    
+    if (!logs || logs.length === 0) {
+      body.innerHTML = `<tr><td colspan="3" class="empty-feed">No audit trail events found. Start the runner to log events.</td></tr>`;
+      return;
+    }
+    
+    body.innerHTML = logs.map(l => {
+      const ts = l.timestamp ? l.timestamp.replace("T", " ").slice(0, 19) : "—";
+      return `
+        <tr>
+          <td class="mono" style="font-size:0.72rem;color:var(--text-secondary);">${ts}</td>
+          <td><span class="outcome-badge pending" style="text-transform:uppercase;font-size:0.68rem;padding:2px 6px;">${l.action}</span></td>
+          <td style="font-size:0.75rem;color:var(--text-primary);">${l.details}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error("Failed to refresh audit trail:", e);
+  }
+}
+
+// Admin Performance Analytics
+async function refreshAdminData() {
+  try {
+    const statusRes = await fetch(`${API_BASE}/api/engine/status`);
+    if (statusRes.ok) {
+      const st = await statusRes.json();
+      document.getElementById("adminAllowInPlay").checked = st.allow_in_play;
+    }
+    
+    if (!linesData || linesData.length === 0) return;
+    
+    // Check if Single lines are paused to determine defaultHedge checkbox
+    const singleA = linesData.find(l => l.line_id === "sxbet-single-A");
+    const singleB = linesData.find(l => l.line_id === "sxbet-single-B");
+    const isHedgeDefault = (singleA && singleA.paused) && (singleB && singleB.paused);
+    document.getElementById("adminDefaultHedge").checked = isHedgeDefault;
+    
+    // Calculate performance metrics across all line histories
+    let wins = 0;
+    let losses = 0;
+    let totalVol = 0;
+    let stages = [];
+    
+    const allHists = linesData._histories || [];
+    allHists.forEach(hist => {
+      if (!hist) return;
+      hist.forEach(b => {
+        totalVol += b.stake;
+        stages.push(b.stage);
+        if (b.outcome === 'win') wins++;
+        else if (b.outcome === 'loss') losses++;
+      });
+    });
+    
+    const totalTrades = wins + losses;
+    const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0.0;
+    const avgStage = stages.length > 0 ? (stages.reduce((a,b) => a+b, 0) / stages.length) : 0.0;
+    
+    document.getElementById("adminWinRate").textContent = `${winRate.toFixed(1)}%`;
+    document.getElementById("adminWinDetails").textContent = `${wins} wins / ${totalTrades} settled`;
+    document.getElementById("adminAvgStage").textContent = `Stage ${avgStage.toFixed(1)}`;
+    document.getElementById("adminTradedVol").textContent = `${totalVol.toFixed(2)} USDC`;
+    
+    // Copy stats
+    if (copytradeState && copytradeState.stats) {
+      const pnl = copytradeState.stats.total_copied_profit || 0;
+      const fees = copytradeState.stats.total_fees_paid || 0;
+      const pnlEl = document.getElementById("adminNetProfit");
+      pnlEl.textContent = `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)} USDC`;
+      pnlEl.style.color = pnl >= 0 ? "var(--green)" : "var(--red)";
+      document.getElementById("adminFeesCollected").textContent = `${fees.toFixed(2)} USDC fees paid`;
+    }
+  } catch (e) {
+    console.error("Failed to refresh admin data:", e);
+  }
+}
+
+// Initial boot + polling
+(async function init() {
+  await checkPersistedWallet();
+  checkPersistedVault();
+  await refresh();
+  await refreshScannerFeed();
+  updateTicker();
+
+  // Network pill initial state from engine status
+  try {
+    const es = await fetch(`${API_BASE}/api/engine/status`);
+    if (es.ok) {
+      const d = await es.json();
+      updateNetPill(d.network, d.auto_execution);
+    }
+  } catch(_) {}
+
+  // Main polling loop: 3s for lines/copytrade, 32s for scanner
+  setInterval(refresh, 3000);
+  setInterval(refreshScannerFeed, 32000);
+  setInterval(updateTicker, 5000);
+
+  // Notification polling
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/copytrade/notifications`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.notifications) {
+        data.notifications.forEach(n => showToast(n));
+      }
+    } catch(e) {}
+  }, 3000);
+})();
+
+</script>
+</body>
+</html>

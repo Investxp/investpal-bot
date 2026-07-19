@@ -34,6 +34,13 @@ POLYMARKET_FUNDER_ADDRESS="${POLYMARKET_FUNDER_ADDRESS:-}" \
 PORT=8090 python server.py &
 POLY_PID=$!
 
+# Start Betfair Recovery Engine API (Flask on port 5070)
+cd /app/polymarket-backend/betfair-recovery-engine
+FLASK_ENV=production python api_server.py &
+BETS_PID=$!
+echo "Bets API started on port 5070 (PID $BETS_PID)"
+cd /app/polymarket-backend
+
 cd /app
 PORT=$NEXT_PORT npm start &
 NEXT_PID=$!
@@ -43,7 +50,7 @@ nginx -g 'daemon off;' &
 NGINX_PID=$!
 
 cleanup() {
-    kill $NGINX_PID $NEXT_PID $POLY_PID 2>/dev/null
+    kill $NGINX_PID $NEXT_PID $POLY_PID $BETS_PID 2>/dev/null
     wait
 }
 trap cleanup SIGTERM SIGINT

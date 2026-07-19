@@ -17,6 +17,8 @@ import { DashboardView } from '../components/custom/dashboard-view';
 import { AutoTradeView } from '../components/custom/autotrade-view';
 import { BotBuilderView } from '../components/bot-builder/bot-builder-view';
 import { PolymarketView } from '../components/custom/polymarket-view';
+import { PharmacyView } from '../components/custom/pharmacy-view';
+import { BetsView } from '../components/custom/bets-view';
 
 // UI icons and components
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -224,7 +226,7 @@ function DigitsTab({ auth }: { auth: UseAuthReturn }) {
 // Main Unified Dashboard Component
 // -------------------------------------------------------------
 
-type TabName = 'dashboard' | 'rise-fall' | 'digits' | 'accumulators' | 'dbot' | 'autotrade' | 'polymarket';
+type TabName = 'dashboard' | 'rise-fall' | 'digits' | 'accumulators' | 'dbot' | 'autotrade' | 'polymarket' | 'pharmacy' | 'bets';
 
 export default function UniversalPage() {
   const { auth } = useDerivWSContext();
@@ -241,6 +243,8 @@ export default function UniversalPage() {
     { name: 'dbot', label: 'Bot Builder', icon: Bot, authRequired: true },
     { name: 'autotrade', label: 'Hedge Bot', icon: Activity, authRequired: true },
     { name: 'polymarket', label: 'Polymarket', icon: Activity, authRequired: false },
+    { name: 'pharmacy', label: 'Pharmacy', icon: Activity, authRequired: false },
+    { name: 'bets', label: 'Bets Engine', icon: Activity, authRequired: false },
   ] as const;
 
   const handleTabChange = (tabName: TabName) => {
@@ -452,6 +456,8 @@ export default function UniversalPage() {
           {activeTab === 'autotrade' && <AutoTradeView auth={auth} />}
 
           {activeTab === 'polymarket' && <PolymarketView />}
+          {activeTab === 'pharmacy' && <PharmacyView />}
+          {activeTab === 'bets' && <BetsView />}
         </main>
       </div>
     </div>
