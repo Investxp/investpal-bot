@@ -1,0 +1,96 @@
+services:
+  # ── Web Service (Node.js Backend + Frontend) ─────────────
+  - type: web
+    name: qemrx-pharmacy
+    env: node
+    region: oregon          # closest to Kenya with free tier
+    plan: free              # upgrade to starter ($7/mo) for production
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: PHARMACY_NAME
+        value: QEMRX PHARMACY
+      - key: PHARMACY_TAGLINE
+        value: Your Health, Delivered.
+      - key: PHARMACY_PHONE
+        value: "+254700000000"
+      - key: PHARMACY_EMAIL
+        value: info@qemrxpharmacy.co.ke
+      - key: PHARMACY_ADDRESS
+        value: "Nairobi, Kenya"
+      - key: CURRENCY
+        value: KES
+      - key: DELIVERY_FEE_NAIROBI
+        value: 150
+      - key: DELIVERY_FEE_COUNTY
+        value: 300
+      - key: FREE_DELIVERY_THRESHOLD
+        value: 2500
+      - key: ESTIMATED_DELIVERY_HOURS
+        value: 4
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: MAX_UPLOAD_SIZE_MB
+        value: 5
+      - key: UPLOAD_DIR
+        value: ./uploads/prescriptions
+      # ── FILL THESE IN RENDER DASHBOARD ──────────────────
+      - key: DATABASE_URL
+        sync: false          # paste from Neon.tech
+      - key: JWT_SECRET
+        sync: false          # random 64-char string
+      - key: SESSION_SECRET
+        sync: false          # random 32-char string
+      - key: BASE_URL
+        sync: false          # https://qemrx-pharmacy.onrender.com
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_ENV
+        value: sandbox       # change to production when ready
+      - key: MPESA_CALLBACK_URL
+        sync: false          # https://yourdomain/api/payments/mpesa/callback
+      - key: STRIPE_PUBLIC_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_USERNAME
+        value: sandbox
+      - key: AT_SENDER_ID
+        value: QEMRX
+      - key: SMTP_HOST
+        value: smtp.sendgrid.net
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        value: apikey
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        value: "QEMRX PHARMACY <noreply@qemrxpharmacy.co.ke>"
+      - key: ADMIN_EMAIL
+        value: admin@qemrxpharmacy.co.ke
+      - key: ADMIN_DEFAULT_PASSWORD
+        sync: false          # set a strong password
+      - key: PHARMACY_LICENSE_NO
+        value: PPB-XXXX-XXXX

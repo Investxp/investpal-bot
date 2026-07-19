@@ -1,0 +1,36 @@
+{
+  "name": "qemrx-backend",
+  "version": "1.0.0",
+  "description": "QEMRX Pharmacy — Node.js/Express backend with M-Pesa, Stripe, SMS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "seed": "node seed.js",
+    "setup": "npm install && node seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.18.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.3",
+    "nodemon": "^3.1.14",
+    "pg": "^8.22.0",
+    "sequelize": "^6.37.8",
+    "stripe": "^22.3.2",
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "docx": "^9.7.1"
+  }
+}

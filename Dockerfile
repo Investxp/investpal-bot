@@ -28,10 +28,13 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 COPY polymarket-backend /app/polymarket-backend
+COPY qemrx-backend /app/qemrx-backend
 
 RUN python3 -m venv /app/polymarket-backend/venv && \
     /app/polymarket-backend/venv/bin/pip install -r /app/polymarket-backend/requirements.txt && \
     /app/polymarket-backend/venv/bin/pip install flask flask-cors betfairlightweight web3 eth-account
+
+RUN cd /app/qemrx-backend && npm ci --omit=dev
 
 COPY nginx.conf /etc/nginx/sites-available/default.template
 COPY torrc /app/torrc

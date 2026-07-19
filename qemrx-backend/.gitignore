@@ -1,0 +1,10 @@
+node_modules/
+.env
+uploads/prescriptions/*
+!uploads/prescriptions/.gitkeep
+*.log
+.DS_Store
+Thumbs.db
+dist/
+.nyc_output/
+coverage/

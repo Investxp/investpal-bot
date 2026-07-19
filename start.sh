@@ -41,7 +41,13 @@ BETS_PID=$!
 echo "Bets API started on port 5070 (PID $BETS_PID)"
 cd /app/polymarket-backend
 
+# Start QEMRX Pharmacy Express backend on port 3001
+cd /app/qemrx-backend
+PORT=3001 NODE_ENV=production node src/server.js &
+QEMRX_PID=$!
+echo "QEMRX Pharmacy API started on port 3001 (PID $QEMRX_PID)"
 cd /app
+
 PORT=$NEXT_PORT npm start &
 NEXT_PID=$!
 
@@ -50,7 +56,7 @@ nginx -g 'daemon off;' &
 NGINX_PID=$!
 
 cleanup() {
-    kill $NGINX_PID $NEXT_PID $POLY_PID $BETS_PID 2>/dev/null
+    kill $NGINX_PID $NEXT_PID $POLY_PID $BETS_PID $QEMRX_PID 2>/dev/null
     wait
 }
 trap cleanup SIGTERM SIGINT
