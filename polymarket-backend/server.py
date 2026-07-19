@@ -14,19 +14,28 @@ from core.polymarket   import (run_poly_loop, get_cached, full_scan_and_cache,
                                 fetch_orderbook, fetch_clob_price, fetch_positions,
                                 place_order, cancel_order, get_open_orders,
                                 get_balance_allowance, update_balance_allowance, approve_usdc,
-                                get_cache_age_minutes, get_proxy, set_proxy)
+                                get_cache_age_minutes, get_proxy, set_proxy,
+                                setup_deposit_wallet, place_order_poly1271,
+                                approve_token_for_onramp, wrap_usdce_to_pusd,
+                                transfer_pusd, swap_native_usdc_for_usdce,
+                                submit_wallet_batch, sign_wallet_batch,
+                                ensure_deposit_balance, get_deposit_wallet_balance,
+                                chain_id, _rpc,
+                                COLLATERAL_ONRAMP, USDC_E, V2_COLLATERAL)
 from core.trade_engine import (get_picks, get_results, get_tracked,
                                 save_tracked, resolve_pick, reset_all)
 from core.martingale   import (get_state, reset_state, calc_stake,
                                 record_outcome, recovery_table, update_config)
 from core.bot          import (get_config as get_bot_cfg, save_config as save_bot_cfg,
                                 get_bot_state, run_cycle, reset_bot, run_bot_loop)
+from core import position_manager, balance_manager
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s %(message)s"
 )
 log = logging.getLogger("server")
+SERVER_START_TIME = time.time()
 
 PORT     = 8090
 STATIC   = os.path.join(os.path.dirname(__file__), "web", "static")
@@ -445,13 +454,50 @@ class Handler(BaseHTTPRequestHandler):
             amount = qs.get("amount", ["100"])[0]
             self._json(approve_usdc(pk, int(amount)) if pk else {"error": "No key"})
 
+        elif path == "/api/polymarket/deposit-status":
+            pk = get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No key"}); return
+            dw = get_funder()
+            if not dw:
+                self._json({"ok": False, "error": "No deposit wallet."}); return
+            import requests
+            rpc = "https://polygon.gateway.tenderly.co"
+            def bal(contract_addr):
+                payload = {"jsonrpc":"2.0","method":"eth_call","params":[{"to":contract_addr,"data":f"0x70a08231000000000000000000000000{dw[2:].lower()}"},"latest"],"id":1}
+                r = requests.post(rpc, json=payload, timeout=6)
+                if "result" in r.json():
+                    return int(r.json()["result"], 16) / 1e6
+                return 0.0
+            pusd_bal = bal(V2_COLLATERAL)
+            matic = 0.0
+            try:
+                r = requests.post(rpc, json={"jsonrpc":"2.0","method":"eth_getBalance","params":[dw,"latest"],"id":1}, timeout=6)
+                if "result" in r.json(): matic = int(r.json()["result"], 16) / 1e18
+            except: pass
+            eoa = None
+            from eth_account import Account
+            Account.enable_unaudited_hdwallet_features()
+            try: eoa = Account.from_key(pk).address
+            except: pass
+            self._json({
+                "ok": True,
+                "deposit_wallet": dw,
+                "pusd_balance": pusd_bal,
+                "matic_balance": matic,
+                "eoa_address": eoa,
+            })
+
         elif path == "/api/env":
             env  = load_env()
             pk   = env.get("POLYMARKET_PRIVATE_KEY", "")
+            bk   = env.get("POLYMARKET_BUILDER_KEY", "")
             self._json({
                 "has_private_key":    bool(pk and len(pk) > 10),
                 "private_key_preview": f"0x...{pk[-6:]}" if pk and len(pk) > 10 else "",
                 "funder_address":     env.get("POLYMARKET_FUNDER_ADDRESS", ""),
+                "has_builder_key":    bool(bk),
+                "builder_key_preview": f"{bk[:8]}...{bk[-4:]}" if bk else "",
                 "chain_id":           int(env.get("CHAIN_ID", "137")),
                 "trading_enabled":    bool(pk and len(pk) > 10),
             })
@@ -465,6 +511,47 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path == "/api/proxy":
             self._json({"ok": True, "proxy_url": get_proxy()})
+
+        elif path == "/api/dashboard":
+            pk = get_pk()
+            dw = get_funder()
+            pos_summary = position_manager.get_summary()
+            bal_status = balance_manager.get_status()
+            pusd_bal = 0.0
+            matic_bal = 0.0
+            if dw:
+                pusd_bal = get_deposit_wallet_balance(dw) / 1e6
+                import requests
+                try:
+                    r = requests.post("https://polygon.gateway.tenderly.co", json={"jsonrpc":"2.0","method":"eth_getBalance","params":[dw,"latest"],"id":1}, timeout=6)
+                    if r.ok: matic_bal = int(r.json().get("result","0x0"), 16) / 1e18
+                except: pass
+            self._json({
+                "ok": True,
+                "positions": pos_summary,
+                "balance": {"pusd": pusd_bal, "matic": matic_bal, "deposit_wallet": dw or "", "eoa": (pk[:42] if pk and pk.startswith("0x") and len(pk) >= 42 else "")},
+                "wallet_balance": bal_status,
+                "bot_state": get_bot_state(),
+                "bot_config": get_bot_cfg(),
+                "orders": get_open_orders(pk) if pk else [],
+            })
+
+        elif path == "/api/health":
+            self._json({
+                "status": "ok",
+                "uptime": time.time() - SERVER_START_TIME,
+                "cache_age_mins": round(get_cache_age_minutes(), 1),
+                "market_count": len(get_cached()),
+                "position_count": position_manager.get_summary().get("open_positions", 0),
+                "has_keys": bool(get_pk()),
+                "has_dw": bool(get_funder()),
+            })
+
+        elif path == "/api/positions":
+            self._json({"positions": position_manager.get_positions(include_closed=True), "summary": position_manager.get_summary()})
+
+        elif path == "/api/orders":
+            self._json({"orders": position_manager.get_orders()})
 
         elif path.startswith("/api/"):
             self._json({"error": "unknown endpoint"}, 404)
@@ -508,15 +595,21 @@ class Handler(BaseHTTPRequestHandler):
                         return
                 else:
                     updates["POLYMARKET_PRIVATE_KEY"] = pk_input
-            if body.get("funder_address"): updates["POLYMARKET_FUNDER_ADDRESS"] = body["funder_address"]
-            if body.get("chain_id"):       updates["CHAIN_ID"] = str(body["chain_id"])
+            if body.get("funder_address"):    updates["POLYMARKET_FUNDER_ADDRESS"] = body["funder_address"]
+            if body.get("builder_key"):        updates["POLYMARKET_BUILDER_KEY"] = body["builder_key"]
+            if body.get("builder_secret"):     updates["POLYMARKET_BUILDER_SECRET"] = body["builder_secret"]
+            if body.get("builder_passphrase"): updates["POLYMARKET_BUILDER_PASSPHRASE"] = body["builder_passphrase"]
+            if body.get("chain_id"):           updates["CHAIN_ID"] = str(body["chain_id"])
             if updates: save_env(updates)
             env = load_env(); pk = env.get("POLYMARKET_PRIVATE_KEY", "")
+            bk = env.get("POLYMARKET_BUILDER_KEY", "")
             self._json({
                 "ok":                 True,
                 "has_private_key":    bool(pk and len(pk) > 10),
                 "private_key_preview": f"0x...{pk[-6:]}" if pk and len(pk) > 10 else "",
                 "funder_address":     env.get("POLYMARKET_FUNDER_ADDRESS", ""),
+                "has_builder_key":    bool(bk),
+                "builder_key_preview": f"{bk[:8]}...{bk[-4:]}" if bk else "",
                 "trading_enabled":    bool(pk and len(pk) > 10),
             })
 
@@ -598,6 +691,27 @@ class Handler(BaseHTTPRequestHandler):
             save_bot_cfg(body)
             self._json({"ok": True, "config": get_bot_cfg()})
 
+        elif path == "/api/bot/enable":
+            cfg = get_bot_cfg()
+            cfg["bot_enabled"] = body.get("enabled", True)
+            cfg["bot_mode"] = body.get("mode", cfg.get("bot_mode", "simulation"))
+            cfg["order_type"] = body.get("order_type", cfg.get("order_type", "standard"))
+            cfg["auto_fund"] = body.get("auto_fund", cfg.get("auto_fund", True))
+            if "interval_seconds" in body: cfg["interval_seconds"] = int(body["interval_seconds"])
+            if "min_pusd" in body: cfg["min_pusd"] = float(body["min_pusd"])
+            save_bot_cfg(cfg)
+            self._json({"ok": True, "config": cfg})
+
+        elif path == "/api/bot/health":
+            pk = get_pk()
+            dw = get_funder()
+            health = {"ok": True, "bot_enabled": get_bot_cfg().get("bot_enabled", False), "has_pk": bool(pk), "has_dw": bool(dw)}
+            if pk and dw:
+                bal = get_deposit_wallet_balance(dw) / 1e6
+                health["pusd_balance"] = bal
+                health["needs_funding"] = (bal * 1e6) < 1000000
+            self._json(health)
+
         elif path == "/api/bot/run":
             markets = get_cached()
             state   = run_cycle(markets)
@@ -619,6 +733,147 @@ class Handler(BaseHTTPRequestHandler):
                 funder     = body.get("funder") or get_funder(),
             )
             self._json(result)
+
+        elif path == "/api/polymarket/order/poly1271":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            dw = body.get("deposit_wallet") or get_funder()
+            if not dw:
+                self._json({"ok": False, "error": "No deposit wallet. Set funder_address."}); return
+            self._json(place_order_poly1271(
+                token_id=body.get("token_id", ""),
+                side=body.get("side", "BUY"),
+                price=float(body.get("price", 0.5)),
+                size_usdc=float(body.get("size_usdc", body.get("size", 10))),
+                private_key=pk,
+                deposit_wallet=dw,
+            ))
+
+        elif path == "/api/polymarket/fund-deposit-wallet":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            dw = body.get("deposit_wallet") or get_funder()
+            if not dw:
+                self._json({"ok": False, "error": "No deposit wallet. Set funder_address."}); return
+            amount = float(body.get("amount", 1))
+            self._json(setup_deposit_wallet(pk, dw, amount))
+
+        elif path == "/api/polymarket/deposit/usdc-e":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            dw = body.get("deposit_wallet") or get_funder()
+            amount = float(body.get("amount", 1))
+            from core.polymarket import approve_token_for_onramp, wrap_usdce_to_pusd, transfer_pusd
+            try:
+                tx1 = approve_token_for_onramp(pk, int(amount))
+                tx2 = wrap_usdce_to_pusd(pk, int(amount))
+                tx3 = transfer_pusd(pk, dw, int(amount)) if dw else None
+                self._json({"ok": True, "approve_tx": tx1, "wrap_tx": tx2, "transfer_tx": tx3})
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)})
+
+        elif path == "/api/polymarket/deposit/matic":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            amount = float(body.get("amount", 5))
+            import requests, json
+            from eth_account import Account
+            Account.enable_unaudited_hdwallet_features()
+            acct = Account.from_key(pk)
+            addr = acct.address
+            rpc = _rpc()
+            # Get quote from Paraswap: MATIC → USDC
+            u = "https://apiv5.paraswap.io"
+            matic_addr = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+            usdc_n = "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+            amt = int(amount * 10**18)
+            price_r = requests.get(f"{u}/prices/", params={
+                "srcToken": matic_addr, "destToken": usdc_n, "amount": str(amt),
+                "srcDecimals": "18", "destDecimals": "6", "side": "SELL", "network": str(chain_id()),
+            }, timeout=15)
+            if not price_r.ok:
+                self._json({"ok": False, "error": f"Paraswap price: {price_r.text[:200]}"}); return
+            price_data = price_r.json()
+            tx_r = requests.post(f"{u}/transactions/{chain_id()}", json={
+                "srcToken": matic_addr, "destToken": usdc_n,
+                "srcAmount": str(amt), "destAmount": price_data["priceRoute"]["destAmount"],
+                "priceRoute": price_data["priceRoute"],
+                "userAddress": addr, "receiver": addr,
+            }, timeout=30)
+            if not tx_r.ok:
+                self._json({"ok": False, "error": f"Paraswap tx: {tx_r.text[:200]}"}); return
+            tx_data = tx_r.json()
+            from core.polymarket import _send_tx
+            swap_value = int(tx_data.get("value", "0"), 16) if isinstance(tx_data.get("value"), str) else tx_data.get("value", 0)
+            swap_hash = _send_tx(tx_data["to"], tx_data["data"], private_key, value=swap_value)
+            self._json({"ok": True, "tx": swap_hash, "note": f"Swapped {amount} MATIC → USDC"})
+
+        elif path == "/api/polymarket/withdraw/pusd":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            amount = float(body.get("amount", 1))
+            to = body.get("to", "")
+            from core.polymarket import transfer_pusd
+            tx = transfer_pusd(pk, to, int(amount))
+            self._json({"ok": True, "tx": tx, "note": f"Transferred {amount} pUSD to {to}"})
+
+        elif path == "/api/polymarket/withdraw/usdce":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            amount = float(body.get("amount", 1))
+            from core.polymarket import _send_tx, USDC_E, V2_COLLATERAL, COLLATERAL_ONRAMP
+            # Unwrap pUSD → USDC.e via CollateralOnramp
+            from eth_account import Account
+            Account.enable_unaudited_hdwallet_features()
+            acct = Account.from_key(pk)
+            addr = acct.address
+            asset_pad = USDC_E[2:].lower().zfill(64)
+            to_pad = addr[2:].lower().zfill(64)
+            amt_hex = hex(int(amount * 10**6))[2:].zfill(64)
+            data = f"0xba793a8b{asset_pad}{to_pad}{amt_hex}"
+            tx = _send_tx(COLLATERAL_ONRAMP, data, private_key)
+            self._json({"ok": True, "tx": tx, "note": f"Unwrapped {amount} pUSD → USDC.e to {addr}"})
+
+        elif path == "/api/polymarket/submit-wallet-batch":
+            pk = body.get("private_key") or get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            dw = body.get("deposit_wallet") or get_funder()
+            if not dw:
+                self._json({"ok": False, "error": "No deposit wallet."}); return
+            calls = body.get("calls", [])
+            nonce = int(body.get("nonce", 0))
+            deadline = int(body.get("deadline", int(time.time()) + 300))
+            self._json(submit_wallet_batch(calls, dw, nonce, deadline, pk))
+
+        elif path == "/api/polymarket/approve-token-onramp":
+            pk = get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            amount = float(body.get("amount", 10))
+            self._json({"ok": True, "tx": approve_token_for_onramp(pk, int(amount))})
+
+        elif path == "/api/polymarket/wrap-pusd":
+            pk = get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            amount = float(body.get("amount", 10))
+            recipient = body.get("recipient", None)
+            self._json({"ok": True, "tx": wrap_usdce_to_pusd(pk, int(amount), recipient)})
+
+        elif path == "/api/polymarket/transfer-pusd":
+            pk = get_pk()
+            if not pk:
+                self._json({"ok": False, "error": "No wallet key."}); return
+            to = body.get("to", get_funder())
+            amount = float(body.get("amount", 10))
+            self._json({"ok": True, "tx": transfer_pusd(pk, to, int(amount))})
 
         elif path == "/api/polymarket/cancel":
             pk = get_pk()

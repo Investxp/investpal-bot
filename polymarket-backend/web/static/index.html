@@ -660,6 +660,31 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
             </select>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label class="me-lbl">Order Type</label>
+            <select class="me-inp" id="botOrderType" style="width:100%">
+              <option value="standard">Standard (EOA)</option>
+              <option value="poly1271">POLY_1271 (Deposit Wallet)</option>
+            </select>
+          </div>
+          <div>
+            <label class="me-lbl">Auto-Fund</label>
+            <div style="display:flex;align-items:center;height:38px;gap:8px">
+              <div class="mode-toggle" id="botAutoFundToggle" onclick="toggleAutoFund()">
+                <span id="botAutoFundIcon">⏸</span><div class="sw"></div>
+              </div>
+              <span style="font-size:10px;font-weight:700;color:var(--text-dim)" id="botAutoFundLabel">OFF</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:8px;padding:10px;background:rgba(0,230,118,0.03);border-color:rgba(0,230,118,0.15)">
+          <div style="font-size:10px;color:var(--text-dim);display:flex;justify-content:space-between;align-items:center">
+            <span>💼 Deposit Wallet: <strong id="depositWalletDisplay">—</strong></span>
+            <span>pUSD: <strong id="depositPusdDisplay" style="color:var(--green)">—</strong></span>
+            <span>MATIC: <strong id="depositMaticDisplay">—</strong></span>
+          </div>
+        </div>
         <div style="display:flex;gap:7px;margin-top:6px">
           <button class="btn btn-gold btn-sm" onclick="saveBotConfig()" style="flex:1">Save Bot Config</button>
         </div>
@@ -700,6 +725,17 @@ header{background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);border-bottom:2
             <tbody id="botActiveBetsBody"></tbody>
           </table>
           <div class="empty-state" id="botActiveBetsEmpty">No active bot bets.</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-lbl"><span>📊 Position Manager <span id="posMgrCount" style="font-weight:400;color:var(--text-muted)">(0 open)</span></span></div>
+        <div class="card" style="padding:10px;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px">
+            <div class="ab-stat" style="padding:6px"><div class="lbl">Total Orders</div><div class="val" id="posMgrTotal" style="font-size:12px">0</div></div>
+            <div class="ab-stat" style="padding:6px"><div class="lbl">Matched</div><div class="val" id="posMgrMatched" style="font-size:12px;color:var(--green)">0</div></div>
+            <div class="ab-stat" style="padding:6px"><div class="lbl">Total P&L</div><div class="val" id="posMgrPnl" style="font-size:12px">$0</div></div>
+          </div>
+          <div style="font-size:9px;color:var(--text-muted);margin-top:6px;max-height:80px;overflow-y:auto" id="posMgrRecent"></div>
         </div>
       </div>
       <div>
@@ -1841,6 +1877,12 @@ async function loadBotConfig(){
   document.getElementById('botBankroll').value=botConfig.bankroll;
   document.getElementById('botMode').value=botConfig.bot_mode || 'simulation';
   document.getElementById('botInterval').value=botConfig.interval_seconds || 60;
+  document.getElementById('botOrderType').value=botConfig.order_type || 'standard';
+  if (botConfig.auto_fund === undefined) botConfig.auto_fund = true;
+  autoFundEnabled = botConfig.auto_fund;
+  document.getElementById('botAutoFundToggle').classList.toggle('on', autoFundEnabled);
+  document.getElementById('botAutoFundLabel').textContent = autoFundEnabled ? 'ON' : 'OFF';
+  document.getElementById('botAutoFundIcon').textContent = autoFundEnabled ? '▶' : '⏸';
   updateBotEnabledUI();
   updateLiveModeUI();
 }
@@ -1851,6 +1893,8 @@ async function saveBotConfig(){
   botConfig.bankroll=parseFloat(document.getElementById('botBankroll').value)||2000;
   botConfig.bot_mode=document.getElementById('botMode').value;
   botConfig.interval_seconds=parseInt(document.getElementById('botInterval').value)||60;
+  botConfig.order_type=document.getElementById('botOrderType').value;
+  botConfig.auto_fund=autoFundEnabled;
   
   // Sync back to main state!
   state.base_stake = botConfig.base_stake;
@@ -1880,15 +1924,14 @@ async function toggleBotEnabled(){
   save();
 }
 
-async function toggleAutoTrade() {
+async function toggleBotAutoTrade() {
   botConfig.bot_enabled = !botConfig.bot_enabled;
   updateBotEnabledUI();
   try {
     await apiPost('/api/bot/config', botConfig);
   } catch(e){}
-  botLog(botConfig.bot_enabled ? 'Autonomous Trading Bot ENABLED.' : 'Autonomous Trading Bot DISABLED.', botConfig.bot_enabled ? 'info' : 'warn');
+  botLog(botConfig.bot_enabled ? 'Bot ENABLED' : 'Bot DISABLED', botConfig.bot_enabled ? 'info' : 'warn');
   save();
-  toast(botConfig.bot_enabled ? 'Autonomous Trading ON' : 'Autonomous Trading OFF', botConfig.bot_enabled ? 'success' : 'info');
 }
 
 async function toggleLiveMode() {
@@ -2129,6 +2172,7 @@ function renderBotTab(){
   }
   renderBotLog();
   updateBotEnabledUI();
+  loadDashboard();
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2524,6 +2568,87 @@ async function executeLiveOrder() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════
+// POLY_1271 + DASHBOARD + POSITION MANAGER
+// ════════════════════════════════════════════════════════════════
+let autoFundEnabled = true;
+
+function toggleAutoFund() {
+  autoFundEnabled = !autoFundEnabled;
+  const toggle = document.getElementById('botAutoFundToggle');
+  const label = document.getElementById('botAutoFundLabel');
+  toggle.classList.toggle('on', autoFundEnabled);
+  label.textContent = autoFundEnabled ? 'ON' : 'OFF';
+  document.getElementById('botAutoFundIcon').textContent = autoFundEnabled ? '▶' : '⏸';
+  save();
+}
+
+async function loadDashboard() {
+  try {
+    const d = await apiGet('/api/dashboard');
+    if (!d || !d.ok) return;
+    if (d.positions) {
+      document.getElementById('posMgrTotal').textContent = d.positions.total_orders || 0;
+      document.getElementById('posMgrMatched').textContent = d.positions.matched_count || 0;
+      const pnl = d.positions.total_pnl || 0;
+      const pnlEl = document.getElementById('posMgrPnl');
+      pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+      pnlEl.style.color = pnl >= 0 ? 'var(--green)' : 'var(--red-b)';
+      const recent = d.positions.recent_orders || [];
+      document.getElementById('posMgrRecent').innerHTML = recent.slice(-5).reverse().map(o =>
+        `<div style="margin-bottom:2px"><span style="color:${o.status === 'matched' ? 'var(--green)' : 'var(--gold)'}">•</span> ${(o.order_id||'').slice(0,10)}... ${o.status} ${o.side || ''}</div>`
+      ).join('');
+      document.getElementById('posMgrCount').textContent = `(${d.positions.open_positions || 0} open)`;
+    }
+    if (d.balance) {
+      document.getElementById('depositPusdDisplay').textContent = '$' + (d.balance.pusd || 0).toFixed(2);
+      document.getElementById('depositMaticDisplay').textContent = (d.balance.matic || 0).toFixed(4) + ' MATIC';
+      document.getElementById('depositWalletDisplay').textContent = (d.balance.deposit_wallet || '').slice(0, 10) + '...' || '—';
+    }
+  } catch (e) { /* silent */ }
+}
+
+function toggleAutoTrade() {
+  const current = botConfig.bot_enabled;
+  botConfig.bot_enabled = !current;
+  document.getElementById('headerAutoTradeToggle').classList.toggle('on', botConfig.bot_enabled);
+  document.getElementById('mainAutoTradeToggle').classList.toggle('on', botConfig.bot_enabled);
+  const icon = document.getElementById('mainAutoTradeIcon');
+  const label = document.getElementById('mainAutoTradeLabel');
+  if (botConfig.bot_enabled) {
+    icon.textContent = '▶';
+    label.textContent = 'ON';
+  } else {
+    icon.textContent = '⏸';
+    label.textContent = 'OFF';
+  }
+  apiPost('/api/bot/enable', {enabled: botConfig.bot_enabled}).catch(() => {});
+  save();
+  renderBotTab();
+  toast(botConfig.bot_enabled ? 'Auto-Trading ENABLED' : 'Auto-Trading DISABLED', botConfig.bot_enabled ? 'success' : 'info');
+}
+
+function toggleLiveMode() {
+  const current = botConfig.bot_mode;
+  botConfig.bot_mode = current === 'live' ? 'simulation' : 'live';
+  document.getElementById('headerLiveModeToggle').classList.toggle('on', botConfig.bot_mode === 'live');
+  document.getElementById('mainLiveModeToggle').classList.toggle('on', botConfig.bot_mode === 'live');
+  const liveIcon = document.getElementById('mainLiveModeIcon');
+  const liveLabel = document.getElementById('mainLiveModeLabel');
+  if (botConfig.bot_mode === 'live') {
+    liveIcon.textContent = '▶';
+    liveLabel.textContent = 'LIVE';
+    document.getElementById('hdrMode').textContent = '⚡ LIVE';
+    document.getElementById('hdrMode').className = 'badge badge-blue';
+  } else {
+    liveIcon.textContent = '⏸';
+    liveLabel.textContent = 'VIRTUAL';
+  }
+  apiPost('/api/bot/enable', {mode: botConfig.bot_mode}).catch(() => {});
+  save();
+  toast('Trading mode: ' + botConfig.bot_mode.toUpperCase(), 'info');
+}
+
 async function init(){
   loadLocal();
   applyConfig();
@@ -2538,10 +2663,12 @@ async function init(){
   await loadWalletBalances();
   renderBotTab();
   renderSessionStats();
+  loadDashboard();
 
   setInterval(tickClock,1000);tickClock();
-  setInterval(pollStatus,15000); // poll backend status every 15s
-  setInterval(loadFeed,60000);   // refresh feed every 60s
+  setInterval(pollStatus,15000);
+  setInterval(loadFeed,60000);
+  setInterval(loadDashboard,30000);
   startBotAutoLoop();
 }
 window.onload=init;

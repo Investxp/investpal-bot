@@ -1,0 +1,41 @@
+# Environment (contains private keys!)
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Runtime data (state, cache, logs)
+data/bot_state.json
+data/bot_config.json
+data/poly_cache.json
+data/positions.json
+data/balance_log.json
+data/state.json
+data/results.json
+
+# OS files
+Thumbs.db
+.DS_Store
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Server
+server.pid
+*.pid
+
+# Scratch / experimental
+scratch/
+step_6*.py
+steps_3_*.py
+swap_high_gas.py
+fund_deposit.py
