@@ -43,6 +43,18 @@ market at the same time.
 - **Best for:** Stable daily returns in efficient markets with combined odds consistently
   below 1.0.
 
+### Minimum capital required
+
+| Base stake | Recovery factor | Worst-case 6-streak per side | Minimum bankroll (both sides) |
+|---|---|---|---|
+| $5 | 2.0 | $5 × 64 = $320 | **~$650** (both sides could peak) |
+| $10 | 2.0 | $10 × 64 = $640 | **~$1,300** |
+| $10 | 1.5 | $10 × 11.4 = $114 | **~$250** |
+| $25 | 2.0 | $25 × 64 = $1,600 | **~$3,200** |
+
+**Rule of thumb:** bankroll should be at least **15×** your base stake per side × 2 sides
+when recovery_factor = 2.0. Lower the recovery factor to 1.5 if capital-constrained.
+
 ---
 
 ## Strategy 2: Single Direction Kelly (`"single"`)
@@ -68,21 +80,41 @@ Kelly Criterion.
   The 15% cap prevents over-concentration.
 - One side per market, not both.
 
+### Martingale recovery (optional)
+
+When `martingale_recovery: true`, the Kelly stake is multiplied by `factor ^ streak`
+for the chosen side. A 3-loss streak at factor 2.0 would multiply the stake by 8×.
+
+**Warning:** This overrides the mathematically optimal Kelly sizing and increases
+risk of ruin. Prefer raising `kelly_fraction` instead — that's the safe knob.
+
 ### Key config parameters
 
 | Parameter | Default | Effect |
 |---|---|---|
 | `kelly_fraction` | 0.25 | Fraction of full Kelly (0.05–1.0) |
 | `min_edge` | 0.05 | Minimum edge threshold (5%) |
-| `base_stake` | — | Not used directly; stake is computed from Kelly |
+| `recovery_factor` | 2.0 | Only used if `martingale_recovery: true` |
+| `bankroll` | 100.0 | Total capital for Kelly sizing |
 
 ### Risk profile
 
 - **Volatility:** Moderate per bet (full loss when wrong)
-- **Tail risk:** Low — Kelly controls size; fraction prevents over-betting. No compounding
-  of losses.
+- **Tail risk:** Low (with recovery OFF) — Kelly controls size; fraction prevents
+  over-betting. With recovery ON, tail risk rises to match Hedge.
 - **Best for:** Markets where you have genuine information edge (e.g., deep knowledge of
   a sport/league). Maximizes long-run geometric growth without blow-up risk.
+
+### Minimum capital required
+
+| Kelly fraction | Min edge | Typical stake (% of bankroll) | Recommended minimum bankroll |
+|---|---|---|---|
+| 0.25 (quarter) | 5% | 1–3% | **$50–100** |
+| 0.50 (half) | 5% | 2–6% | **$100–200** |
+| 1.00 (full) | 5% | 4–15% | **$200–500** |
+
+**Rule of thumb:** With quarter-Kelly at default settings, a $100 bankroll places
+$1–3 per bet. You can start with as little as **$50** in simulation or live mode.
 
 ---
 
@@ -97,7 +129,7 @@ spread when either fills.
   - `YES_bid = max(0.001, yes_price - spread)`
   - `NO_bid = max(0.001, no_price - spread)`
 - Posts limit orders (BUY) at those lower prices on **both** sides simultaneously.
-- Stake per side = `min(bankroll × 5%, $10)` — fixed, not dynamic.
+- Base stake per side = `min(bankroll × 5%, $10)` — fixed.
 - Max positions controlled by `mm_max_positions` (default 3).
 - If someone sells into your bid, you've bought below fair value. On resolution:
   - Winning token pays 1 USDC → profit = 1 − bid_price per token
@@ -105,21 +137,47 @@ spread when either fills.
 - The strategy profits when the bid is below the true probability — the spread
   acts as a buffer.
 
+### Martingale recovery (optional)
+
+When `martingale_recovery: true`, each side's stake grows independently based on
+its own streak counter:
+- `stake_a = base_stake × factor ^ streak_a`
+- `stake_b = base_stake × factor ^ streak_b`
+
+The YES side (streak_a) only grows after consecutive YES losses; the NO side only
+grows after consecutive NO losses. They do not cross-contaminate.
+
+**Warning:** Market making is designed for low-risk passive spread collection.
+Adding martingale turns it into a directional bet with compounding leverage.
+Only enable if you're comfortable with the increased tail risk.
+
 ### Key config parameters
 
 | Parameter | Default | Effect |
 |---|---|---|
 | `mm_spread` | 0.02 | Spread below market per side (e.g., 0.02 = 2¢) |
 | `mm_max_positions` | 3 | Max markets to market-make simultaneously |
+| `recovery_factor` | 2.0 | Only used if `martingale_recovery: true` |
 
 ### Risk profile
 
 - **Volatility:** Low per position (bought at discount)
-- **Tail risk:** Low — fixed small stakes, no compounding. Risk is adverse selection
-  (market moves away from your bid → never fills, or moves against your filled position).
+- **Tail risk:** Low with recovery OFF — fixed small stakes, no compounding.
+  With recovery ON, tail risk is moderate.
 - **Best for:** Passive spread collection in liquid markets. Highest win rate but
-  smallest per-bet profit. Ideal when direction is unpredictable but mean reversion
-  is expected.
+  smallest per-bet profit.
+
+### Minimum capital required
+
+| Bankroll | Per-side stake (5%) | Max positions | Total committed | Buffer (2×) | Recommended minimum |
+|---|---|---|---|---|---|
+| $50 | $2.50 | 3 | $15 | $30 | **$50** |
+| $100 | $5.00 | 3 | $30 | $60 | **$100** |
+| $200 | $10.00 (capped) | 3 | $60 | $120 | **$150** |
+
+**Rule of thumb:** The per-side stake is capped at $10. With 3 concurrent positions
+at $10 each side, you need $60 per cycle. A **$100 bankroll** is comfortable;
+**$50 is the bare minimum** for 1–2 positions.
 
 ---
 
@@ -137,6 +195,7 @@ spread when either fills.
 | **Capital efficiency** | Poor — ties up 2× stake per market | Good — single side per market | Moderate — 2× stake but lower prices |
 | **Best for** | Thin markets with tight spreads | Clear directional bias | Liquid markets, passive income |
 | **Worst case** | 6-loss streak = 64× base stake per side | Wrong direction = full loss | Bid never fills → missed opportunity |
+| **Minimum bankroll** | **$500–1,000** | **$50–100** | **$50–100** |
 
 ---
 
@@ -154,6 +213,19 @@ spread when either fills.
 
 ---
 
+## Martingale Recovery — Cross-Strategy Summary
+
+| Strategy | Default | Effect when ON |
+|---|---|---|
+| **Hedge** | Always ON (built-in) | `stake = base × factor^streak` per side independently |
+| **Single (Kelly)** | OFF | Kelly stake × `factor^streak` for chosen side |
+| **Market Making** | OFF | Per-side stake × `factor^streak_a` (YES) or `factor^streak_b` (NO) independently |
+
+The `martingale_recovery` toggle, `recovery_factor`, and `max_steps` are shared across
+all three strategies. When OFF for Single/MM, they behave without compounding.
+
+---
+
 ## Common Configuration
 
 These apply regardless of strategy:
@@ -166,3 +238,5 @@ These apply regardless of strategy:
 | `sport_filter` | `""` (all sports) | Filter to one sport (Football, Basketball, etc.) |
 | `interval_seconds` | `60` | Cycle interval; 3600+ for production |
 | `bankroll` | `100.0` | Total capital allocation for the bot |
+| `martingale_recovery` | `false` | Enable martingale compounding for Single/MM |
+| `recovery_factor` | `2.0` | Multiplier per consecutive loss (when recovery is on) |
