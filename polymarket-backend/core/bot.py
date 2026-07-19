@@ -28,7 +28,16 @@ def _w(f, d):
 
 def get_config():    return _r(BOT_CFG,   D_CFG)
 def save_config(c):  _w(BOT_CFG, {**D_CFG, **c})
-def get_bot_state(): return _r(BOT_STATE, D_STATE)
+def get_bot_state():
+    state = _r(BOT_STATE, D_STATE)
+    import requests as _req
+    for bet in state.get('active_bets', []):
+        if not bet.get('slug') and bet.get('market_id') and str(bet['market_id']).isdigit():
+            try:
+                _r_ = _req.get(f"https://gamma-api.polymarket.com/markets/{bet['market_id']}", timeout=6)
+                if _r_.ok: bet['slug'] = _r_.json().get('slug', '')
+            except: pass
+    return state
 
 def get_pk():
     env_file = os.path.join(os.path.dirname(__file__), '..', '.env')
@@ -112,6 +121,12 @@ def run_cycle(markets):
     if not cfg.get('bot_enabled'):
         _log(state, 'Bot disabled — skipping cycle.', 'warn')
         _w(BOT_STATE, state); return state
+    for bet in state.get('active_bets', []):
+        if not bet.get('slug') and bet.get('market_id') and bet['market_id'].isdigit():
+            try:
+                r = __import__('requests').get(f"https://gamma-api.polymarket.com/markets/{bet['market_id']}", timeout=8)
+                if r.ok: bet['slug'] = r.json().get('slug', '')
+            except: pass
     state['cycles'] = state.get('cycles', 0) + 1
     mode = cfg.get('bot_mode', 'simulation')
     order_type = cfg.get('order_type', 'standard')
