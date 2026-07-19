@@ -174,10 +174,40 @@ Only enable if you're comfortable with the increased tail risk.
 | $50 | $2.50 | 3 | $15 | $30 | **$50** |
 | $100 | $5.00 | 3 | $30 | $60 | **$100** |
 | $200 | $10.00 (capped) | 3 | $60 | $120 | **$150** |
+| $500 | $10.00 (capped) | 3 | $60 | $120 | **$150** (cap bound) |
 
-**Rule of thumb:** The per-side stake is capped at $10. With 3 concurrent positions
-at $10 each side, you need $60 per cycle. A **$100 bankroll** is comfortable;
-**$50 is the bare minimum** for 1–2 positions.
+**Rule of thumb:** The per-side stake is capped at $10, so bankroll above $200
+doesn't increase per-position size. More capital instead allows more concurrent
+positions (raise `mm_max_positions`) and absorbs loss streaks better.
+
+### Realistic income projections
+
+**Key reality:** On Polymarket, both sides of a market making position rarely fill
+simultaneously on the same cycle. Typically only *one* side gets hit — making each
+position effectively a directional bet bought at a discount. This means variance
+is higher than a pure spread-collection model would suggest.
+
+**Per-fill math** ($5 at 2¢ below market, single side fills):
+- Buy YES at $0.60 (market at $0.62) → 8.33 YES tokens
+- YES wins: $8.33 = **+$3.33**  |  NO wins: $0 = **−$5.00**
+- Break-even true probability: 60% (matches bid price)
+- If market is efficient (true P ≈ 62%), EV per fill ≈ **+$0.16 (3.2% edge)**
+
+| Bankroll | Per side | Fills/day (est.) | Monthly (con.) | Monthly (opt.) | ROI/mo |
+|---|---|---|---|---|---|
+| **$100** | $5 | 1–3 | **$5–$12** | $15–$30 | 5–12% |
+| **$500** | $10 (cap) | 3–6 | **$25–$60** | $60–$120 | 5–12% |
+| **$1,000** | $10 (cap) | 6–10 | **$50–$100** | $120–$240 | 5–10% |
+| **$2,000** | $10 (cap) | 10–15 | **$100–$200** | $200–$400 | 5–10% |
+
+**Why returns compress at higher bankrolls:** The per-side stake caps at $10.
+Above $200, more capital means *more positions*, not *larger positions*. At $2,000
+you'd run 10–15 concurrent positions, which requires finding enough qualifying
+markets — a constraint in reality.
+
+**Variance warning:** A 3–4 loss streak at $500 represents a $150–$200 drawdown
+(15–20% of account). MM is not "free money" — it's a small-edge repeated bet
+with real risk. Loss streaks happen.
 
 ---
 
@@ -196,6 +226,8 @@ at $10 each side, you need $60 per cycle. A **$100 bankroll** is comfortable;
 | **Best for** | Thin markets with tight spreads | Clear directional bias | Liquid markets, passive income |
 | **Worst case** | 6-loss streak = 64× base stake per side | Wrong direction = full loss | Bid never fills → missed opportunity |
 | **Minimum bankroll** | **$500–1,000** | **$50–100** | **$50–100** |
+| **Monthly income ($100 acct)** | N/A (too risky) | $3–10 | $5–12 |
+| **Monthly income ($1,000 acct)** | $50–150 | $30–100 | $50–100 |
 
 ---
 
