@@ -31,7 +31,7 @@ cd /app/polymarket-backend
 . venv/bin/activate
 POLYMARKET_PRIVATE_KEY="${POLYMARKET_PRIVATE_KEY:-}" \
 POLYMARKET_FUNDER_ADDRESS="${POLYMARKET_FUNDER_ADDRESS:-}" \
-python server.py &
+PORT=8090 python server.py &
 POLY_PID=$!
 
 cd /app

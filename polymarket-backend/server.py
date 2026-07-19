@@ -37,7 +37,7 @@ logging.basicConfig(
 log = logging.getLogger("server")
 SERVER_START_TIME = time.time()
 
-PORT     = int(os.getenv("PORT", "8090"))
+PORT     = 8090  # Internal port; Nginx proxies Render's PORT to this
 STATIC   = os.path.join(os.path.dirname(__file__), "web", "static")
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 ENV_FILE = os.path.join(os.path.dirname(__file__), ".env")
