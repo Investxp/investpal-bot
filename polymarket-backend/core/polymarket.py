@@ -298,7 +298,7 @@ def parse_market(raw,event_title="",force_sports=False,allow_closed=False):
             "note":f"Polymarket · {sport} · Vol ${vol24:,.0f}/24h",
             "why":f"YES {yp*100:.1f}% / NO {np*100:.1f}% implied",
             "balance":abs(yo-no),"odds1":yo,"odds2":no,"desc1":outcomes[0],"desc2":outcomes[1] if len(outcomes)>1 else "No",
-            "url": f"https://polymarket.com/market/{slug}" if slug else "https://polymarket.com",
+            "url": f"https://polymarket.com/market/{tids[0]}" if tids and len(tids) > 0 else (f"https://polymarket.com/market/{slug}" if slug else "https://polymarket.com"),
         }
     except Exception as e: log.debug(f"parse_market: {e}"); return None
 

@@ -1031,7 +1031,9 @@ function getRec(m){
 }
 const SPORT_SLUGS={'Football':'football','Tennis':'tennis','Table Tennis':'table-tennis','Basketball':'basketball','Volleyball':'volleyball','Badminton':'badminton','Darts':'darts'};
 function polymarketLink(m){
-  if(m.url) return m.url.replace('/event/', '/market/');
+  if(m.url) return m.url;
+  const clobId = (m.token_ids && m.token_ids.length > 0) ? m.token_ids[0] : null;
+  if(clobId) return `https://polymarket.com/market/${clobId}`;
   const slug=m.slug||m.market_id||'';
   return slug ? `https://polymarket.com/market/${slug}` : 'https://polymarket.com/sports';
 }
@@ -2159,12 +2161,12 @@ function simulateBotCycle(){
 
     botState.active_bets.push({
       id: m.id, name, sport: m.sport, side: 'A', odds: m.oA, stake: stakeA,
-      url: m.url, slug: m.slug, market_id: m.market_id,
+      url: m.url, slug: m.slug, market_id: m.market_id, token_ids: m.token_ids,
       end_date: m.end_date, placed: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
     });
     botState.active_bets.push({
       id: m.id, name, sport: m.sport, side: 'B', odds: m.oB, stake: stakeB,
-      url: m.url, slug: m.slug, market_id: m.market_id,
+      url: m.url, slug: m.slug, market_id: m.market_id, token_ids: m.token_ids,
       end_date: m.end_date, placed: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
     });
 
