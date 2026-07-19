@@ -246,6 +246,7 @@ def run_cycle(markets):
     if slots_available > 0:
         cutoff = utc_now + timedelta(hours=72)
         cands = []
+        sport_filter = (cfg.get('sport_filter', '') or '').lower()
         for m in markets:
             market_id = m.get('market_id')
             if not market_id or market_id in active_market_ids:
@@ -258,6 +259,8 @@ def run_cycle(markets):
                     oA, oB = m.get('oA', 0), m.get('oB', 0)
                     rec = get_rec(oA, oB)
                     if rec != "SKIP":
+                        if sport_filter and (m.get('sport', '') or '').lower() != sport_filter:
+                            continue
                         cands.append(m)
             except: continue
         cands.sort(key=lambda x: x.get('end_date', '9999'))

@@ -2120,12 +2120,15 @@ function simulateBotCycle(){
 
   // Place new bets ONLY if there are no active bets (linear execution!)
   if (botState.active_bets.length === 0) {
+    const sportFilter = (botConfig.sport_filter || '').toLowerCase();
     const pool = feedData.filter(m => {
       if (!m.end_date) return false;
       const end = new Date(m.end_date);
       if (!(end > now && end <= cutoff)) return false;
       const rec = getRec(m);
-      return rec.txt !== 'SKIP';
+      if (rec.txt === 'SKIP') return false;
+      if (sportFilter && (m.sport || '').toLowerCase() !== sportFilter) return false;
+      return true;
     });
 
     if(!pool.length){
@@ -2156,10 +2159,12 @@ function simulateBotCycle(){
 
     botState.active_bets.push({
       id: m.id, name, sport: m.sport, side: 'A', odds: m.oA, stake: stakeA,
+      url: m.url, slug: m.slug, market_id: m.market_id,
       end_date: m.end_date, placed: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
     });
     botState.active_bets.push({
       id: m.id, name, sport: m.sport, side: 'B', odds: m.oB, stake: stakeB,
+      url: m.url, slug: m.slug, market_id: m.market_id,
       end_date: m.end_date, placed: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
     });
 
@@ -2186,7 +2191,7 @@ function renderBotTab(){
   if(botState.active_bets.length){
     tbl.style.display='table';empty.style.display='none';
     document.getElementById('botActiveBetsBody').innerHTML=botState.active_bets.map(b=>`<tr>
-      <td style="font-size:11px">${b.name}</td>
+      <td style="font-size:11px">${b.name} <a href="${polymarketLink(b)}" target="_blank" style="color:var(--blue);font-size:9px;text-decoration:none" title="Open on Polymarket">↗</a></td>
       <td><span class="sb ${sc(b.sport)}">${b.sport.slice(0,3).toUpperCase()}</span></td>
       <td>${b.side}</td>
       <td>${b.odds.toFixed(2)}</td>
