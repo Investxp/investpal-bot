@@ -1032,10 +1032,11 @@ function getRec(m){
 const SPORT_SLUGS={'Football':'football','Tennis':'tennis','Table Tennis':'table-tennis','Basketball':'basketball','Volleyball':'volleyball','Badminton':'badminton','Darts':'darts'};
 function polymarketLink(m){
   if(m.url) return m.url;
+  const slug=m.slug||m.market_id||'';
+  if(slug) return `https://polymarket.com/market/${slug}`;
   const clobId = (m.token_ids && m.token_ids.length > 0) ? m.token_ids[0] : null;
   if(clobId) return `https://polymarket.com/market/${clobId}`;
-  const slug=m.slug||m.market_id||'';
-  return slug ? `https://polymarket.com/market/${slug}` : 'https://polymarket.com/sports';
+  return 'https://polymarket.com/sports';
 }
 
 // ════════════════════════════════════════════════════════════════
