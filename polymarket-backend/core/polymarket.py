@@ -995,24 +995,27 @@ def ensure_deposit_balance(private_key, deposit_wallet, min_balance=1000000, tar
         usdc_sel = "0x70a08231" + eoa[2:].lower().zfill(64)
         usdc_r = req.post(rpc, json={"jsonrpc":"2.0","method":"eth_call","params":[{"to": USDC_NATIVE, "data": usdc_sel}, "latest"],"id":1}, timeout=10)
         usdc_bal = int(usdc_r.json().get("result","0x0"), 16) if usdc_r.ok else 0
-        if usdc_bal < int(amount_needed * 10**6):
-            log.warning(f"EOA only has {usdc_bal/10**6:.2f} native USDC, need {amount_needed:.2f}")
+        available = usdc_bal / 10**6 - 0.02
+        if available < 0.01:
+            log.warning(f"EOA only has {usdc_bal/10**6:.2f} native USDC, need ~{amount_needed:.2f}")
             return {"funded": False, "balance": bal, "tx_log": tx_log, "ok": False,
                     "error": f"EOA USDC balance {usdc_bal/10**6:.2f} < needed {amount_needed:.2f}"}
-        tx_log.append("swap: native USDC → USDC.e via Paraswap")
-        swap_hash = swap_native_usdc_for_usdce(private_key, amount_needed)
+        actual_amount = min(amount_needed, available)
+        log.info(f"Using {actual_amount:.2f} USDC from EOA balance of {usdc_bal/10**6:.2f}")
+        tx_log.append(f"swap: {actual_amount:.2f} native USDC → USDC.e via Paraswap")
+        swap_hash = swap_native_usdc_for_usdce(private_key, actual_amount)
         tx_log.append(f"  tx: {swap_hash[:66]}")
         time.sleep(5)
         tx_log.append("approve: USDC.e for CollateralOnramp")
-        approve_hash = approve_token_for_onramp(private_key, int(amount_needed))
+        approve_hash = approve_token_for_onramp(private_key, int(actual_amount))
         tx_log.append(f"  tx: {approve_hash[:66]}")
         time.sleep(3)
         tx_log.append("wrap: USDC.e → pUSD")
-        wrap_hash = wrap_usdce_to_pusd(private_key, int(amount_needed), eoa)
+        wrap_hash = wrap_usdce_to_pusd(private_key, int(actual_amount), eoa)
         tx_log.append(f"  tx: {wrap_hash[:66]}")
         time.sleep(3)
         tx_log.append(f"transfer: pUSD → {deposit_wallet}")
-        transfer_hash = transfer_pusd(private_key, deposit_wallet, int(amount_needed))
+        transfer_hash = transfer_pusd(private_key, deposit_wallet, int(actual_amount))
         tx_log.append(f"  tx: {transfer_hash[:66]}")
         time.sleep(5)
         bal_after = get_deposit_wallet_balance(deposit_wallet)

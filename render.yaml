@@ -13,5 +13,9 @@ services:
         sync: false
       - key: POLYMARKET_FUNDER_ADDRESS
         sync: false
+      - key: POLYMARKET_USE_TOR
+        value: "true"
+      - key: POLYMARKET_PROXY
+        sync: false
     healthCheckPath: /
     autoDeploy: true
