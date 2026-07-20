@@ -14,398 +14,522 @@
     --danger: #C62828; --success: #2E7D32; --warn: #E65100;
     --rx-badge: #7B1FA2; --radius: 12px; --radius-sm: 8px;
     --shadow: 0 2px 12px rgba(0,107,94,0.08);
-    --shadow-lg: 0 8px 32px rgba(0,107,94,0.14);
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
-    font-size: 14px; line-height: 1.6;
-  }
-  /* Sidebar */
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
   .layout { display: flex; min-height: 100vh; }
-  .sidebar {
-    width: 240px; background: var(--primary-dark); color: #fff;
-    padding: 24px 0; flex-shrink: 0;
-  }
-  .sidebar h2 { padding: 0 20px 20px; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px; }
-  .sidebar h2 small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 4px; }
-  .sidebar a {
-    display: flex; align-items: center; gap: 10px; padding: 12px 20px;
-    color: rgba(255,255,255,0.75); text-decoration: none; font-size: 13.5px;
-    transition: 0.15s; cursor: pointer;
-  }
-  .sidebar a:hover { background: rgba(255,255,255,0.08); color: #fff; }
-  .sidebar a.active { background: rgba(255,255,255,0.12); color: #fff; border-right: 3px solid var(--accent); }
-  .sidebar .back-link { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
-  /* Main */
-  .main { flex: 1; padding: 24px 32px; max-width: 1200px; }
-  .main h1 { font-size: 22px; margin-bottom: 20px; }
+  .sidebar { width: 230px; background: var(--primary-dark); color: #fff; padding: 20px 0; flex-shrink: 0; display:flex; flex-direction:column; }
+  .sidebar h2 { padding: 0 18px 16px; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px; }
+  .sidebar h2 small { display: block; font-size: 10px; font-weight: 400; opacity: 0.6; margin-top: 3px; }
+  .sidebar a { display: flex; align-items: center; gap: 9px; padding: 10px 18px; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 13px; cursor: pointer; transition: 0.15s; border-left: 3px solid transparent; }
+  .sidebar a:hover { background: rgba(255,255,255,0.07); color: #fff; }
+  .sidebar a.active { background: rgba(255,255,255,0.1); color: #fff; border-left-color: var(--accent); }
+  .sidebar .spacer { flex:1; }
+  .sidebar .bottom-link { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; }
+  .sidebar .store-link { color: var(--accent); }
+  .main { flex: 1; padding: 20px 28px; max-width: 1200px; min-width: 0; }
+  .main h1 { font-size: 20px; margin-bottom: 16px; display:flex; align-items:center; justify-content:space-between; }
   /* Stats */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .stat-card { background: var(--surface); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
-  .stat-card .num { font-size: 28px; font-weight: 700; color: var(--primary); }
-  .stat-card .label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+  .stat-card .num { font-size: 26px; font-weight: 700; color: var(--primary); }
+  .stat-card .label { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .stat-card .num.warn { color: var(--warn); }
+  .stat-card .num.danger { color: var(--danger); }
+  /* Split layout */
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  @media (max-width:800px){ .split { grid-template-columns:1fr; } }
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+  .card h3 { font-size:14px; margin-bottom:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+  .card-table { width:100%; font-size:12.5px; }
+  .card-table td { padding:6px 0; border-bottom:1px solid var(--border); }
+  .card-table tr:last-child td { border-bottom:none; }
   /* Tables */
   .table-wrap { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 12px 14px; background: var(--surface-2); font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
-  tr:last-child td { border-bottom: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; padding: 10px 12px; background: var(--surface-2); font-weight: 600; color: var(--text-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
   tr:hover td { background: var(--surface-2); }
+  /* Forms */
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar input, .toolbar select { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 12.5px; font-family:inherit; }
+  .toolbar input { width: 200px; }
   /* Buttons */
-  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.15s; text-decoration: none; }
+  .btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border: none; border-radius: var(--radius-sm); font-size: 12.5px; font-weight: 500; cursor: pointer; transition: 0.15s; text-decoration: none; font-family:inherit; }
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover { background: var(--primary-light); }
-  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
   .btn-danger { background: var(--danger); color: #fff; }
   .btn-danger:hover { opacity: 0.85; }
   .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
   .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-  .header-actions { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
-  .header-actions .btn { margin-bottom: 0; }
-  .search-input { display: inline-flex; align-items: center; }
-  .search-input input { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 220px; }
+  .btn-success { background: var(--success); color:#fff; }
+  .btn-success:hover { opacity:0.85; }
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 10.5px; font-weight: 600; }
+  .badge-pending { background: #FFF3E0; color: var(--warn); }
+  .badge-paid,.badge-completed { background: #E8F5E9; color: var(--success); }
+  .badge-confirmed { background: #E3F2FD; color: #1565C0; }
+  .badge-processing { background: #F3E5F5; color: var(--rx-badge); }
+  .badge-out_for_delivery { background: #E3F2FD; color: #1565C0; }
+  .badge-delivered { background: #E8F5E9; color: var(--success); }
+  .badge-cancelled,.badge-failed { background: #FFEBEE; color: var(--danger); }
+  .badge-otc { background:#E8F5E9; color:var(--success); }
+  .badge-rx { background:#F3E5F5; color:var(--rx-badge); }
+  .badge-customer { background:#E3F2FD; color:#1565C0; }
+  .badge-admin { background:#FFF3E0; color:var(--warn); }
+  .badge-pharmacist { background:#F3E5F5; color:var(--rx-badge); }
+  .badge-approved { background:#E8F5E9; color:var(--success); }
+  .badge-rejected { background:#FFEBEE; color:var(--danger); }
   /* Modal */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border-radius: var(--radius); padding: 28px; width: 480px; max-width: 94vw; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
-  .modal h3 { margin-bottom: 16px; }
-  .modal label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 12px 0 4px; }
-  .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; }
-  .modal textarea { resize: vertical; min-height: 60px; }
-  .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
-  /* Status badges */
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-pending { background: #FFF3E0; color: var(--warn); }
-  .badge-paid { background: #E8F5E9; color: var(--success); }
-  .badge-confirmed { background: #E3F2FD; color: #1565C0; }
-  .badge-processing { background: #F3E5F5; color: var(--rx-badge); }
-  .badge-delivered { background: #E8F5E9; color: var(--success); }
-  .badge-cancelled { background: #FFEBEE; color: var(--danger); }
-  .badge-failed { background: #FFEBEE; color: var(--danger); }
-  .badge-out_for_delivery { background: #E3F2FD; color: #1565C0; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 24px; width: 520px; max-width: 94vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+  .modal h3 { margin-bottom: 14px; font-size:16px; }
+  .modal label { display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted); margin: 10px 0 3px; }
+  .modal input, .modal select, .modal textarea { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; }
+  .modal textarea { resize: vertical; min-height: 50px; }
+  .modal .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .modal hr { border:none; border-top:1px solid var(--border); margin:12px 0; }
+  .modal-detail { font-size:13px; line-height:1.8; }
+  .modal-detail strong { display:inline-block; min-width:100px; color:var(--text-muted); }
+  /* Tabs */
   .tab-content { display: none; }
   .tab-content.active { display: block; }
-  .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 20px; border-radius: var(--radius-sm); font-size: 13px; z-index: 9999; animation: fadeIn 0.2s; }
+  .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); color: #fff; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 13px; z-index: 9999; animation: fadeIn 0.2s; }
   .toast.error { background: var(--danger); }
   .toast.success { background: var(--success); }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .section-title h2 { font-size: 18px; }
-  .inline-edit { padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 13px; width: 80px; }
-  .inline-edit:hover { border-color: var(--border); }
-  .inline-edit:focus { border-color: var(--primary); outline: none; }
-  .user-info { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: rgba(255,255,255,0.06); margin: 0 12px 12px; border-radius: var(--radius-sm); }
-  .user-info .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .user-info .details { font-size: 12px; }
-  .user-info .details .name { font-weight: 600; color: #fff; }
-  .user-info .details .role { opacity: 0.6; }
-  @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar h2, .sidebar .user-info, .sidebar a span { display: none; } .main { padding: 16px; } }
+  .empty { text-align:center; padding:32px; color:var(--text-muted); }
+  .inline-edit { padding:3px 6px; border:1px solid transparent; border-radius:4px; font-size:12.5px; width:70px; }
+  .inline-edit:hover { border-color:var(--border); }
+  .inline-edit:focus { border-color:var(--primary); outline:none; }
+  .low-stock { color:var(--warn); font-weight:600; }
+  .out-stock { color:var(--danger); font-weight:600; }
+  @media (max-width:700px){ .sidebar { width:52px; } .sidebar a span, .sidebar h2 span { display:none; } .sidebar h2 small { display:none; } .main { padding:12px; } }
 </style>
 </head>
 <body>
 <div class="layout">
   <nav class="sidebar">
-    <h2>QEMRX <small>Admin Panel</small></h2>
-    <div class="user-info" id="userInfo">
-      <div class="avatar">👤</div>
-      <div class="details">
-        <div class="name" id="adminName">Loading...</div>
-        <div class="role" id="adminRole">admin</div>
-      </div>
-    </div>
+    <h2>QEMRX <span><small>Admin Panel</small></span></h2>
     <a class="active" onclick="switchTab('dashboard')">📊 <span>Dashboard</span></a>
     <a onclick="switchTab('products')">💊 <span>Products</span></a>
     <a onclick="switchTab('orders')">📦 <span>Orders</span></a>
+    <a onclick="switchTab('customers')">👥 <span>Customers</span></a>
     <a onclick="switchTab('prescriptions')">📋 <span>Prescriptions</span></a>
-    <div style="flex:1"></div>
-    <a class="back-link" href="/pharmacy/" target="_blank">🏪 <span>Back to Store</span></a>
-    <a onclick="doLogout()" style="color:rgba(255,255,255,0.5)">🚪 <span>Sign Out</span></a>
+    <a onclick="switchTab('delivery')">🚚 <span>Delivery Zones</span></a>
+    <a onclick="switchTab('settings')">⚙️ <span>Settings</span></a>
+    <div class="spacer"></div>
+    <a class="bottom-link store-link" href="/pharmacy/" target="_blank">🏪 <span>View Store</span></a>
+    <a class="bottom-link" onclick="doLogout()" style="color:rgba(255,255,255,0.5)">🚪 <span>Sign Out</span></a>
   </nav>
 
-    <div class="main">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div></div>
-      <button class="btn btn-sm btn-danger" onclick="doLogout()">🚪 Sign Out</button>
-    </div>
+  <div class="main">
+    <!-- DASHBOARD -->
     <div id="tab-dashboard" class="tab-content active">
       <h1>Dashboard</h1>
-      <div class="stats" id="statsContainer">
-        <div class="stat-card"><div class="num">—</div><div class="label">Total Orders</div></div>
-        <div class="stat-card"><div class="num">—</div><div class="label">Today</div></div>
-        <div class="stat-card"><div class="num">—</div><div class="label">Pending</div></div>
-        <div class="stat-card"><div class="num">—</div><div class="label">Revenue (KSh)</div></div>
-        <div class="stat-card"><div class="num">—</div><div class="label">Pending Rx</div></div>
-        <div class="stat-card"><div class="num">—</div><div class="label">Customers</div></div>
+      <div class="stats" id="statsContainer"></div>
+      <div class="split">
+        <div class="card"><h3>📦 Recent Orders</h3><table class="card-table" id="recentOrdersTable"><tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></table></div>
+        <div class="card"><h3>⚠️ Low Stock Products</h3><table class="card-table" id="lowStockTable"><tr><td colspan="3" style="text-align:center;color:var(--text-muted)">Loading...</td></tr></table></div>
       </div>
     </div>
 
+    <!-- PRODUCTS -->
     <div id="tab-products" class="tab-content">
-      <div class="section-title"><h1>Products</h1><button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button></div>
-      <div class="header-actions">
-        <div class="search-input"><input type="text" id="productSearch" placeholder="Search products..." oninput="loadProducts()"></div>
-        <select id="categoryFilter" onchange="loadProducts()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px"><option value="">All Categories</option></select>
+      <h1>💊 Products <button class="btn btn-primary" onclick="openProductModal()">+ Add</button></h1>
+      <div class="toolbar">
+        <input id="prodSearch" placeholder="Search..." oninput="loadProducts()">
+        <select id="prodCat" onchange="loadProducts()"><option value="">All Categories</option></select>
+        <select id="prodType" onchange="loadProducts()"><option value="">All Types</option><option value="otc">OTC</option><option value="rx">Rx</option></select>
+        <select id="prodStock" onchange="loadProducts()"><option value="">All Stock</option><option value="low">Low Stock (&lt;20)</option><option value="out">Out of Stock</option></select>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Type</th><th style="width:120px">Actions</th></tr></thead><tbody id="productsTable"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Product</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Type</th><th style="width:90px">Actions</th></tr></thead><tbody id="productsTable"></tbody></table></div>
     </div>
 
+    <!-- ORDERS -->
     <div id="tab-orders" class="tab-content">
-      <div class="section-title"><h1>Orders</h1></div>
-      <div class="header-actions">
-        <select id="orderStatusFilter" onchange="loadOrders()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px">
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option><option value="confirmed">Confirmed</option>
-          <option value="processing">Processing</option><option value="out_for_delivery">Out for Delivery</option>
-          <option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>
-        </select>
+      <h1>📦 Orders</h1>
+      <div class="toolbar">
+        <select id="orderStatus" onchange="loadOrders()"><option value="">All Statuses</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="processing">Processing</option><option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
+        <select id="orderPayStatus" onchange="loadOrders()"><option value="">All Payments</option><option value="pending">Pending</option><option value="paid">Paid</option><option value="failed">Failed</option></select>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Order #</th><th>Customer</th><th>Phone</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th style="width:160px">Actions</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Order #</th><th>Customer</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th style="width:130px">Actions</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
     </div>
 
+    <!-- CUSTOMERS -->
+    <div id="tab-customers" class="tab-content">
+      <h1>👥 Customers</h1>
+      <div class="toolbar"><input id="custSearch" placeholder="Search name/phone..." oninput="loadCustomers()"></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Orders</th><th>Joined</th><th style="width:90px">Actions</th></tr></thead><tbody id="customersTable"></tbody></table></div>
+    </div>
+
+    <!-- PRESCRIPTIONS -->
     <div id="tab-prescriptions" class="tab-content">
-      <div class="section-title"><h1>Prescriptions</h1></div>
-      <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Phone</th><th>File</th><th>Status</th><th>Date</th><th style="width:180px">Actions</th></tr></thead><tbody id="rxTable"></tbody></table></div>
+      <h1>📋 Prescriptions</h1>
+      <div class="toolbar">
+        <select id="rxStatus" onchange="loadPrescriptions()"><option value="">All</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Phone</th><th>File</th><th>Notes</th><th>Status</th><th>Date</th><th style="width:160px">Actions</th></tr></thead><tbody id="rxTable"></tbody></table></div>
+    </div>
+
+    <!-- DELIVERY -->
+    <div id="tab-delivery" class="tab-content">
+      <h1>🚚 Delivery Zones</h1>
+      <div class="table-wrap" id="deliveryZonesContainer"></div>
+      <div style="margin-top:16px" class="card">
+        <h3>⚙️ Delivery Config (from env)</h3>
+        <div id="deliveryConfig"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="tab-content">
+      <h1>⚙️ Settings</h1>
+      <div class="card" style="margin-bottom:12px"><h3>🏪 Pharmacy Info</h3><div id="settingsInfo"></div></div>
+      <div class="card"><h3>🔑 Environment Variables</h3><div id="settingsEnv"></div></div>
     </div>
   </div>
 </div>
 
-<!-- Product Edit Modal -->
-<div class="modal-overlay" id="productModal">
-  <div class="modal">
-    <h3 id="productModalTitle">Add Product</h3>
-    <label>Name</label><input id="editName">
-    <label>Brand</label><input id="editBrand">
-    <label>Category</label><input id="editCategory">
-    <label>Subcategory</label><input id="editSubcategory">
-    <label>Price (KSh)</label><input id="editPrice" type="number" step="0.01">
-    <label>Old Price (KSh, optional)</label><input id="editOldPrice" type="number" step="0.01">
-    <label>Stock</label><input id="editStock" type="number">
-    <label>Emoji</label><input id="editEmoji" maxlength="2">
-    <label>Type</label><select id="editType"><option value="otc">OTC</option><option value="rx">Prescription (Rx)</option></select>
-    <label>Description</label><textarea id="editDescription"></textarea>
-    <label><input id="editActive" type="checkbox" checked> Active</label>
-    <label><input id="editRx" type="checkbox"> Requires Prescription</label>
-    <div class="btn-row">
-      <button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
-      <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()">Save</button>
-    </div>
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="productModal"><div class="modal">
+  <h3 id="prodModalTitle">Add Product</h3>
+  <label>Name *</label><input id="fName">
+  <label>Brand</label><input id="fBrand">
+  <label>Category *</label><input id="fCategory" list="catList"><datalist id="catList"></datalist>
+  <label>Subcategory</label><input id="fSubcat">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div><label>Price (KSh) *</label><input id="fPrice" type="number" step="0.01"></div>
+    <div><label>Old Price</label><input id="fOldPrice" type="number" step="0.01"></div>
   </div>
-</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div><label>Stock</label><input id="fStock" type="number"></div>
+    <div><label>Emoji</label><input id="fEmoji" maxlength="2"></div>
+  </div>
+  <label>Type</label><select id="fType"><option value="otc">OTC</option><option value="rx">Prescription (Rx)</option></select>
+  <label>Description</label><textarea id="fDesc"></textarea>
+  <label>Image URL</label><input id="fImage">
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="fActive" type="checkbox" checked> Active</label>
+  <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button><button class="btn btn-primary" id="prodSaveBtn" onclick="saveProduct()">Save</button></div>
+</div></div>
 
-<!-- Order Status Modal -->
-<div class="modal-overlay" id="orderModal">
-  <div class="modal">
-    <h3>Update Order Status</h3>
-    <p style="margin-bottom:12px;color:var(--text-muted)" id="orderModalInfo">Order #12345</p>
-    <label>Status</label>
-    <select id="orderStatusSelect">
-      <option value="pending">Pending</option>
-      <option value="confirmed">Confirmed</option>
-      <option value="processing">Processing</option>
-      <option value="out_for_delivery">Out for Delivery</option>
-      <option value="delivered">Delivered</option>
-      <option value="cancelled">Cancelled</option>
-    </select>
-    <div class="btn-row">
-      <button class="btn btn-outline" onclick="closeModal('orderModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="updateOrderStatus()">Update</button>
-    </div>
-  </div>
-</div>
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="orderModal"><div class="modal">
+  <h3 id="orderModalTitle">Order Details</h3>
+  <div class="modal-detail" id="orderDetail"></div>
+  <hr>
+  <label>Update Status</label>
+  <select id="orderStatusSelect"><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="processing">Processing</option><option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
+  <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('orderModal')">Close</button><button class="btn btn-primary" onclick="updateOrderStatus()">Update Status</button></div>
+</div></div>
+
+<!-- CUSTOMER ORDERS MODAL -->
+<div class="modal-overlay" id="custOrderModal"><div class="modal" style="width:600px">
+  <h3 id="custOrderTitle">Customer Orders</h3>
+  <div id="custOrderList"></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('custOrderModal')">Close</button></div>
+</div></div>
 
 <script>
 const API = window.QEMRX_API || '/pharmacy-api';
-let editingProductId = null;
-let updatingOrderId = null;
+let editId = null, orderEditId = null;
 
-function toast(msg, type) { const t = document.createElement('div'); t.className='toast'+(type?' '+type:''); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3500); }
+function t(m,t){const d=document.createElement('div');d.className='toast'+(t?' '+t:'');d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3500);}
+function gt(){return localStorage.getItem('qemrx_token');}
+function gu(){try{return JSON.parse(localStorage.getItem('qemrx_user'));}catch(e){return null;}}
 
-function getToken() { return localStorage.getItem('qemrx_token'); }
-function getUser() { try { return JSON.parse(localStorage.getItem('qemrx_user')); } catch(e) { return null; } }
-
-async function api(path, opts={}) {
-  const headers = { 'Content-Type': 'application/json' };
-  const t = getToken();
-  if (t) headers['Authorization'] = 'Bearer ' + t;
-  if (opts.body && typeof opts.body === 'object') opts.body = JSON.stringify(opts.body);
-  const res = await fetch(API + path, { ...opts, headers: { ...headers, ...opts.headers } });
-  if (res.status === 401) { toast('Session expired — sign in again', 'error'); localStorage.removeItem('qemrx_token'); localStorage.removeItem('qemrx_user'); setTimeout(()=>location.href='/pharmacy/',2000); throw new Error('Unauthorized'); }
-  const data = await res.json().catch(()=>({}));
-  if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
-  return data;
+async function api(p,o={}){
+  const h={'Content-Type':'application/json'};
+  const t=gt();if(t)h['Authorization']='Bearer '+t;
+  if(o.body&&typeof o.body==='object')o.body=JSON.stringify(o.body);
+  const r=await fetch(API+p,{...o,headers:{...h,...o.headers}});
+  if(r.status===401){t('Session expired','error');localStorage.removeItem('qemrx_token');localStorage.removeItem('qemrx_user');setTimeout(()=>location.href='/pharmacy/',2000);throw Error('Unauthorized');}
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(d.error||'HTTP '+r.status);
+  return d;
 }
 
-function checkAuth() {
-  const user = getUser();
-  if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
-    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px"><h2>🔒 Admin Access Only</h2><p style="color:var(--text-muted)">Please sign in as admin or pharmacist at the <a href="/pharmacy/">store page</a>.</p></div>';
+function ca(){
+  const u=gu();
+  if(!u||(u.role!=='admin'&&u.role!=='pharmacist')){
+    document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px"><h2>🔒 Admin Access Only</h2><p style="color:var(--text-muted)">Please sign in as admin or pharmacist at the <a href="/pharmacy/">store page</a>.</p></div>';
     return false;
   }
-  document.getElementById('adminName').textContent = user.name || user.phone;
-  document.getElementById('adminRole').textContent = user.role;
   return true;
 }
 
-function switchTab(name) {
-  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+function st(n){
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
   event.target.closest('a').classList.add('active');
-  if (name === 'dashboard') loadDashboard();
-  if (name === 'products') loadProducts();
-  if (name === 'orders') loadOrders();
-  if (name === 'prescriptions') loadPrescriptions();
+  if(n==='dashboard'){loadDashboard();loadRecentOrders();loadLowStock();}
+  if(n==='products')loadProducts();
+  if(n==='orders')loadOrders();
+  if(n==='customers')loadCustomers();
+  if(n==='prescriptions')loadPrescriptions();
+  if(n==='delivery')loadDelivery();
+  if(n==='settings')loadSettings();
 }
 
-async function loadDashboard() {
-  try {
-    const d = await api('/api/admin/dashboard');
-    const stats = document.getElementById('statsContainer').children;
-    stats[0].querySelector('.num').textContent = d.totalOrders || 0;
-    stats[1].querySelector('.num').textContent = d.todayOrders || 0;
-    stats[2].querySelector('.num').textContent = d.pendingOrders || 0;
-    stats[3].querySelector('.num').textContent = (d.totalRevenue || 0).toLocaleString();
-    stats[4].querySelector('.num').textContent = d.pendingRx || 0;
-    stats[5].querySelector('.num').textContent = d.totalUsers || 0;
-  } catch(e) { toast('Failed to load dashboard: ' + e.message, 'error'); }
+// ── DASHBOARD ──
+async function loadDashboard(){
+  try{
+    const d=await api('/api/admin/dashboard');
+    const s=document.getElementById('statsContainer');
+    s.innerHTML='<div class="stat-card"><div class="num">'+d.totalOrders+'</div><div class="label">Total Orders</div></div>'+
+      '<div class="stat-card"><div class="num">'+d.todayOrders+'</div><div class="label">Today</div></div>'+
+      '<div class="stat-card"><div class="num">'+d.pendingOrders+'</div><div class="label">Pending</div></div>'+
+      '<div class="stat-card"><div class="num">KSh '+(d.totalRevenue||0).toLocaleString()+'</div><div class="label">Revenue</div></div>'+
+      '<div class="stat-card"><div class="num'+(d.pendingRx>0?' warn':'')+'">'+d.pendingRx+'</div><div class="label">Pending Rx</div></div>'+
+      '<div class="stat-card"><div class="num">'+d.totalUsers+'</div><div class="label">Customers</div></div>';
+  }catch(e){t('Dashboard error: '+e.message,'error');}
 }
 
-async function loadProducts() {
-  try {
-    const search = document.getElementById('productSearch').value;
-    const category = document.getElementById('categoryFilter').value;
-    let url = '/api/products?limit=100';
-    if (search) url += '&search=' + encodeURIComponent(search);
-    if (category) url += '&category=' + encodeURIComponent(category);
-    const data = await api(url);
-    const tbody = document.getElementById('productsTable');
-    const catFilter = document.getElementById('categoryFilter');
-    const cats = await api('/api/products/categories');
-    catFilter.innerHTML = '<option value="">All Categories</option>' + cats.map(c => '<option value="' + c + '"' + (c===category?' selected':'') + '>' + c + '</option>').join('');
-    tbody.innerHTML = (data.products || data.rows || []).map(p => '<tr><td>' + (p.emoji||'💊') + ' ' + p.name + '</td><td>' + (p.brand||'—') + '</td><td>' + (p.category||'') + '</td><td>' + (p.oldPrice ? '<s style="color:var(--text-muted)">' + p.oldPrice + '</s> ' : '') + '<strong>' + p.price + '</strong></td><td>' + (p.stock!==null ? '<input class="inline-edit" type="number" value="' + p.stock + '" onchange="quickUpdate(\'' + p.id + '\',\'stock\',this.value)">' : '—') + '</td><td><span class="badge ' + (p.type==='rx'?'badge-processing':'badge-paid') + '">' + p.type + '</span></td><td><button class="btn btn-sm btn-outline" onclick="openProductModal(\'' + p.id + '\')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteProduct(\'' + p.id + '\')">🗑️</button></td></tr>').join('');
-  } catch(e) { toast('Failed to load products: ' + e.message, 'error'); }
+async function loadRecentOrders(){
+  try{
+    const d=await api('/api/admin/orders?limit=5');
+    const rows=(d.rows||[]).slice(0,5);
+    document.getElementById('recentOrdersTable').innerHTML=rows.length===0?'<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">No orders yet</td></tr>':
+      rows.map(o=>'<tr><td><strong>'+o.orderNumber+'</strong></td><td>'+(o.User?o.User.name:'—')+'</td><td><span class="badge badge-'+o.status+'">'+o.status.replace(/_/g,' ')+'</span></td></tr>').join('');
+  }catch(e){document.getElementById('recentOrdersTable').innerHTML='<tr><td style="color:var(--danger)">Error loading</td></tr>';}
 }
 
-async function openProductModal(id) {
-  editingProductId = id || null;
-  document.getElementById('productModalTitle').textContent = id ? 'Edit Product' : 'Add Product';
-  document.getElementById('saveProductBtn').textContent = id ? 'Update' : 'Add';
-  ['editName','editBrand','editCategory','editSubcategory','editPrice','editOldPrice','editStock','editEmoji','editDescription'].forEach(f => document.getElementById(f).value = '');
-  document.getElementById('editType').value = 'otc';
-  document.getElementById('editActive').checked = true;
-  document.getElementById('editRx').checked = false;
-  if (id) {
-    try {
-      const p = await api('/api/products/' + id);
-      document.getElementById('editName').value = p.name || '';
-      document.getElementById('editBrand').value = p.brand || '';
-      document.getElementById('editCategory').value = p.category || '';
-      document.getElementById('editSubcategory').value = p.subcategory || '';
-      document.getElementById('editPrice').value = p.price || '';
-      document.getElementById('editOldPrice').value = p.oldPrice || '';
-      document.getElementById('editStock').value = p.stock || '';
-      document.getElementById('editEmoji').value = p.emoji || '💊';
-      document.getElementById('editDescription').value = p.description || '';
-      document.getElementById('editType').value = p.type || 'otc';
-      document.getElementById('editActive').checked = p.isActive !== false;
-      document.getElementById('editRx').checked = p.requiresPrescription === true;
-    } catch(e) { toast('Failed to load product: ' + e.message, 'error'); return; }
+async function loadLowStock(){
+  try{
+    const d=await api('/api/products?limit=100');
+    const prods=(d.products||d.rows||[]).filter(p=>p.stock!==null&&p.stock<20).sort((a,b)=>a.stock-b.stock).slice(0,10);
+    const tb=document.getElementById('lowStockTable');
+    if(prods.length===0){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">✅ All products well stocked</td></tr>';return;}
+    tb.innerHTML=prods.map(p=>'<tr><td>'+(p.emoji||'💊')+' '+p.name+'</td><td class="'+(p.stock===0?'out-stock':'low-stock')+'">'+p.stock+'</td><td><button class="btn btn-sm btn-outline" onclick="switchTab(\'products\')">✏️</button></td></tr>').join('');
+  }catch(e){}
+}
+
+// ── PRODUCTS ──
+async function loadProducts(){
+  try{
+    const s=document.getElementById('prodSearch').value;
+    const c=document.getElementById('prodCat').value;
+    const t=document.getElementById('prodType').value;
+    const st=document.getElementById('prodStock').value;
+    let u='/api/products?limit=200';
+    if(s)u+='&search='+encodeURIComponent(s);
+    if(c)u+='&category='+encodeURIComponent(c);
+    if(t)u+='&type='+t;
+    const d=await api(u);
+    const cats=await api('/api/products/categories');
+    const cf=document.getElementById('prodCat');
+    cf.innerHTML='<option value="">All Categories</option>'+cats.map(x=>'<option value="'+x+'"'+(x===c?' selected':'')+'>'+x+'</option>').join('');
+    const dl=document.getElementById('catList');
+    dl.innerHTML=cats.map(x=>'<option value="'+x+'">').join('');
+    const prods=(d.products||d.rows||[]).filter(p=>{
+      if(st==='low')return p.stock!==null&&p.stock<20&&p.stock>0;
+      if(st==='out')return p.stock===0||p.stock===null;
+      return true;
+    });
+    document.getElementById('productsTable').innerHTML=prods.length===0?'<tr><td colspan="7" class="empty">No products found</td></tr>':
+      prods.map(p=>'<tr><td>'+(p.emoji||'💊')+' '+p.name+'</td><td>'+(p.brand||'—')+'</td><td>'+p.category+'</td><td>'+(p.oldPrice?'<s style="color:var(--text-muted)">'+p.oldPrice+'</s> ':'')+'<strong>'+p.price+'</strong></td><td class="'+(p.stock===0?'out-stock':p.stock<20?'low-stock':'')+'"><input class="inline-edit" type="number" value="'+(p.stock??'')+'" onchange="quickUpdate(\''+p.id+'\',\'stock\',this.value)"></td><td><span class="badge badge-'+p.type+'">'+p.type+'</span></td><td><button class="btn btn-sm btn-outline" onclick="openProductModal(\''+p.id+'\')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteProduct(\''+p.id+'\')">🗑️</button></td></tr>').join('');
+  }catch(e){t('Products error: '+e.message,'error');}
+}
+
+async function openProductModal(id){
+  editId=id||null;
+  document.getElementById('prodModalTitle').textContent=id?'Edit Product':'Add Product';
+  document.getElementById('prodSaveBtn').textContent=id?'Update':'Add';
+  ['fName','fBrand','fCategory','fSubcat','fPrice','fOldPrice','fStock','fEmoji','fDesc','fImage'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('fType').value='otc';document.getElementById('fActive').checked=true;
+  if(id){
+    try{
+      const p=await api('/api/products/'+id);
+      document.getElementById('fName').value=p.name||'';
+      document.getElementById('fBrand').value=p.brand||'';
+      document.getElementById('fCategory').value=p.category||'';
+      document.getElementById('fSubcat').value=p.subcategory||'';
+      document.getElementById('fPrice').value=p.price||'';
+      document.getElementById('fOldPrice').value=p.oldPrice||'';
+      document.getElementById('fStock').value=p.stock??'';
+      document.getElementById('fEmoji').value=p.emoji||'💊';
+      document.getElementById('fDesc').value=p.description||'';
+      document.getElementById('fImage').value=p.imageUrl||'';
+      document.getElementById('fType').value=p.type||'otc';
+      document.getElementById('fActive').checked=p.isActive!==false;
+    }catch(e){t('Load error: '+e.message,'error');return;}
   }
   document.getElementById('productModal').classList.add('open');
 }
 
-async function saveProduct() {
-  const body = {
-    name: document.getElementById('editName').value,
-    brand: document.getElementById('editBrand').value,
-    category: document.getElementById('editCategory').value,
-    subcategory: document.getElementById('editSubcategory').value,
-    price: parseFloat(document.getElementById('editPrice').value) || 0,
-    oldPrice: parseFloat(document.getElementById('editOldPrice').value) || null,
-    stock: parseInt(document.getElementById('editStock').value) || 0,
-    emoji: document.getElementById('editEmoji').value || '💊',
-    description: document.getElementById('editDescription').value,
-    type: document.getElementById('editType').value,
-    isActive: document.getElementById('editActive').checked,
-    requiresPrescription: document.getElementById('editRx').checked,
+async function saveProduct(){
+  const b={
+    name:document.getElementById('fName').value,
+    brand:document.getElementById('fBrand').value,
+    category:document.getElementById('fCategory').value,
+    subcategory:document.getElementById('fSubcat').value,
+    price:parseFloat(document.getElementById('fPrice').value)||0,
+    oldPrice:parseFloat(document.getElementById('fOldPrice').value)||null,
+    stock:parseInt(document.getElementById('fStock').value)||0,
+    emoji:document.getElementById('fEmoji').value||'💊',
+    description:document.getElementById('fDesc').value,
+    imageUrl:document.getElementById('fImage').value,
+    type:document.getElementById('fType').value,
+    isActive:document.getElementById('fActive').checked,
   };
-  if (!body.name || !body.category || !body.price) { toast('Name, category and price are required', 'error'); return; }
-  try {
-    if (editingProductId) {
-      await api('/api/products/' + editingProductId, { method: 'PATCH', body });
-      toast('✅ Product updated', 'success');
-    } else {
-      await api('/api/products', { method: 'POST', body });
-      toast('✅ Product added', 'success');
+  if(!b.name||!b.category||!b.price){t('Name, category and price required','error');return;}
+  try{
+    if(editId){await api('/api/products/'+editId,{method:'PATCH',body:b});t('✅ Updated','success');}
+    else{await api('/api/products',{method:'POST',body:b});t('✅ Added','success');}
+    closeModal('productModal');loadProducts();
+  }catch(e){t('Failed: '+e.message,'error');}
+}
+
+async function quickUpdate(id,f,v){
+  try{await api('/api/products/'+id,{method:'PATCH',body:{[f]:f==='stock'?parseInt(v):v}});t('✅ Updated','success');}
+  catch(e){t('Failed: '+e.message,'error');}
+}
+
+async function deleteProduct(id){
+  if(!confirm('Deactivate this product?'))return;
+  try{await api('/api/products/'+id,{method:'DELETE'});t('✅ Deactivated','success');loadProducts();}
+  catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── ORDERS ──
+async function loadOrders(){
+  try{
+    const s=document.getElementById('orderStatus').value;
+    const ps=document.getElementById('orderPayStatus').value;
+    let u='/api/admin/orders?limit=50';
+    if(s)u+='&status='+s;
+    const d=await api(u);
+    let rows=d.rows||[];
+    if(ps){rows=rows.filter(o=>o.paymentStatus===ps);}
+    document.getElementById('ordersTable').innerHTML=rows.length===0?'<tr><td colspan="7" class="empty">No orders found</td></tr>':
+      rows.map(o=>'<tr><td><strong>'+o.orderNumber+'</strong></td><td>'+(o.User?o.User.name:'—')+'<br><small style="color:var(--text-muted)">'+(o.User?o.User.phone:o.deliveryPhone)+'</small></td><td>KSh '+(parseFloat(o.total)||0).toLocaleString()+'</td><td><span class="badge badge-'+(o.paymentStatus||'pending')+'">'+(o.paymentStatus||'—')+'</span></td><td><span class="badge badge-'+(o.status||'pending').replace(/\s/g,'_')+'">'+(o.status||'—').replace(/_/g,' ')+'</span></td><td>'+new Date(o.createdAt).toLocaleDateString()+'</td><td><button class="btn btn-sm btn-outline" onclick="viewOrder(\''+o.id+'\')">📄 View</button></td></tr>').join('');
+  }catch(e){t('Orders error: '+e.message,'error');}
+}
+
+async function viewOrder(id){
+  try{
+    const o=await api('/api/orders/'+id);
+    document.getElementById('orderModalTitle').textContent='Order #'+o.orderNumber;
+    orderEditId=o.id;
+    let itemsHtml='';
+    if(o.items&&o.items.length){
+      itemsHtml='<br><strong style="color:var(--text)">Items:</strong><br>';
+      o.items.forEach(i=>{itemsHtml+='&nbsp;&nbsp;×'+i.quantity+' '+i.productName+' @ KSh '+i.unitPrice+' = KSh '+(i.subtotal||(i.quantity*i.unitPrice)).toLocaleString()+'<br>';});
     }
-    closeModal('productModal');
-    loadProducts();
-  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+    document.getElementById('orderDetail').innerHTML=
+      '<strong>Customer:</strong> '+(o.User?o.User.name:'—')+'<br>'+
+      '<strong>Phone:</strong> '+o.deliveryPhone+'<br>'+
+      '<strong>Address:</strong> '+o.deliveryAddress+'<br>'+
+      '<strong>Subtotal:</strong> KSh '+(parseFloat(o.subtotal)||0).toLocaleString()+'<br>'+
+      '<strong>Delivery:</strong> KSh '+(parseFloat(o.deliveryFee)||0).toLocaleString()+'<br>'+
+      '<strong>Total:</strong> KSh '+(parseFloat(o.total)||0).toLocaleString()+'<br>'+
+      '<strong>Payment:</strong> '+(o.paymentMethod||'—')+' <span class="badge badge-'+(o.paymentStatus||'pending')+'">'+(o.paymentStatus||'pending')+'</span><br>'+
+      '<strong>Ordered:</strong> '+new Date(o.createdAt).toLocaleString()+'<br>'+
+      itemsHtml;
+    document.getElementById('orderStatusSelect').value=o.status;
+    document.getElementById('orderModal').classList.add('open');
+  }catch(e){t('Failed: '+e.message,'error');}
 }
 
-async function quickUpdate(id, field, value) {
-  try {
-    await api('/api/products/' + id, { method: 'PATCH', body: { [field]: field === 'stock' ? parseInt(value) : value } });
-    toast('✅ Updated', 'success');
-  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+async function updateOrderStatus(){
+  try{
+    await api('/api/orders/'+orderEditId+'/status',{method:'PATCH',body:{status:document.getElementById('orderStatusSelect').value}});
+    t('✅ Status updated','success');closeModal('orderModal');loadOrders();
+  }catch(e){t('Failed: '+e.message,'error');}
 }
 
-async function deleteProduct(id) {
-  if (!confirm('Deactivate this product?')) return;
-  try { await api('/api/products/' + id, { method: 'DELETE' }); toast('✅ Product deactivated', 'success'); loadProducts(); }
-  catch(e) { toast('Failed: ' + e.message, 'error'); }
+// ── CUSTOMERS ──
+async function loadCustomers(){
+  try{
+    const q=document.getElementById('custSearch').value;
+    const d=await api('/api/admin/orders?limit=200');
+    const orders=d.rows||[];
+    const userMap={};
+    orders.forEach(o=>{
+      if(o.User){
+        const uid=o.User.id||o.User.phone;
+        if(!userMap[uid])userMap[uid]={...o.User,orderCount:0};
+        userMap[uid].orderCount++;
+      }
+    });
+    const users=Object.values(userMap).filter(u=>{
+      if(!q)return true;
+      const lq=q.toLowerCase();
+      return (u.name&&u.name.toLowerCase().includes(lq))||(u.phone&&u.phone.toLowerCase().includes(lq));
+    }).sort((a,b)=>b.orderCount-a.orderCount);
+    document.getElementById('customersTable').innerHTML=users.length===0?'<tr><td colspan="6" class="empty">No customers found</td></tr>':
+      users.map(u=>'<tr><td>'+(u.name||'—')+'</td><td>'+u.phone+'</td><td>'+(u.email||'—')+'</td><td><span class="badge badge-'+(u.role||'customer')+'">'+(u.role||'customer')+'</span></td><td>'+u.orderCount+'</td><td>'+(u.createdAt?new Date(u.createdAt).toLocaleDateString():'—')+'</td><td><button class="btn btn-sm btn-outline" onclick="viewCustomerOrders(\''+u.phone+'\')">📦</button></td></tr>').join('');
+  }catch(e){t('Customers error: '+e.message,'error');}
 }
 
-async function loadOrders() {
-  try {
-    const status = document.getElementById('orderStatusFilter').value;
-    let url = '/api/admin/orders?limit=50';
-    if (status) url += '&status=' + status;
-    const data = await api(url);
-    const tbody = document.getElementById('ordersTable');
-    tbody.innerHTML = (data.rows || []).map(o => '<tr><td><strong>' + o.orderNumber + '</strong></td><td>' + (o.User ? o.User.name : '—') + '</td><td>' + (o.User ? o.User.phone : o.deliveryPhone) + '</td><td>KSh ' + (parseFloat(o.total)||0).toLocaleString() + '</td><td><span class="badge badge-' + o.paymentStatus + '">' + o.paymentStatus + '</span></td><td><span class="badge badge-' + o.status.replace(/\s/g,'_') + '">' + o.status.replace(/_/g,' ') + '</span></td><td>' + new Date(o.createdAt).toLocaleDateString() + '</td><td><button class="btn btn-sm btn-outline" onclick="openOrderModal(\'' + o.id + '\',\'' + o.orderNumber + '\',\'' + o.status + '\')">📝 Update</button></td></tr>').join('');
-  } catch(e) { toast('Failed to load orders: ' + e.message, 'error'); }
+async function viewCustomerOrders(phone){
+  try{
+    const d=await api('/api/admin/orders?limit=50');
+    const orders=(d.rows||[]).filter(o=>o.User&&o.User.phone===phone);
+    document.getElementById('custOrderTitle').textContent='Orders for '+phone;
+    document.getElementById('custOrderList').innerHTML=orders.length===0?'<p style="color:var(--text-muted)">No orders</p>':
+      orders.map(o=>'<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><strong>'+o.orderNumber+'</strong> — KSh '+(parseFloat(o.total)||0).toLocaleString()+' — <span class="badge badge-'+o.status+'">'+o.status.replace(/_/g,' ')+'</span> — '+new Date(o.createdAt).toLocaleDateString()+'</div>').join('');
+    document.getElementById('custOrderModal').classList.add('open');
+  }catch(e){t('Failed: '+e.message,'error');}
 }
 
-function openOrderModal(id, orderNum, status) {
-  updatingOrderId = id;
-  document.getElementById('orderModalInfo').textContent = 'Order #' + orderNum;
-  document.getElementById('orderStatusSelect').value = status;
-  document.getElementById('orderModal').classList.add('open');
+// ── PRESCRIPTIONS ──
+async function loadPrescriptions(){
+  try{
+    const s=document.getElementById('rxStatus').value;
+    let u='/api/prescriptions/all';
+    if(s)u+='?status='+s;
+    const d=await api(u);
+    const rxs=d.rows||d||[];
+    document.getElementById('rxTable').innerHTML=rxs.length===0?'<tr><td colspan="7" class="empty">No prescriptions</td></tr>':
+      rxs.map(r=>'<tr><td>'+(r.patientName||'—')+'</td><td>'+r.phone+'</td><td>'+(r.fileUrl?'<a href="'+r.fileUrl+'" target="_blank" class="btn btn-sm btn-outline">📎 View</a>':'—')+'</td><td><small>'+(r.notes||r.pharmacistNotes||'—')+'</small></td><td><span class="badge badge-'+(r.status||'pending')+'">'+(r.status||'pending')+'</span></td><td>'+new Date(r.createdAt).toLocaleDateString()+'</td><td>'+(r.status==='pending'?'<button class="btn btn-sm btn-success" onclick="reviewRx(\''+r.id+'\',\'approved\')">✅</button> <button class="btn btn-sm btn-danger" onclick="reviewRx(\''+r.id+'\',\'rejected\')">❌</button>':'—')+'</td></tr>').join('');
+  }catch(e){t('Error: '+e.message,'error');}
 }
 
-async function updateOrderStatus() {
-  try {
-    await api('/api/orders/' + updatingOrderId + '/status', { method: 'PATCH', body: { status: document.getElementById('orderStatusSelect').value } });
-    toast('✅ Order status updated', 'success');
-    closeModal('orderModal');
-    loadOrders();
-  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+async function reviewRx(id,s){
+  try{await api('/api/prescriptions/'+id+'/review',{method:'PATCH',body:{status:s,pharmacistNotes:s==='approved'?'Approved':'Rejected'}});t('✅ '+s,'success');loadPrescriptions();}
+  catch(e){t('Failed: '+e.message,'error');}
 }
 
-async function loadPrescriptions() {
-  try {
-    const data = await api('/api/prescriptions/all');
-    const tbody = document.getElementById('rxTable');
-    tbody.innerHTML = (data.rows || data || []).map(r => '<tr><td>' + (r.patientName || '—') + '</td><td>' + (r.phone || '—') + '</td><td><a href="' + (r.fileUrl||'#') + '" target="_blank" class="btn btn-sm btn-outline">📎 View</a></td><td><span class="badge badge-' + r.status + '">' + r.status + '</span></td><td>' + new Date(r.createdAt||r.placed_at).toLocaleDateString() + '</td><td>' + (r.status === 'pending' ? '<button class="btn btn-sm btn-primary" onclick="reviewPrescription(\'' + r.id + '\',\'approved\')">✅ Approve</button> <button class="btn btn-sm btn-danger" onclick="reviewPrescription(\'' + r.id + '\',\'rejected\')">❌ Reject</button>' : '—') + '</td></tr>').join('');
-  } catch(e) { toast('Failed to load prescriptions: ' + e.message, 'error'); }
+// ── DELIVERY ──
+async function loadDelivery(){
+  try{
+    const d=await api('/api/delivery/zones');
+    document.getElementById('deliveryZonesContainer').innerHTML=
+      '<table><thead><tr><th>Zone</th><th>Fee (KSh)</th><th>ETA</th></tr></thead><tbody>'+
+      d.zones.map(z=>'<tr><td>'+z.name+'</td><td>'+z.fee+'</td><td>'+z.eta+'</td></tr>').join('')+
+      '</tbody></table>';
+    document.getElementById('deliveryConfig').innerHTML=
+      '<p><strong>Free Delivery Threshold:</strong> KSh '+(d.freeDeliveryThreshold||'2,500')+'</p>'+
+      '<p><strong>Nairobi Fee:</strong> KSh '+(d.zones[0]?d.zones[0].fee:'150')+'</p>'+
+      '<p><strong>Other Counties:</strong> KSh '+(d.zones[3]?d.zones[3].fee:'300')+'</p>';
+  }catch(e){document.getElementById('deliveryZonesContainer').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
 }
 
-async function reviewPrescription(id, status) {
-  try {
-    await api('/api/prescriptions/' + id + '/review', { method: 'PATCH', body: { status, pharmacistNotes: status === 'approved' ? 'Approved by pharmacist' : 'Rejected by pharmacist' } });
-    toast('✅ Prescription ' + status, 'success');
-    loadPrescriptions();
-  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+// ── SETTINGS ──
+function loadSettings(){
+  const envVars=['PHARMACY_NAME','PHARMACY_PHONE','ADMIN_EMAIL','PHARMACIST_PHONE','BASE_URL','DELIVERY_FEE_NAIROBI','DELIVERY_FEE_COUNTY','FREE_DELIVERY_THRESHOLD','ESTIMATED_DELIVERY_HOURS','MPESA_ENV','JWT_SECRET','NODE_ENV'];
+  document.getElementById('settingsInfo').innerHTML=`
+    <p><strong>Name:</strong> QEMRX PHARMACY</p>
+    <p><strong>Phone:</strong> +254 723 257 560 / +254 736 474 493</p>
+    <p><strong>Email:</strong> qemrxpharmacy1@gmail.com</p>
+    <p><strong>PPB License:</strong> PPB-123456789</p>
+    <p><strong>Address:</strong> Nairobi, Kenya</p>
+    <p><strong>WhatsApp:</strong> <a href="https://chat.whatsapp.com/DeTJxzXbxNrG7ZhnLnyg6c" target="_blank">Chat link</a> / +254 723 257 560</p>
+    <p><strong>Website:</strong> <a href="https://investpal-bot.onrender.com/pharmacy/" target="_blank">investpal-bot.onrender.com/pharmacy/</a></p>
+  `;
+  document.getElementById('settingsEnv').innerHTML='<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:12.5px">'+
+    envVars.map(v=>'<div style="font-weight:600;color:var(--text-muted)">'+v+'</div><div style="font-family:monospace;font-size:12px">'+(process.env&&process.env[v]||'<em style="color:#aaa">set in Render</em>')+'</div>').join('')+
+    '</div><p style="margin-top:12px;color:var(--text-muted);font-size:12px">⚠️ Env vars shown are from server startup — edit in Render Dashboard → Environment.</p>';
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function cm(n){document.getElementById(n).classList.remove('open');}
+function dl(){localStorage.removeItem('qemrx_token');localStorage.removeItem('qemrx_user');location.href='/pharmacy/';}
 
-function doLogout() { localStorage.removeItem('qemrx_token'); localStorage.removeItem('qemrx_user'); location.href='/pharmacy/'; }
-
-// Init
-if (checkAuth()) { loadDashboard(); }
+if(ca()){loadDashboard();loadRecentOrders();loadLowStock();}
 </script>
 </body>
 </html>
