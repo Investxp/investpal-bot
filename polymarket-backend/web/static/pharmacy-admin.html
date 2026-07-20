@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QEMRX Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #006B5E; --primary-light: #00897B; --primary-dark: #004D40;
+    --accent: #00BFA5; --bg: #F7FAF9; --surface: #FFFFFF; --surface-2: #EEF5F3;
+    --text: #0D1F1C; --text-muted: #5C7A75; --border: #D4E6E1;
+    --danger: #C62828; --success: #2E7D32; --warn: #E65100;
+    --rx-badge: #7B1FA2; --radius: 12px; --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0,107,94,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,107,94,0.14);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+    font-size: 14px; line-height: 1.6;
+  }
+  /* Sidebar */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 240px; background: var(--primary-dark); color: #fff;
+    padding: 24px 0; flex-shrink: 0;
+  }
+  .sidebar h2 { padding: 0 20px 20px; font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px; }
+  .sidebar h2 small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 4px; }
+  .sidebar a {
+    display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+    color: rgba(255,255,255,0.75); text-decoration: none; font-size: 13.5px;
+    transition: 0.15s; cursor: pointer;
+  }
+  .sidebar a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .sidebar a.active { background: rgba(255,255,255,0.12); color: #fff; border-right: 3px solid var(--accent); }
+  .sidebar .back-link { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
+  /* Main */
+  .main { flex: 1; padding: 24px 32px; max-width: 1200px; }
+  .main h1 { font-size: 22px; margin-bottom: 20px; }
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
+  .stat-card .num { font-size: 28px; font-weight: 700; color: var(--primary); }
+  .stat-card .label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  /* Tables */
+  .table-wrap { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 12px 14px; background: var(--surface-2); font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-2); }
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.15s; text-decoration: none; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+  .header-actions { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+  .header-actions .btn { margin-bottom: 0; }
+  .search-input { display: inline-flex; align-items: center; }
+  .search-input input { padding: 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 220px; }
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: var(--radius); padding: 28px; width: 480px; max-width: 94vw; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .modal h3 { margin-bottom: 16px; }
+  .modal label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 12px 0 4px; }
+  .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: inherit; }
+  .modal textarea { resize: vertical; min-height: 60px; }
+  .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+  /* Status badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-pending { background: #FFF3E0; color: var(--warn); }
+  .badge-paid { background: #E8F5E9; color: var(--success); }
+  .badge-confirmed { background: #E3F2FD; color: #1565C0; }
+  .badge-processing { background: #F3E5F5; color: var(--rx-badge); }
+  .badge-delivered { background: #E8F5E9; color: var(--success); }
+  .badge-cancelled { background: #FFEBEE; color: var(--danger); }
+  .badge-failed { background: #FFEBEE; color: var(--danger); }
+  .badge-out_for_delivery { background: #E3F2FD; color: #1565C0; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 20px; border-radius: var(--radius-sm); font-size: 13px; z-index: 9999; animation: fadeIn 0.2s; }
+  .toast.error { background: var(--danger); }
+  .toast.success { background: var(--success); }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .section-title h2 { font-size: 18px; }
+  .inline-edit { padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 13px; width: 80px; }
+  .inline-edit:hover { border-color: var(--border); }
+  .inline-edit:focus { border-color: var(--primary); outline: none; }
+  .user-info { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: rgba(255,255,255,0.06); margin: 0 12px 12px; border-radius: var(--radius-sm); }
+  .user-info .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .user-info .details { font-size: 12px; }
+  .user-info .details .name { font-weight: 600; color: #fff; }
+  .user-info .details .role { opacity: 0.6; }
+  @media (max-width: 768px) { .sidebar { width: 60px; } .sidebar h2, .sidebar .user-info, .sidebar a span { display: none; } .main { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar">
+    <h2>QEMRX <small>Admin Panel</small></h2>
+    <div class="user-info" id="userInfo">
+      <div class="avatar">👤</div>
+      <div class="details">
+        <div class="name" id="adminName">Loading...</div>
+        <div class="role" id="adminRole">admin</div>
+      </div>
+    </div>
+    <a class="active" onclick="switchTab('dashboard')">📊 <span>Dashboard</span></a>
+    <a onclick="switchTab('products')">💊 <span>Products</span></a>
+    <a onclick="switchTab('orders')">📦 <span>Orders</span></a>
+    <a onclick="switchTab('prescriptions')">📋 <span>Prescriptions</span></a>
+    <div style="flex:1"></div>
+    <a class="back-link" href="/pharmacy/" target="_blank">🏪 <span>Back to Store</span></a>
+    <a onclick="doLogout()" style="color:rgba(255,255,255,0.5)">🚪 <span>Sign Out</span></a>
+  </nav>
+
+  <div class="main">
+    <div id="tab-dashboard" class="tab-content active">
+      <h1>Dashboard</h1>
+      <div class="stats" id="statsContainer">
+        <div class="stat-card"><div class="num">—</div><div class="label">Total Orders</div></div>
+        <div class="stat-card"><div class="num">—</div><div class="label">Today</div></div>
+        <div class="stat-card"><div class="num">—</div><div class="label">Pending</div></div>
+        <div class="stat-card"><div class="num">—</div><div class="label">Revenue (KSh)</div></div>
+        <div class="stat-card"><div class="num">—</div><div class="label">Pending Rx</div></div>
+        <div class="stat-card"><div class="num">—</div><div class="label">Customers</div></div>
+      </div>
+    </div>
+
+    <div id="tab-products" class="tab-content">
+      <div class="section-title"><h1>Products</h1><button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button></div>
+      <div class="header-actions">
+        <div class="search-input"><input type="text" id="productSearch" placeholder="Search products..." oninput="loadProducts()"></div>
+        <select id="categoryFilter" onchange="loadProducts()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px"><option value="">All Categories</option></select>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Type</th><th style="width:120px">Actions</th></tr></thead><tbody id="productsTable"></tbody></table></div>
+    </div>
+
+    <div id="tab-orders" class="tab-content">
+      <div class="section-title"><h1>Orders</h1></div>
+      <div class="header-actions">
+        <select id="orderStatusFilter" onchange="loadOrders()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px">
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option><option value="confirmed">Confirmed</option>
+          <option value="processing">Processing</option><option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Order #</th><th>Customer</th><th>Phone</th><th>Total</th><th>Payment</th><th>Status</th><th>Date</th><th style="width:160px">Actions</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
+    </div>
+
+    <div id="tab-prescriptions" class="tab-content">
+      <div class="section-title"><h1>Prescriptions</h1></div>
+      <div class="table-wrap"><table><thead><tr><th>Patient</th><th>Phone</th><th>File</th><th>Status</th><th>Date</th><th style="width:180px">Actions</th></tr></thead><tbody id="rxTable"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- Product Edit Modal -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <h3 id="productModalTitle">Add Product</h3>
+    <label>Name</label><input id="editName">
+    <label>Brand</label><input id="editBrand">
+    <label>Category</label><input id="editCategory">
+    <label>Subcategory</label><input id="editSubcategory">
+    <label>Price (KSh)</label><input id="editPrice" type="number" step="0.01">
+    <label>Old Price (KSh, optional)</label><input id="editOldPrice" type="number" step="0.01">
+    <label>Stock</label><input id="editStock" type="number">
+    <label>Emoji</label><input id="editEmoji" maxlength="2">
+    <label>Type</label><select id="editType"><option value="otc">OTC</option><option value="rx">Prescription (Rx)</option></select>
+    <label>Description</label><textarea id="editDescription"></textarea>
+    <label><input id="editActive" type="checkbox" checked> Active</label>
+    <label><input id="editRx" type="checkbox"> Requires Prescription</label>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Order Status Modal -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal">
+    <h3>Update Order Status</h3>
+    <p style="margin-bottom:12px;color:var(--text-muted)" id="orderModalInfo">Order #12345</p>
+    <label>Status</label>
+    <select id="orderStatusSelect">
+      <option value="pending">Pending</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="processing">Processing</option>
+      <option value="out_for_delivery">Out for Delivery</option>
+      <option value="delivered">Delivered</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeModal('orderModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="updateOrderStatus()">Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.QEMRX_API || '/pharmacy-api';
+let editingProductId = null;
+let updatingOrderId = null;
+
+function toast(msg, type) { const t = document.createElement('div'); t.className='toast'+(type?' '+type:''); t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),3500); }
+
+function getToken() { return localStorage.getItem('qemrx_token'); }
+function getUser() { try { return JSON.parse(localStorage.getItem('qemrx_user')); } catch(e) { return null; } }
+
+async function api(path, opts={}) {
+  const headers = { 'Content-Type': 'application/json' };
+  const t = getToken();
+  if (t) headers['Authorization'] = 'Bearer ' + t;
+  if (opts.body && typeof opts.body === 'object') opts.body = JSON.stringify(opts.body);
+  const res = await fetch(API + path, { ...opts, headers: { ...headers, ...opts.headers } });
+  if (res.status === 401) { toast('Session expired — sign in again', 'error'); localStorage.removeItem('qemrx_token'); localStorage.removeItem('qemrx_user'); setTimeout(()=>location.href='/pharmacy/',2000); throw new Error('Unauthorized'); }
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+  return data;
+}
+
+function checkAuth() {
+  const user = getUser();
+  if (!user || (user.role !== 'admin' && user.role !== 'pharmacist')) {
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px"><h2>🔒 Admin Access Only</h2><p style="color:var(--text-muted)">Please sign in as admin or pharmacist at the <a href="/pharmacy/">store page</a>.</p></div>';
+    return false;
+  }
+  document.getElementById('adminName').textContent = user.name || user.phone;
+  document.getElementById('adminRole').textContent = user.role;
+  return true;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.closest('a').classList.add('active');
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'products') loadProducts();
+  if (name === 'orders') loadOrders();
+  if (name === 'prescriptions') loadPrescriptions();
+}
+
+async function loadDashboard() {
+  try {
+    const d = await api('/api/admin/dashboard');
+    const stats = document.getElementById('statsContainer').children;
+    stats[0].querySelector('.num').textContent = d.totalOrders || 0;
+    stats[1].querySelector('.num').textContent = d.todayOrders || 0;
+    stats[2].querySelector('.num').textContent = d.pendingOrders || 0;
+    stats[3].querySelector('.num').textContent = (d.totalRevenue || 0).toLocaleString();
+    stats[4].querySelector('.num').textContent = d.pendingRx || 0;
+    stats[5].querySelector('.num').textContent = d.totalUsers || 0;
+  } catch(e) { toast('Failed to load dashboard: ' + e.message, 'error'); }
+}
+
+async function loadProducts() {
+  try {
+    const search = document.getElementById('productSearch').value;
+    const category = document.getElementById('categoryFilter').value;
+    let url = '/api/products?limit=100';
+    if (search) url += '&search=' + encodeURIComponent(search);
+    if (category) url += '&category=' + encodeURIComponent(category);
+    const data = await api(url);
+    const tbody = document.getElementById('productsTable');
+    const catFilter = document.getElementById('categoryFilter');
+    const cats = await api('/api/products/categories');
+    catFilter.innerHTML = '<option value="">All Categories</option>' + cats.map(c => '<option value="' + c + '"' + (c===category?' selected':'') + '>' + c + '</option>').join('');
+    tbody.innerHTML = (data.products || data.rows || []).map(p => '<tr><td>' + (p.emoji||'💊') + ' ' + p.name + '</td><td>' + (p.brand||'—') + '</td><td>' + (p.category||'') + '</td><td>' + (p.oldPrice ? '<s style="color:var(--text-muted)">' + p.oldPrice + '</s> ' : '') + '<strong>' + p.price + '</strong></td><td>' + (p.stock!==null ? '<input class="inline-edit" type="number" value="' + p.stock + '" onchange="quickUpdate(\'' + p.id + '\',\'stock\',this.value)">' : '—') + '</td><td><span class="badge ' + (p.type==='rx'?'badge-processing':'badge-paid') + '">' + p.type + '</span></td><td><button class="btn btn-sm btn-outline" onclick="openProductModal(\'' + p.id + '\')">✏️</button> <button class="btn btn-sm btn-danger" onclick="deleteProduct(\'' + p.id + '\')">🗑️</button></td></tr>').join('');
+  } catch(e) { toast('Failed to load products: ' + e.message, 'error'); }
+}
+
+async function openProductModal(id) {
+  editingProductId = id || null;
+  document.getElementById('productModalTitle').textContent = id ? 'Edit Product' : 'Add Product';
+  document.getElementById('saveProductBtn').textContent = id ? 'Update' : 'Add';
+  ['editName','editBrand','editCategory','editSubcategory','editPrice','editOldPrice','editStock','editEmoji','editDescription'].forEach(f => document.getElementById(f).value = '');
+  document.getElementById('editType').value = 'otc';
+  document.getElementById('editActive').checked = true;
+  document.getElementById('editRx').checked = false;
+  if (id) {
+    try {
+      const p = await api('/api/products/' + id);
+      document.getElementById('editName').value = p.name || '';
+      document.getElementById('editBrand').value = p.brand || '';
+      document.getElementById('editCategory').value = p.category || '';
+      document.getElementById('editSubcategory').value = p.subcategory || '';
+      document.getElementById('editPrice').value = p.price || '';
+      document.getElementById('editOldPrice').value = p.oldPrice || '';
+      document.getElementById('editStock').value = p.stock || '';
+      document.getElementById('editEmoji').value = p.emoji || '💊';
+      document.getElementById('editDescription').value = p.description || '';
+      document.getElementById('editType').value = p.type || 'otc';
+      document.getElementById('editActive').checked = p.isActive !== false;
+      document.getElementById('editRx').checked = p.requiresPrescription === true;
+    } catch(e) { toast('Failed to load product: ' + e.message, 'error'); return; }
+  }
+  document.getElementById('productModal').classList.add('open');
+}
+
+async function saveProduct() {
+  const body = {
+    name: document.getElementById('editName').value,
+    brand: document.getElementById('editBrand').value,
+    category: document.getElementById('editCategory').value,
+    subcategory: document.getElementById('editSubcategory').value,
+    price: parseFloat(document.getElementById('editPrice').value) || 0,
+    oldPrice: parseFloat(document.getElementById('editOldPrice').value) || null,
+    stock: parseInt(document.getElementById('editStock').value) || 0,
+    emoji: document.getElementById('editEmoji').value || '💊',
+    description: document.getElementById('editDescription').value,
+    type: document.getElementById('editType').value,
+    isActive: document.getElementById('editActive').checked,
+    requiresPrescription: document.getElementById('editRx').checked,
+  };
+  if (!body.name || !body.category || !body.price) { toast('Name, category and price are required', 'error'); return; }
+  try {
+    if (editingProductId) {
+      await api('/api/products/' + editingProductId, { method: 'PATCH', body });
+      toast('✅ Product updated', 'success');
+    } else {
+      await api('/api/products', { method: 'POST', body });
+      toast('✅ Product added', 'success');
+    }
+    closeModal('productModal');
+    loadProducts();
+  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+async function quickUpdate(id, field, value) {
+  try {
+    await api('/api/products/' + id, { method: 'PATCH', body: { [field]: field === 'stock' ? parseInt(value) : value } });
+    toast('✅ Updated', 'success');
+  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Deactivate this product?')) return;
+  try { await api('/api/products/' + id, { method: 'DELETE' }); toast('✅ Product deactivated', 'success'); loadProducts(); }
+  catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+async function loadOrders() {
+  try {
+    const status = document.getElementById('orderStatusFilter').value;
+    let url = '/api/admin/orders?limit=50';
+    if (status) url += '&status=' + status;
+    const data = await api(url);
+    const tbody = document.getElementById('ordersTable');
+    tbody.innerHTML = (data.rows || []).map(o => '<tr><td><strong>' + o.orderNumber + '</strong></td><td>' + (o.User ? o.User.name : '—') + '</td><td>' + (o.User ? o.User.phone : o.deliveryPhone) + '</td><td>KSh ' + (parseFloat(o.total)||0).toLocaleString() + '</td><td><span class="badge badge-' + o.paymentStatus + '">' + o.paymentStatus + '</span></td><td><span class="badge badge-' + o.status.replace(/\s/g,'_') + '">' + o.status.replace(/_/g,' ') + '</span></td><td>' + new Date(o.createdAt).toLocaleDateString() + '</td><td><button class="btn btn-sm btn-outline" onclick="openOrderModal(\'' + o.id + '\',\'' + o.orderNumber + '\',\'' + o.status + '\')">📝 Update</button></td></tr>').join('');
+  } catch(e) { toast('Failed to load orders: ' + e.message, 'error'); }
+}
+
+function openOrderModal(id, orderNum, status) {
+  updatingOrderId = id;
+  document.getElementById('orderModalInfo').textContent = 'Order #' + orderNum;
+  document.getElementById('orderStatusSelect').value = status;
+  document.getElementById('orderModal').classList.add('open');
+}
+
+async function updateOrderStatus() {
+  try {
+    await api('/api/orders/' + updatingOrderId + '/status', { method: 'PATCH', body: { status: document.getElementById('orderStatusSelect').value } });
+    toast('✅ Order status updated', 'success');
+    closeModal('orderModal');
+    loadOrders();
+  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+async function loadPrescriptions() {
+  try {
+    const data = await api('/api/prescriptions/all');
+    const tbody = document.getElementById('rxTable');
+    tbody.innerHTML = (data.rows || data || []).map(r => '<tr><td>' + (r.patientName || '—') + '</td><td>' + (r.phone || '—') + '</td><td><a href="' + (r.fileUrl||'#') + '" target="_blank" class="btn btn-sm btn-outline">📎 View</a></td><td><span class="badge badge-' + r.status + '">' + r.status + '</span></td><td>' + new Date(r.createdAt||r.placed_at).toLocaleDateString() + '</td><td>' + (r.status === 'pending' ? '<button class="btn btn-sm btn-primary" onclick="reviewPrescription(\'' + r.id + '\',\'approved\')">✅ Approve</button> <button class="btn btn-sm btn-danger" onclick="reviewPrescription(\'' + r.id + '\',\'rejected\')">❌ Reject</button>' : '—') + '</td></tr>').join('');
+  } catch(e) { toast('Failed to load prescriptions: ' + e.message, 'error'); }
+}
+
+async function reviewPrescription(id, status) {
+  try {
+    await api('/api/prescriptions/' + id + '/review', { method: 'PATCH', body: { status, pharmacistNotes: status === 'approved' ? 'Approved by pharmacist' : 'Rejected by pharmacist' } });
+    toast('✅ Prescription ' + status, 'success');
+    loadPrescriptions();
+  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function doLogout() { localStorage.removeItem('qemrx_token'); localStorage.removeItem('qemrx_user'); location.href='/pharmacy/'; }
+
+// Init
+if (checkAuth()) { loadDashboard(); }
+</script>
+</body>
+</html>

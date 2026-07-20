@@ -891,7 +891,8 @@
         🛒
         <span class="badge" id="cartBadge">0</span>
       </button>
-      <button class="btn-primary" onclick="showModal('loginModal')">Sign In</button>
+      <button class="btn-primary" onclick="showModal('loginModal')" id="signInBtn">Sign In</button>
+      <a class="btn-primary" href="/admin/" target="_blank" id="adminBtn" style="display:none;background:var(--accent);color:var(--primary-dark);font-weight:700">⚙️ Admin</a>
     </div>
   </div>
 </header>
@@ -2020,14 +2021,20 @@ async function submitRx() {
 // ══════════════════════════════════════
 function updateAuthUI() {
   const user = Auth.user();
-  const signInBtn = document.querySelector('button.btn-primary');
+  const signInBtn = document.querySelector('button#signInBtn');
   if (signInBtn) {
     if (user) {
       signInBtn.textContent = `👤 ${user.name.split(' ')[0]}`;
       signInBtn.onclick = showAccountMenu;
+      const adminBtn = document.getElementById('adminBtn');
+      if (adminBtn && (user.role === 'admin' || user.role === 'pharmacist')) {
+        adminBtn.style.display = 'inline-flex';
+      }
     } else {
       signInBtn.textContent = 'Sign In';
       signInBtn.onclick = () => showModal('loginModal');
+      const adminBtn = document.getElementById('adminBtn');
+      if (adminBtn) adminBtn.style.display = 'none';
     }
   }
 }

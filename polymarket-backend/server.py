@@ -338,6 +338,20 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
+    def _inject_pharmacy_admin_html(self):
+        full = os.path.join(STATIC, "pharmacy-admin.html")
+        if not os.path.isfile(full):
+            self.send_response(404); self.end_headers(); return
+        body = open(full, "rb").read().decode("utf-8")
+        script = '<script>window.QEMRX_API="/pharmacy-api";</script>\n'
+        body = body.replace("</head>", script + "</head>", 1)
+        raw = body.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -569,6 +583,9 @@ class Handler(BaseHTTPRequestHandler):
 
         elif path in ("/pharmacy", "/pharmacy/"):
             self._inject_pharmacy_html()
+
+        elif path in ("/admin", "/admin/"):
+            self._inject_pharmacy_admin_html()
 
         elif path in ("/bets", "/bets/"):
             self._static("/bets.html")
