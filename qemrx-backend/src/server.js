@@ -107,29 +107,36 @@ async function autoSeed() {
     }
     console.log(`   ✅ ${created} products seeded`);
 
+    const adminPhone = process.env.PHARMACY_PHONE || '+254736474493';
     const adminPass = await bcrypt.hash(
       process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@QEMRX2024!', 12
     );
     const [admin] = await User.findOrCreate({
-      where: { phone: process.env.PHARMACY_PHONE || '+254700000000' },
+      where: { phone: adminPhone },
       defaults: {
         name: process.env.PHARMACY_NAME || 'QEMRX Admin',
         email: process.env.ADMIN_EMAIL || 'admin@qemrxpharmacy.co.ke',
-        phone: process.env.PHARMACY_PHONE || '+254700000000',
+        phone: adminPhone,
         password: adminPass, role: 'admin', isVerified: true,
       },
     });
     console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
 
-    const pharmPass = await bcrypt.hash('Pharmacist@2024!', 12);
-    const [pharm] = await User.findOrCreate({
-      where: { phone: '+254711000001' },
-      defaults: {
-        name: 'Lead Pharmacist', email: 'pharmacist@qemrxpharmacy.co.ke',
-        phone: '+254711000001', password: pharmPass, role: 'pharmacist', isVerified: true,
-      },
-    });
-    console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
+    if (process.env.PHARMACIST_PHONE) {
+      const pharmPass = await bcrypt.hash(process.env.PHARMACIST_PASSWORD || 'Pharmacist@2024!', 12);
+      const [pharm] = await User.findOrCreate({
+        where: { phone: process.env.PHARMACIST_PHONE },
+        defaults: {
+          name: process.env.PHARMACIST_NAME || 'Lead Pharmacist',
+          email: process.env.PHARMACIST_EMAIL || 'pharmacist@qemrxpharmacy.co.ke',
+          phone: process.env.PHARMACIST_PHONE,
+          password: pharmPass, role: 'pharmacist', isVerified: true,
+        },
+      });
+      console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
+    } else {
+      console.log(`   💊 Pharmacist: skipped (set PHARMACIST_PHONE to create)`);
+    }
   } catch (err) {
     console.error('❌ Auto-seed failed:', err.message);
   }
