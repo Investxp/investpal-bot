@@ -185,6 +185,14 @@
     white-space: nowrap;
   }
   .btn-primary:hover { background: var(--primary-light); }
+  .btn-danger {
+    background: var(--danger); color: #fff; border: none;
+    border-radius: var(--radius-sm); padding: 9px 18px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: var(--font-body); transition: background var(--transition);
+    white-space: nowrap;
+  }
+  .btn-danger:hover { opacity: 0.85; }
 
   /* ── NAV ── */
   nav {
@@ -1192,6 +1200,27 @@
   </div>
 </div>
 
+<!-- ══ ACCOUNT MODAL ══ -->
+<div class="modal-overlay" id="accountModal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-head">
+      <h3>My Account</h3>
+      <button class="close-btn" style="color:var(--text)" onclick="closeModal('accountModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:48px;margin-bottom:8px">👤</div>
+        <div style="font-weight:600;font-size:16px" id="accountName"></div>
+        <div style="color:var(--text-muted);font-size:13px" id="accountPhone"></div>
+        <div style="margin-top:4px"><span class="badge badge-paid" id="accountRole"></span></div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+      <a href="/admin/" target="_blank" id="adminStoreLink" style="display:none" class="btn btn-primary" style="width:100%;padding:11px;text-align:center;margin-bottom:10px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px">⚙️ Admin Panel</a>
+      <button class="btn btn-danger" style="width:100%;padding:11px;font-size:14px;margin-top:8px" onclick="logout();closeModal('accountModal')">🚪 Sign Out</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -2082,8 +2111,11 @@ async function doRegister() {
 function showAccountMenu() {
   const user = Auth.user();
   if (!user) return showModal('loginModal');
-  showToast(`👤 ${user.name} | ${user.phone}`, 'success');
-  // TODO: build account dropdown
+  document.getElementById('accountName').textContent = user.name || user.phone;
+  document.getElementById('accountPhone').textContent = user.phone || '';
+  document.getElementById('accountRole').textContent = user.role || 'customer';
+  document.getElementById('adminStoreLink').style.display = (user.role === 'admin' || user.role === 'pharmacist') ? 'block' : 'none';
+  showModal('accountModal');
 }
 
 function logout() {
