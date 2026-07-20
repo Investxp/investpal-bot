@@ -14,6 +14,7 @@ const prescriptionRoutes = require('./routes/prescriptions');
 const cartRoutes = require('./routes/cart');
 const adminRoutes = require('./routes/admin');
 const deliveryRoutes = require('./routes/delivery');
+const systemRoutes = require('./routes/systems');
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/cart',          cartRoutes);
 app.use('/api/admin',         adminRoutes);
 app.use('/api/delivery',      deliveryRoutes);
+app.use('/api/systems',       systemRoutes);
 
 // ── Serve Frontend ──────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'public')));

@@ -119,7 +119,13 @@
     <a onclick="st('customers')">👥 <span>Customers</span></a>
     <a onclick="st('employees')">👤 <span>Employees</span></a>
     <a onclick="st('prescriptions')">📋 <span>Prescriptions</span></a>
-    <a onclick="st('delivery')">🚚 <span>Delivery Zones</span></a>
+    <a onclick="st('delivery')">🚚 <span>Delivery</span></a>
+    <a onclick="st('procurement')">🏭 <span>Procurement</span></a>
+    <a onclick="st('finance')">💰 <span>Finance</span></a>
+    <a onclick="st('marketing')">📢 <span>Marketing</span></a>
+    <a onclick="st('pr')">📡 <span>PR & Reviews</span></a>
+    <a onclick="st('legal')">⚖️ <span>Legal</span></a>
+    <a onclick="st('progress')">📈 <span>Progress</span></a>
     <a onclick="st('settings')">⚙️ <span>Settings</span></a>
     <div class="spacer"></div>
     <a class="bottom-link store-link" href="/pharmacy/" target="_blank">🏪 <span>View Store</span></a>
@@ -195,6 +201,54 @@
       </div>
     </div>
 
+    <!-- PROCUREMENT -->
+    <div id="tab-procurement" class="tab-content">
+      <h1>🏭 Procurement & Supply <button class="btn btn-primary" onclick="openSupplierModal()">+ Supplier</button> <button class="btn btn-primary" onclick="openPOModal()">+ PO</button></h1>
+      <div class="toolbar"><select id="poFilter" onchange="loadProcurement()"><option value="">All POs</option><option value="draft">Draft</option><option value="sent">Sent</option><option value="approved">Approved</option><option value="received">Received</option></select></div>
+      <div id="procurementContent"></div>
+    </div>
+
+    <!-- FINANCE -->
+    <div id="tab-finance" class="tab-content">
+      <h1>💰 Finance <button class="btn btn-primary" onclick="openTxModal()">+ Transaction</button> <button class="btn btn-primary" onclick="openInvoiceModal()">+ Invoice</button></h1>
+      <div class="stats" id="financeStats"></div>
+      <div class="toolbar">
+        <select id="txFilter" onchange="loadFinance()"><option value="">All</option><option value="income">Income</option><option value="expense">Expense</option></select>
+      </div>
+      <div id="financeContent"></div>
+    </div>
+
+    <!-- MARKETING -->
+    <div id="tab-marketing" class="tab-content">
+      <h1>📢 Marketing <button class="btn btn-primary" onclick="openCampaignModal()">+ Campaign</button> <button class="btn btn-primary" onclick="openPromoModal()">+ Promotion</button></h1>
+      <div class="toolbar">
+        <select id="campaignFilter" onchange="loadMarketing()"><option value="">All Campaigns</option><option value="planning">Planning</option><option value="active">Active</option><option value="completed">Completed</option></select>
+      </div>
+      <div id="marketingContent"></div>
+    </div>
+
+    <!-- PR & REVIEWS -->
+    <div id="tab-pr" class="tab-content">
+      <h1>📡 PR & Reviews</h1>
+      <div class="toolbar">
+        <select id="inquiryFilter" onchange="loadPR()"><option value="">All Inquiries</option><option value="new">New</option><option value="read">Read</option><option value="replied">Replied</option></select>
+        <button class="btn btn-primary" onclick="openPressModal()">+ Press Release</button>
+      </div>
+      <div id="prContent"></div>
+    </div>
+
+    <!-- LEGAL -->
+    <div id="tab-legal" class="tab-content">
+      <h1>⚖️ Legal & Compliance <button class="btn btn-primary" onclick="openLicenseModal()">+ License</button> <button class="btn btn-primary" onclick="openComplianceModal()">+ Record</button></h1>
+      <div id="legalContent"></div>
+    </div>
+
+    <!-- PROGRESS TRACKER -->
+    <div id="tab-progress" class="tab-content">
+      <h1>📈 System Progress Tracker</h1>
+      <div id="progressContent" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px"></div>
+    </div>
+
     <!-- SETTINGS -->
     <div id="tab-settings" class="tab-content">
       <h1>⚙️ Settings</h1>
@@ -254,6 +308,89 @@
   <div class="btn-row"><button class="btn btn-outline" onclick="cm('custOrderModal')">Close</button></div>
 </div></div>
 
+<!-- SUPPLIER MODAL -->
+<div class="modal-overlay" id="supplierModal"><div class="modal">
+  <h3 id="supModalTitle">Add Supplier</h3>
+  <div class="form-row"><input id="supName" placeholder="Supplier name*" class="form-input"></div>
+  <div class="form-row"><input id="supContact" placeholder="Contact person" class="form-input"></div>
+  <div class="form-row"><input id="supEmail" placeholder="Email" class="form-input"><input id="supPhone" placeholder="Phone" class="form-input"></div>
+  <div class="form-row"><input id="supAddress" placeholder="Address" class="form-input"></div>
+  <div class="form-row"><input id="supProducts" placeholder="Products offered (comma separated)" class="form-input"></div>
+  <div class="form-row"><input id="supTerms" placeholder="Payment terms" class="form-input" style="width:auto"><input id="supLeadTime" placeholder="Lead time (days)" class="form-input" style="width:80px"><input id="supRating" placeholder="Rating 1-5" class="form-input" style="width:60px"></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('supplierModal')">Cancel</button><button class="btn btn-primary" id="supSaveBtn" onclick="saveSupplier()">Add</button></div>
+</div></div>
+
+<!-- PURCHASE ORDER MODAL -->
+<div class="modal-overlay" id="poModal"><div class="modal" style="width:600px">
+  <h3 id="poModalTitle">Create Purchase Order</h3>
+  <div class="form-row"><input id="poSupplier" placeholder="Supplier ID" class="form-input"></div>
+  <div class="form-row"><textarea id="poNotes" placeholder="Notes" class="form-input" rows="2"></textarea></div>
+  <div class="form-row"><label style="font-size:12px;color:var(--text-muted)">Items (one per line: ProductName,Qty,UnitPrice)</label><textarea id="poItems" placeholder="Amoxicillin 500mg,100,15&#10;Paracetamol 1g,200,5" class="form-input" rows="4"></textarea></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('poModal')">Cancel</button><button class="btn btn-primary" id="poSaveBtn" onclick="savePO()">Create</button></div>
+</div></div>
+
+<!-- TRANSACTION MODAL -->
+<div class="modal-overlay" id="txModal"><div class="modal">
+  <h3 id="txModalTitle">Add Transaction</h3>
+  <div class="form-row"><input id="txDesc" placeholder="Description*" class="form-input"></div>
+  <div class="form-row"><input id="txAmount" placeholder="Amount*" type="number" class="form-input" style="width:120px"><select id="txType" class="form-input" style="width:auto"><option value="expense">Expense</option><option value="income">Income</option></select></div>
+  <div class="form-row"><input id="txCategory" placeholder="Category (e.g. utilities, salaries)" class="form-input"></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('txModal')">Cancel</button><button class="btn btn-primary" id="txSaveBtn" onclick="saveTx()">Add</button></div>
+</div></div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay" id="invoiceModal"><div class="modal">
+  <h3 id="invModalTitle">Create Invoice</h3>
+  <div class="form-row"><input id="invClient" placeholder="Client name*" class="form-input"><input id="invEmail" placeholder="Client email" class="form-input"></div>
+  <div class="form-row"><input id="invAmount" placeholder="Amount*" type="number" class="form-input" style="width:120px"><input id="invTax" placeholder="Tax" type="number" class="form-input" style="width:80px"><select id="invStatus" class="form-input" style="width:auto"><option value="pending">Pending</option><option value="sent">Sent</option><option value="paid">Paid</option></select></div>
+  <div class="form-row"><input id="invDue" placeholder="Due date" type="date" class="form-input"></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('invoiceModal')">Cancel</button><button class="btn btn-primary" id="invSaveBtn" onclick="saveInvoice()">Create</button></div>
+</div></div>
+
+<!-- CAMPAIGN MODAL -->
+<div class="modal-overlay" id="campaignModal"><div class="modal">
+  <h3 id="campModalTitle">New Campaign</h3>
+  <div class="form-row"><input id="campName" placeholder="Campaign name*" class="form-input"></div>
+  <div class="form-row"><input id="campChannel" placeholder="Channel (e.g. social, email, radio)" class="form-input"><input id="campBudget" placeholder="Budget" type="number" class="form-input" style="width:100px"><input id="campSpent" placeholder="Spent" type="number" class="form-input" style="width:100px"></div>
+  <div class="form-row"><input id="campStart" placeholder="Start date" type="date" class="form-input"><input id="campEnd" placeholder="End date" type="date" class="form-input"><select id="campStatus" class="form-input" style="width:auto"><option value="planning">Planning</option><option value="active">Active</option><option value="completed">Completed</option></select></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('campaignModal')">Cancel</button><button class="btn btn-primary" onclick="saveCampaign()">Create</button></div>
+</div></div>
+
+<!-- PROMOTION MODAL -->
+<div class="modal-overlay" id="promoModal"><div class="modal">
+  <h3 id="promoModalTitle">New Promotion</h3>
+  <div class="form-row"><input id="promoCode" placeholder="Code (e.g. WELCOME10)*" class="form-input"></div>
+  <div class="form-row"><input id="promoDiscount" placeholder="Discount value" type="number" class="form-input" style="width:100px"><select id="promoType" class="form-input" style="width:auto"><option value="percent">Percent %</option><option value="fixed">Fixed KSh</option></select><input id="promoMinOrder" placeholder="Min order" type="number" class="form-input" style="width:100px"></div>
+  <div class="form-row"><input id="promoMaxUses" placeholder="Max uses" type="number" class="form-input" style="width:80px"><input id="promoStart" placeholder="Start" type="date" class="form-input"><input id="promoEnd" placeholder="End" type="date" class="form-input"><label><input id="promoActive" type="checkbox" checked> Active</label></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('promoModal')">Cancel</button><button class="btn btn-primary" onclick="savePromo()">Create</button></div>
+</div></div>
+
+<!-- PRESS RELEASE MODAL -->
+<div class="modal-overlay" id="pressModal"><div class="modal" style="width:600px">
+  <h3 id="pressModalTitle">New Press Release</h3>
+  <div class="form-row"><input id="pressTitle" placeholder="Headline*" class="form-input"></div>
+  <div class="form-row"><textarea id="pressBody" placeholder="Body*" class="form-input" rows="6"></textarea></div>
+  <div class="form-row"><select id="pressStatus" class="form-input" style="width:auto"><option value="draft">Draft</option><option value="published">Published</option></select></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('pressModal')">Cancel</button><button class="btn btn-primary" onclick="savePressRelease()">Publish</button></div>
+</div></div>
+
+<!-- LICENSE MODAL -->
+<div class="modal-overlay" id="licenseModal"><div class="modal">
+  <h3 id="licModalTitle">Add License</h3>
+  <div class="form-row"><input id="licName" placeholder="License name*" class="form-input"><input id="licAuthority" placeholder="Authority" class="form-input"></div>
+  <div class="form-row"><input id="licIssue" placeholder="Issue date" type="date" class="form-input"><input id="licExpiry" placeholder="Expiry date" type="date" class="form-input"><select id="licStatus" class="form-input" style="width:auto"><option value="active">Active</option><option value="expired">Expired</option><option value="pending">Pending Renewal</option></select></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('licenseModal')">Cancel</button><button class="btn btn-primary" onclick="saveLicense()">Add</button></div>
+</div></div>
+
+<!-- COMPLIANCE MODAL -->
+<div class="modal-overlay" id="complianceModal"><div class="modal">
+  <h3 id="compModalTitle">Add Compliance Record</h3>
+  <div class="form-row"><textarea id="compDesc" placeholder="Description*" class="form-input" rows="3"></textarea></div>
+  <div class="form-row"><select id="compCategory" class="form-input" style="width:auto"><option value="general">General</option><option value="safety">Safety</option><option value="privacy">Privacy</option><option value="regulatory">Regulatory</option><option value="audit">Audit</option></select>
+  <select id="compStatus" class="form-input" style="width:auto"><option value="compliant">Compliant</option><option value="non-compliant">Non-Compliant</option><option value="pending-review">Pending Review</option><option value="resolved">Resolved</option></select></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('complianceModal')">Cancel</button><button class="btn btn-primary" onclick="saveCompliance()">Add</button></div>
+</div></div>
+
 <script>
 const API = window.QEMRX_API || '/pharmacy-api';
 let editId = null, orderEditId = null;
@@ -294,6 +431,12 @@ function st(n){
   if(n==='employees')loadEmployees();
   if(n==='prescriptions')loadPrescriptions();
   if(n==='delivery')loadDelivery();
+  if(n==='procurement')loadProcurement();
+  if(n==='finance')loadFinance();
+  if(n==='marketing')loadMarketing();
+  if(n==='pr')loadPR();
+  if(n==='legal')loadLegal();
+  if(n==='progress')loadProgress();
   if(n==='settings')loadSettings();
 }
 
@@ -626,6 +769,274 @@ function loadSettings(){
   document.getElementById('settingsEnv').innerHTML='<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:12.5px">'+
     envVars.map(v=>'<div style="font-weight:600;color:var(--text-muted)">'+v+'</div><div style="font-family:monospace;font-size:12px"><em style="color:#aaa">set in Render → Environment</em></div>').join('')+
     '</div><p style="margin-top:12px;color:var(--text-muted);font-size:12px">⚙️ Edit env vars in Render Dashboard → Environment, then redeploy to apply.</p>';
+}
+
+// ── PROCUREMENT ──
+async function loadProcurement(){
+  try{
+    const s=document.getElementById('poFilter').value;
+    let u='/api/systems/purchase-orders';
+    if(s)u+='?status='+s;
+    const pos=await api(u);
+    document.getElementById('procurementContent').innerHTML=
+      '<div class="card"><h3>Suppliers</h3><div id="supplierList"></div></div>'+
+      '<div class="card"><h3>Purchase Orders ('+pos.length+')</h3>'+
+      (pos.length===0?'<p style="color:var(--text-muted)">No POs yet</p>':
+      '<table><thead><tr><th>PO#</th><th>Supplier</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead><tbody>'+
+      pos.map(p=>'<tr><td>'+p.poNumber+'</td><td>'+(p.Supplier?p.Supplier.name:'—')+'</td><td>'+(p.items?p.items.length:0)+'</td><td>KSh '+(parseFloat(p.total)||0).toLocaleString()+'</td><td><span class="badge badge-'+p.status+'">'+p.status+'</span></td><td>'+new Date(p.createdAt).toLocaleDateString()+'</td></tr>').join('')+
+      '</tbody></table>')+'</div>';
+    const suppliers=await api('/api/systems/suppliers');
+    document.getElementById('supplierList').innerHTML=suppliers.length===0?'<p style="color:var(--text-muted)">No suppliers. Add one!</p>':
+      '<table><thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Lead Time</th><th>Rating</th></tr></thead><tbody>'+
+      suppliers.map(s=>'<tr><td>'+s.name+'</td><td>'+(s.contactPerson||'—')+'</td><td>'+(s.phone||'—')+'</td><td>'+(s.leadTimeDays?s.leadTimeDays+'d':'—')+'</td><td>'+(s.rating?'⭐'.repeat(s.rating):'—')+'</td></tr>').join('')+
+      '</tbody></table>';
+  }catch(e){document.getElementById('procurementContent').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
+}
+function openSupplierModal(){
+  document.getElementById('supModalTitle').textContent='Add Supplier';
+  document.getElementById('supSaveBtn').textContent='Add';
+  ['supName','supContact','supEmail','supPhone','supAddress','supProducts','supTerms','supLeadTime','supRating'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('supRating').value=0;
+  document.getElementById('supplierModal').classList.add('open');
+}
+async function saveSupplier(){
+  const b={name:document.getElementById('supName').value.trim(),contactPerson:document.getElementById('supContact').value.trim(),email:document.getElementById('supEmail').value.trim(),phone:document.getElementById('supPhone').value.trim(),address:document.getElementById('supAddress').value.trim(),productsOffered:document.getElementById('supProducts').value.trim(),paymentTerms:document.getElementById('supTerms').value.trim(),leadTimeDays:parseInt(document.getElementById('supLeadTime').value)||null,rating:parseInt(document.getElementById('supRating').value)||0};
+  if(!b.name){t('Supplier name required','error');return;}
+  try{await api('/api/systems/suppliers',{method:'POST',body:b});t('✅ Supplier added','success');cm('supplierModal');loadProcurement();}catch(e){t('Failed: '+e.message,'error');}
+}
+function openPOModal(){
+  document.getElementById('poModalTitle').textContent='Create Purchase Order';
+  document.getElementById('poSaveBtn').textContent='Create';
+  document.getElementById('poSupplier').value='';
+  document.getElementById('poNotes').value='';
+  document.getElementById('poItems').value='';
+  document.getElementById('poModal').classList.add('open');
+}
+async function savePO(){
+  const supplierId=document.getElementById('poSupplier').value;
+  const notes=document.getElementById('poNotes').value.trim();
+  const itemsStr=document.getElementById('poItems').value.trim();
+  if(!supplierId){t('Select a supplier','error');return;}
+  const items=itemsStr.split('\n').filter(Boolean).map(l=>{const p=l.split(',');return {productName:p[0].trim(),quantity:parseInt(p[1])||1,unitPrice:parseFloat(p[2])||0};});
+  try{await api('/api/systems/purchase-orders',{method:'POST',body:{supplierId,notes,items}});t('✅ PO created','success');cm('poModal');loadProcurement();}catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── FINANCE ──
+async function loadFinance(){
+  try{
+    const summary=await api('/api/systems/transactions/summary');
+    document.getElementById('financeStats').innerHTML=
+      '<div class="stat-card"><div class="stat-value" style="color:var(--success)">KSh '+(summary.totalIncome||0).toLocaleString()+'</div><div class="stat-label">Total Income</div></div>'+
+      '<div class="stat-card"><div class="stat-value" style="color:var(--danger)">KSh '+(summary.totalExpenses||0).toLocaleString()+'</div><div class="stat-label">Expenses</div></div>'+
+      '<div class="stat-card"><div class="stat-value" style="color:'+(summary.netProfit>=0?'var(--success)':'var(--danger)')+'">KSh '+(summary.netProfit||0).toLocaleString()+'</div><div class="stat-label">Net Profit</div></div>'+
+      '<div class="stat-card"><div class="stat-value">KSh '+(summary.orderRevenue||0).toLocaleString()+'</div><div class="stat-label">Order Revenue</div></div>';
+    const t=document.getElementById('txFilter').value;
+    let u='/api/systems/transactions';
+    if(t)u+='?type='+t;
+    const txs=await api(u);
+    const invoices=await api('/api/systems/invoices');
+    document.getElementById('financeContent').innerHTML=
+      '<div class="card"><h3>Transactions ('+txs.length+') <span style="font-weight:400;font-size:12px;color:var(--text-muted)">filtered</span></h3>'+
+      (txs.length===0?'<p style="color:var(--text-muted)">No transactions</p>':
+      '<table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Status</th></tr></thead><tbody>'+
+      txs.map(tx=>'<tr><td>'+(tx.date?new Date(tx.date).toLocaleDateString():'—')+'</td><td>'+(tx.description||'—')+'</td><td>'+(tx.category||'—')+'</td><td><span class="badge badge-'+tx.type+'">'+tx.type+'</span></td><td style="color:'+(tx.type==='income'?'var(--success)':'var(--danger)')+'">KSh '+(parseFloat(tx.amount)||0).toLocaleString()+'</td><td><span class="badge badge-'+tx.status+'">'+(tx.status||'—')+'</span></td></tr>').join('')+
+      '</tbody></table>')+'</div>'+
+      '<div class="card"><h3>Invoices ('+invoices.length+')</h3>'+
+      (invoices.length===0?'<p style="color:var(--text-muted)">No invoices</p>':
+      '<table><thead><tr><th>#</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th></tr></thead><tbody>'+
+      invoices.map(inv=>'<tr><td>'+inv.invoiceNumber+'</td><td>'+(inv.clientName||'—')+'</td><td>KSh '+(parseFloat(inv.total||inv.amount)||0).toLocaleString()+'</td><td><span class="badge badge-'+inv.status+'">'+inv.status+'</span></td><td>'+(inv.dueDate?new Date(inv.dueDate).toLocaleDateString():'—')+'</td></tr>').join('')+
+      '</tbody></table>')+'</div>';
+  }catch(e){document.getElementById('financeContent').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
+}
+function openTxModal(){
+  document.getElementById('txModalTitle').textContent='Add Transaction';
+  document.getElementById('txSaveBtn').textContent='Add';
+  ['txDesc','txAmount','txCategory'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('txType').value='expense';
+  document.getElementById('txModal').classList.add('open');
+}
+async function saveTx(){
+  const b={description:document.getElementById('txDesc').value.trim(),amount:parseFloat(document.getElementById('txAmount').value)||0,type:document.getElementById('txType').value,category:document.getElementById('txCategory').value.trim(),date:new Date().toISOString(),status:'completed'};
+  if(!b.description||!b.amount){t('Description and amount required','error');return;}
+  try{await api('/api/systems/transactions',{method:'POST',body:b});t('✅ Transaction added','success');cm('txModal');loadFinance();}catch(e){t('Failed: '+e.message,'error');}
+}
+function openInvoiceModal(){
+  document.getElementById('invModalTitle').textContent='Create Invoice';
+  document.getElementById('invSaveBtn').textContent='Create';
+  ['invClient','invEmail','invAmount','invTax','invDue'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('invStatus').value='pending';
+  document.getElementById('invoiceModal').classList.add('open');
+}
+async function saveInvoice(){
+  const b={clientName:document.getElementById('invClient').value.trim(),clientEmail:document.getElementById('invEmail').value.trim(),amount:parseFloat(document.getElementById('invAmount').value)||0,tax:parseFloat(document.getElementById('invTax').value)||0,status:document.getElementById('invStatus').value,dueDate:document.getElementById('invDue').value||null};
+  if(!b.clientName||!b.amount){t('Client name and amount required','error');return;}
+  try{await api('/api/systems/invoices',{method:'POST',body:b});t('✅ Invoice created','success');cm('invoiceModal');loadFinance();}catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── MARKETING ──
+async function loadMarketing(){
+  try{
+    const s=document.getElementById('campaignFilter').value;
+    let u='/api/systems/campaigns';
+    const campaigns=await api(u);
+    const promos=await api('/api/systems/promotions');
+    document.getElementById('marketingContent').innerHTML=
+      '<div class="card"><h3>Campaigns ('+campaigns.length+')</h3>'+
+      (campaigns.length===0?'<p style="color:var(--text-muted)">No campaigns</p>':
+      '<table><thead><tr><th>Name</th><th>Channel</th><th>Budget</th><th>Spent</th><th>Status</th><th>Period</th></tr></thead><tbody>'+
+      campaigns.map(c=>'<tr><td>'+c.name+'</td><td>'+(c.channel||'—')+'</td><td>KSh '+(parseFloat(c.budget)||0).toLocaleString()+'</td><td>KSh '+(parseFloat(c.spent)||0).toLocaleString()+'</td><td><span class="badge badge-'+c.status+'">'+c.status+'</span></td><td>'+(c.startDate?new Date(c.startDate).toLocaleDateString():'')+' → '+(c.endDate?new Date(c.endDate).toLocaleDateString():'')+'</td></tr>').join('')+
+      '</tbody></table>')+'</div>'+
+      '<div class="card"><h3>Promotions ('+promos.length+')</h3>'+
+      (promos.length===0?'<p style="color:var(--text-muted)">No promotions</p>':
+      '<table><thead><tr><th>Code</th><th>Discount</th><th>Min Order</th><th>Usage</th><th>Valid</th><th>Status</th></tr></thead><tbody>'+
+      promos.map(p=>'<tr><td><strong>'+p.code+'</strong></td><td>'+(p.discountPercent?p.discountPercent+'%':(p.discountAmount?'KSh '+p.discountAmount:''))+'</td><td>KSh '+(parseFloat(p.minOrder)||0).toLocaleString()+'</td><td>'+(p.usedCount||0)+'/'+(p.maxUses||'∞')+'</td><td>'+(p.startDate?new Date(p.startDate).toLocaleDateString():'')+' → '+(p.endDate?new Date(p.endDate).toLocaleDateString():'')+'</td><td><span class="badge badge-'+(p.isActive?'active':'inactive')+'">'+(p.isActive?'Active':'Inactive')+'</span></td></tr>').join('')+
+      '</tbody></table>')+'</div>';
+  }catch(e){document.getElementById('marketingContent').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
+}
+function openCampaignModal(){
+  document.getElementById('campModalTitle').textContent='New Campaign';
+  ['campName','campChannel','campBudget','campSpent','campStart','campEnd'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('campStatus').value='planning';
+  document.getElementById('campaignModal').classList.add('open');
+}
+async function saveCampaign(){
+  const b={name:document.getElementById('campName').value.trim(),channel:document.getElementById('campChannel').value.trim(),budget:parseFloat(document.getElementById('campBudget').value)||0,spent:parseFloat(document.getElementById('campSpent').value)||0,status:document.getElementById('campStatus').value,startDate:document.getElementById('campStart').value||null,endDate:document.getElementById('campEnd').value||null};
+  if(!b.name){t('Campaign name required','error');return;}
+  try{await api('/api/systems/campaigns',{method:'POST',body:b});t('✅ Campaign created','success');cm('campaignModal');loadMarketing();}catch(e){t('Failed: '+e.message,'error');}
+}
+function openPromoModal(){
+  document.getElementById('promoModalTitle').textContent='New Promotion';
+  ['promoCode','promoDiscount','promoMinOrder','promoMaxUses','promoStart','promoEnd'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('promoType').value='percent';
+  document.getElementById('promoActive').checked=true;
+  document.getElementById('promoModal').classList.add('open');
+}
+async function savePromo(){
+  const type=document.getElementById('promoType').value;
+  const b={code:document.getElementById('promoCode').value.trim().toUpperCase(),discountPercent:type==='percent'?parseFloat(document.getElementById('promoDiscount').value)||0:null,discountAmount:type==='fixed'?parseFloat(document.getElementById('promoDiscount').value)||0:null,minOrder:parseFloat(document.getElementById('promoMinOrder').value)||0,maxUses:parseInt(document.getElementById('promoMaxUses').value)||null,startDate:document.getElementById('promoStart').value||null,endDate:document.getElementById('promoEnd').value||null,isActive:document.getElementById('promoActive').checked};
+  if(!b.code){t('Promo code required','error');return;}
+  try{await api('/api/systems/promotions',{method:'POST',body:b});t('✅ Promotion created','success');cm('promoModal');loadMarketing();}catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── PR & REVIEWS ──
+async function loadPR(){
+  try{
+    const s=document.getElementById('inquiryFilter').value;
+    let u='/api/systems/inquiries';
+    if(s)u+='?status='+s;
+    const inquiries=await api(u);
+    const releases=await api('/api/systems/press-releases');
+    const reviews=await api('/api/systems/reviews');
+    document.getElementById('prContent').innerHTML=
+      '<div class="card"><h3>Customer Inquiries ('+inquiries.length+')</h3>'+
+      (inquiries.length===0?'<p style="color:var(--text-muted)">No inquiries</p>':
+      '<table><thead><tr><th>Name</th><th>Email</th><th>Message</th><th>Status</th><th>Date</th></tr></thead><tbody>'+
+      inquiries.map(i=>'<tr><td>'+(i.name||'—')+'</td><td>'+(i.email||'—')+'</td><td><small>'+(i.message||'').substring(0,60)+'…</small></td><td><span class="badge badge-'+i.status+'">'+i.status+'</span></td><td>'+new Date(i.createdAt).toLocaleDateString()+'</td></tr>').join('')+
+      '</tbody></table>')+'</div>'+
+      '<div class="card"><h3>Press Releases ('+releases.length+')</h3>'+
+      (releases.length===0?'<p style="color:var(--text-muted)">No press releases</p>':
+      '<table><thead><tr><th>Title</th><th>Status</th><th>Date</th></tr></thead><tbody>'+
+      releases.map(r=>'<tr><td><strong>'+r.title+'</strong></td><td><span class="badge badge-'+r.status+'">'+r.status+'</span></td><td>'+new Date(r.createdAt).toLocaleDateString()+'</td></tr>').join('')+
+      '</tbody></table>')+'</div>'+
+      '<div class="card"><h3>Customer Reviews ('+reviews.length+')</h3>'+
+      (reviews.length===0?'<p style="color:var(--text-muted)">No reviews</p>':
+      '<table><thead><tr><th>Product</th><th>User</th><th>Rating</th><th>Review</th><th>Status</th></tr></thead><tbody>'+
+      reviews.map(r=>'<tr><td>'+(r.Product?r.Product.name:'—')+'</td><td>'+(r.User?r.User.name:'—')+'</td><td>'+'⭐'.repeat(r.rating||0)+'</td><td><small>'+(r.comment||'').substring(0,50)+'…</small></td><td><span class="badge badge-'+r.status+'">'+r.status+'</span></td></tr>').join('')+
+      '</tbody></table>')+'</div>';
+  }catch(e){document.getElementById('prContent').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
+}
+function openPressModal(){
+  document.getElementById('pressModalTitle').textContent='New Press Release';
+  document.getElementById('pressTitle').value='';
+  document.getElementById('pressBody').value='';
+  document.getElementById('pressStatus').value='draft';
+  document.getElementById('pressModal').classList.add('open');
+}
+async function savePressRelease(){
+  const b={title:document.getElementById('pressTitle').value.trim(),body:document.getElementById('pressBody').value.trim(),status:document.getElementById('pressStatus').value};
+  if(!b.title||!b.body){t('Title and body required','error');return;}
+  try{await api('/api/systems/press-releases',{method:'POST',body:b});t('✅ Press release added','success');cm('pressModal');loadPR();}catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── LEGAL ──
+async function loadLegal(){
+  try{
+    const licenses=await api('/api/systems/licenses');
+    const compliance=await api('/api/systems/compliance');
+    document.getElementById('legalContent').innerHTML=
+      '<div class="card"><h3>Licenses & Permits ('+licenses.length+')</h3>'+
+      (licenses.length===0?'<p style="color:var(--text-muted)">No licenses recorded</p>':
+      '<table><thead><tr><th>Name</th><th>Authority</th><th>Issue</th><th>Expiry</th><th>Status</th></tr></thead><tbody>'+
+      licenses.map(l=>'<tr><td><strong>'+l.name+'</strong></td><td>'+(l.authority||'—')+'</td><td>'+(l.issueDate?new Date(l.issueDate).toLocaleDateString():'—')+'</td><td style="color:'+(l.expiryDate&&new Date(l.expiryDate)<new Date()?'var(--danger)':'inherit')+'">'+(l.expiryDate?new Date(l.expiryDate).toLocaleDateString():'—')+'</td><td><span class="badge badge-'+(l.status||'active')+'">'+(l.status||'active')+'</span></td></tr>').join('')+
+      '</tbody></table>')+'</div>'+
+      '<div class="card"><h3>Compliance Records ('+compliance.length+')</h3>'+
+      (compliance.length===0?'<p style="color:var(--text-muted)">No compliance records</p>':
+      '<table><thead><tr><th>Category</th><th>Description</th><th>Status</th><th>Date</th></tr></thead><tbody>'+
+      compliance.map(c=>'<tr><td><span class="badge badge-'+(c.category||'general')+'">'+(c.category||'general')+'</span></td><td>'+(c.description||'—')+'</td><td><span class="badge badge-'+c.status+'">'+c.status+'</span></td><td>'+new Date(c.createdAt).toLocaleDateString()+'</td></tr>').join('')+
+      '</tbody></table>')+'</div>';
+  }catch(e){document.getElementById('legalContent').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
+}
+function openLicenseModal(){
+  document.getElementById('licModalTitle').textContent='Add License';
+  ['licName','licAuthority','licIssue','licExpiry','licStatus'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('licStatus').value='active';
+  document.getElementById('licenseModal').classList.add('open');
+}
+async function saveLicense(){
+  const b={name:document.getElementById('licName').value.trim(),authority:document.getElementById('licAuthority').value.trim(),issueDate:document.getElementById('licIssue').value||null,expiryDate:document.getElementById('licExpiry').value||null,status:document.getElementById('licStatus').value};
+  if(!b.name){t('License name required','error');return;}
+  try{await api('/api/systems/licenses',{method:'POST',body:b});t('✅ License added','success');cm('licenseModal');loadLegal();}catch(e){t('Failed: '+e.message,'error');}
+}
+function openComplianceModal(){
+  document.getElementById('compModalTitle').textContent='Add Compliance Record';
+  document.getElementById('compDesc').value='';
+  document.getElementById('compCategory').value='general';
+  document.getElementById('compStatus').value='compliant';
+  document.getElementById('complianceModal').classList.add('open');
+}
+async function saveCompliance(){
+  const b={description:document.getElementById('compDesc').value.trim(),category:document.getElementById('compCategory').value,status:document.getElementById('compStatus').value};
+  if(!b.description){t('Description required','error');return;}
+  try{await api('/api/systems/compliance',{method:'POST',body:b});t('✅ Record added','success');cm('complianceModal');loadLegal();}catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── PROGRESS TRACKER ──
+async function loadProgress(){
+  try{
+    const [suppliers,pos,txs,invoices,campaigns,promos,inquiries,releases,reviews,licenses,compliance,orders,users]=await Promise.all([
+      api('/api/systems/suppliers'),api('/api/systems/purchase-orders'),
+      api('/api/systems/transactions'),api('/api/systems/invoices'),
+      api('/api/systems/campaigns'),api('/api/systems/promotions'),
+      api('/api/systems/inquiries'),api('/api/systems/press-releases'),
+      api('/api/systems/reviews'),api('/api/systems/licenses'),
+      api('/api/systems/compliance'),api('/api/admin/orders?limit=1'),
+      api('/api/admin/users')]);
+    const oCount=orders.total||orders.count||0;
+    const items=[
+      {icon:'🏪',name:'Products',count:0,note:'Open Products tab to add inventory',done:false},
+      {icon:'📦',name:'Orders Started',count:oCount,note:'First customer order',done:oCount>0},
+      {icon:'👥',name:'Customers',count:0,note:'Customers appear after first order',done:oCount>0},
+      {icon:'🏭',name:'Suppliers',count:suppliers.length,note:'Add suppliers for procurement',done:suppliers.length>=2},
+      {icon:'📋',name:'Purchase Orders',count:pos.length,note:'Create POs from suppliers',done:pos.length>0},
+      {icon:'💰',name:'Finance Records',count:txs.length+invoices.length,note:'Track income & expenses',done:txs.length>0||invoices.length>0},
+      {icon:'📢',name:'Marketing',count:campaigns.length+promos.length,note:'Run campaigns & promotions',done:campaigns.length>0||promos.length>0},
+      {icon:'📡',name:'PR & Reviews',count:inquiries.length+releases.length+reviews.length,note:'Manage inquiries & press',done:inquiries.length>0||releases.length>0},
+      {icon:'⚖️',name:'Compliance',count:licenses.length+compliance.length,note:'Track licenses & compliance',done:licenses.length>0},
+      {icon:'👤',name:'Employees',count:users.length,note:'Hire & manage team',done:users.length>=2},
+    ];
+    let html='';
+    items.forEach((item,i)=>{
+      const pct=Math.min(100,Math.round((item.count/(i===8?4:i===4?3:i===9?2:i===3?2:i===5?3:i<3?1:4))*100))||0;
+      const status=item.done?'✅ Active':(item.count>0?'🔄 Partial':'🔴 Not Started');
+      html+='<div class="card" style="border-left:4px solid '+(item.done?'var(--success)':(item.count>0?'var(--warning)':'var(--danger)'))+'">'+
+        '<h3>'+item.icon+' '+item.name+'</h3>'+
+        '<p style="font-size:28px;font-weight:700;margin:8px 0">'+(item.count||0)+'</p>'+
+        '<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0"><div style="height:100%;width:'+pct+'%;background:'+(item.done?'var(--success)':(item.count>0?'var(--warning)':'var(--danger)'))+';border-radius:3px;transition:width 0.3s"></div></div>'+
+        '<p style="color:var(--text-muted);font-size:12px">'+item.note+'</p>'+
+        '<p style="font-size:12px;font-weight:600">'+status+'</p></div>';
+    });
+    document.getElementById('progressContent').innerHTML=html;
+  }catch(e){document.getElementById('progressContent').innerHTML='<p style="color:var(--danger)">Error: '+e.message+'</p>';}
 }
 
 function cm(n){document.getElementById(n).classList.remove('open');}
