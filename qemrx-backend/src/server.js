@@ -78,14 +78,70 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ── Auto-Seed on First Run ──────────────────────────────────
+const { sequelize, Product, User } = require('./models');
+const bcrypt = require('bcryptjs');
+
+async function autoSeed() {
+  try {
+    await sequelize.authenticate();
+    console.log('📦 Database connected');
+    await sequelize.sync({ alter: false });
+    const count = await Product.count();
+    if (count > 0) {
+      console.log(`📦 ${count} products already in DB — skipping seed`);
+      return;
+    }
+    console.log('📦 Database empty — seeding 199 products...');
+    const products = require('../seed_data');
+    let created = 0;
+    for (const p of products) {
+      const [, wasCreated] = await Product.findOrCreate({
+        where: { name: p.name, brand: p.brand },
+        defaults: p,
+      });
+      if (wasCreated) created++;
+    }
+    console.log(`   ✅ ${created} products seeded`);
+
+    const adminPass = await bcrypt.hash(
+      process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@QEMRX2024!', 12
+    );
+    const [admin] = await User.findOrCreate({
+      where: { phone: process.env.PHARMACY_PHONE || '+254700000000' },
+      defaults: {
+        name: process.env.PHARMACY_NAME || 'QEMRX Admin',
+        email: process.env.ADMIN_EMAIL || 'admin@qemrxpharmacy.co.ke',
+        phone: process.env.PHARMACY_PHONE || '+254700000000',
+        password: adminPass, role: 'admin', isVerified: true,
+      },
+    });
+    console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
+
+    const pharmPass = await bcrypt.hash('Pharmacist@2024!', 12);
+    const [pharm] = await User.findOrCreate({
+      where: { phone: '+254711000001' },
+      defaults: {
+        name: 'Lead Pharmacist', email: 'pharmacist@qemrxpharmacy.co.ke',
+        phone: '+254711000001', password: pharmPass, role: 'pharmacist', isVerified: true,
+      },
+    });
+    console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
+  } catch (err) {
+    console.error('❌ Auto-seed failed:', err.message);
+  }
+}
+
 // ── Start ───────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n💊 QEMRX PHARMACY backend running`);
-  console.log(`   Port    : ${PORT}`);
-  console.log(`   Env     : ${process.env.NODE_ENV}`);
-  console.log(`   M-Pesa  : ${process.env.MPESA_ENV || 'not configured'}`);
-  console.log(`   Base URL: ${process.env.BASE_URL}\n`);
+autoSeed().then(() => {
+  app.listen(PORT, () => {
+    console.log(`\n💊 QEMRX PHARMACY backend running`);
+    console.log(`   Port    : ${PORT}`);
+    console.log(`   Env     : ${process.env.NODE_ENV}`);
+    console.log(`   M-Pesa  : ${process.env.MPESA_ENV || 'not configured'}`);
+    console.log(`   Base URL: ${process.env.BASE_URL}\n`);
+  });
 });
 
 module.exports = app;
