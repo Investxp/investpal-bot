@@ -1,36 +1,146 @@
 {
-  "bankroll": 87.41,
-  "pnl": 253.56,
+  "bankroll": 91.08,
+  "pnl": 257.54,
   "active_bets": [
     {
-      "market_id": "2830440",
-      "name": "FC Corvinul 1921 Hunedoara vs. FK Cs\u00edkszereda Miercurea Ciuc",
+      "market_id": "2918955",
+      "name": "Spread: Djurgardens IF (-1.5)",
       "sport": "Sports",
       "side": "A",
-      "odds": 2.0,
-      "stake": 4.08,
-      "placed": "16:55",
-      "ts": 1784555740.7518854,
+      "odds": 1.98,
+      "stake": 0.1,
+      "placed": "18:30",
+      "ts": 1784561418.4956477,
       "simulation": true,
-      "end_date": "2026-07-20T15:30:00Z"
+      "end_date": "2026-07-20T17:00:00Z"
     },
     {
-      "market_id": "2830440",
-      "name": "FC Corvinul 1921 Hunedoara vs. FK Cs\u00edkszereda Miercurea Ciuc",
+      "market_id": "2918955",
+      "name": "Spread: Djurgardens IF (-1.5)",
       "sport": "Sports",
       "side": "B",
-      "odds": 2.0,
-      "stake": 0.1,
-      "placed": "16:55",
-      "ts": 1784555740.7519016,
+      "odds": 2.02,
+      "stake": 0.21,
+      "placed": "18:30",
+      "ts": 1784561418.4956787,
       "simulation": true,
-      "end_date": "2026-07-20T15:30:00Z"
+      "end_date": "2026-07-20T17:00:00Z"
     }
   ],
-  "cycles": 1826,
-  "wins": 16,
+  "cycles": 1836,
+  "wins": 17,
   "losses": 33,
   "log": [
+    {
+      "time": "18:36:19",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:36:19",
+      "msg": "Cycle #1836 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:35:19",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:35:19",
+      "msg": "Cycle #1835 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:34:19",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:34:19",
+      "msg": "Cycle #1834 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:33:19",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:33:19",
+      "msg": "Cycle #1833 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:32:19",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:32:19",
+      "msg": "Cycle #1832 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:31:18",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:31:18",
+      "msg": "Cycle #1831 (SIMULATION/poly1271) \u2014 Streaks: A=0 B=1 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:30:18",
+      "msg": "Cycle done. Bankroll: $91.08 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:30:18",
+      "msg": "[SIM] HEDGE on Spread: Djurgardens IF (-1.5) | A: $0.1 @1.98 | B: $0.21 @2.02",
+      "type": "info"
+    },
+    {
+      "time": "18:30:18",
+      "msg": "[SIM] Resolved: FC Corvinul 1921 Hunedoara vs. FK Cs\u00edkszereda | A:WON \u2713 (+4.08 USDC), B:LOST \u2717 (-0.10 USDC) | Net PnL: +3.98 USDC (Winner: YES)",
+      "type": "info"
+    },
+    {
+      "time": "18:30:18",
+      "msg": "Cycle #1830 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:29:18",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:29:18",
+      "msg": "Cycle #1829 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:28:17",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:28:17",
+      "msg": "Cycle #1828 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2485 markets",
+      "type": "info"
+    },
+    {
+      "time": "18:27:17",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "18:27:17",
+      "msg": "Cycle #1827 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2485 markets",
+      "type": "info"
+    },
     {
       "time": "18:26:17",
       "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
@@ -420,118 +530,8 @@
       "time": "17:47:58",
       "msg": "Cycle #1788 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
       "type": "info"
-    },
-    {
-      "time": "17:46:57",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:46:57",
-      "msg": "Cycle #1787 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:45:57",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:45:57",
-      "msg": "Cycle #1786 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:44:57",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:44:57",
-      "msg": "Cycle #1785 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:43:56",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:43:56",
-      "msg": "Cycle #1784 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:42:56",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:42:56",
-      "msg": "Cycle #1783 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:41:56",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:41:56",
-      "msg": "Cycle #1782 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:40:55",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:40:55",
-      "msg": "Cycle #1781 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:39:55",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:39:55",
-      "msg": "Cycle #1780 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:38:55",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:38:55",
-      "msg": "Cycle #1779 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:37:54",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:37:54",
-      "msg": "Cycle #1778 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
-      "type": "info"
-    },
-    {
-      "time": "17:36:54",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "17:36:54",
-      "msg": "Cycle #1777 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
-      "type": "info"
     }
   ],
-  "streak_a": 5,
-  "streak_b": 0
+  "streak_a": 0,
+  "streak_b": 1
 }

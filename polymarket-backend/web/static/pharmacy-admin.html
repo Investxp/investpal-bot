@@ -113,16 +113,16 @@
 <div class="layout">
   <nav class="sidebar">
     <h2>QEMRX <span><small>Admin Panel</small></span></h2>
-    <a class="active" onclick="switchTab('dashboard')">📊 <span>Dashboard</span></a>
-    <a onclick="switchTab('products')">💊 <span>Products</span></a>
-    <a onclick="switchTab('orders')">📦 <span>Orders</span></a>
-    <a onclick="switchTab('customers')">👥 <span>Customers</span></a>
-    <a onclick="switchTab('prescriptions')">📋 <span>Prescriptions</span></a>
-    <a onclick="switchTab('delivery')">🚚 <span>Delivery Zones</span></a>
-    <a onclick="switchTab('settings')">⚙️ <span>Settings</span></a>
+    <a class="active" onclick="st('dashboard')">📊 <span>Dashboard</span></a>
+    <a onclick="st('products')">💊 <span>Products</span></a>
+    <a onclick="st('orders')">📦 <span>Orders</span></a>
+    <a onclick="st('customers')">👥 <span>Customers</span></a>
+    <a onclick="st('prescriptions')">📋 <span>Prescriptions</span></a>
+    <a onclick="st('delivery')">🚚 <span>Delivery Zones</span></a>
+    <a onclick="st('settings')">⚙️ <span>Settings</span></a>
     <div class="spacer"></div>
     <a class="bottom-link store-link" href="/pharmacy/" target="_blank">🏪 <span>View Store</span></a>
-    <a class="bottom-link" onclick="doLogout()" style="color:rgba(255,255,255,0.5)">🚪 <span>Sign Out</span></a>
+    <a class="bottom-link" onclick="dl()" style="color:rgba(255,255,255,0.5)">🚪 <span>Sign Out</span></a>
   </nav>
 
   <div class="main">
@@ -212,7 +212,7 @@
   <label>Description</label><textarea id="fDesc"></textarea>
   <label>Image URL</label><input id="fImage">
   <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input id="fActive" type="checkbox" checked> Active</label>
-  <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('productModal')">Cancel</button><button class="btn btn-primary" id="prodSaveBtn" onclick="saveProduct()">Save</button></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('productModal')">Cancel</button><button class="btn btn-primary" id="prodSaveBtn" onclick="saveProduct()">Save</button></div>
 </div></div>
 
 <!-- ORDER DETAIL MODAL -->
@@ -222,14 +222,14 @@
   <hr>
   <label>Update Status</label>
   <select id="orderStatusSelect"><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="processing">Processing</option><option value="out_for_delivery">Out for Delivery</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
-  <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('orderModal')">Close</button><button class="btn btn-primary" onclick="updateOrderStatus()">Update Status</button></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('orderModal')">Close</button><button class="btn btn-primary" onclick="updateOrderStatus()">Update Status</button></div>
 </div></div>
 
 <!-- CUSTOMER ORDERS MODAL -->
 <div class="modal-overlay" id="custOrderModal"><div class="modal" style="width:600px">
   <h3 id="custOrderTitle">Customer Orders</h3>
   <div id="custOrderList"></div>
-  <div class="btn-row"><button class="btn btn-outline" onclick="closeModal('custOrderModal')">Close</button></div>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('custOrderModal')">Close</button></div>
 </div></div>
 
 <script>
@@ -303,7 +303,7 @@ async function loadLowStock(){
     const prods=(d.products||d.rows||[]).filter(p=>p.stock!==null&&p.stock<20).sort((a,b)=>a.stock-b.stock).slice(0,10);
     const tb=document.getElementById('lowStockTable');
     if(prods.length===0){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-muted)">✅ All products well stocked</td></tr>';return;}
-    tb.innerHTML=prods.map(p=>'<tr><td>'+(p.emoji||'💊')+' '+p.name+'</td><td class="'+(p.stock===0?'out-stock':'low-stock')+'">'+p.stock+'</td><td><button class="btn btn-sm btn-outline" onclick="switchTab(\'products\')">✏️</button></td></tr>').join('');
+    tb.innerHTML=prods.map(p=>'<tr><td>'+(p.emoji||'💊')+' '+p.name+'</td><td class="'+(p.stock===0?'out-stock':'low-stock')+'">'+p.stock+'</td><td><button class="btn btn-sm btn-outline" onclick="st(\'products\')">✏️</button></td></tr>').join('');
   }catch(e){}
 }
 
@@ -379,7 +379,7 @@ async function saveProduct(){
   try{
     if(editId){await api('/api/products/'+editId,{method:'PATCH',body:b});t('✅ Updated','success');}
     else{await api('/api/products',{method:'POST',body:b});t('✅ Added','success');}
-    closeModal('productModal');loadProducts();
+    cm('productModal');loadProducts();
   }catch(e){t('Failed: '+e.message,'error');}
 }
 
@@ -437,7 +437,7 @@ async function viewOrder(id){
 async function updateOrderStatus(){
   try{
     await api('/api/orders/'+orderEditId+'/status',{method:'PATCH',body:{status:document.getElementById('orderStatusSelect').value}});
-    t('✅ Status updated','success');closeModal('orderModal');loadOrders();
+    t('✅ Status updated','success');cm('orderModal');loadOrders();
   }catch(e){t('Failed: '+e.message,'error');}
 }
 
@@ -522,8 +522,8 @@ function loadSettings(){
     <p><strong>Website:</strong> <a href="https://investpal-bot.onrender.com/pharmacy/" target="_blank">investpal-bot.onrender.com/pharmacy/</a></p>
   `;
   document.getElementById('settingsEnv').innerHTML='<div style="display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:12.5px">'+
-    envVars.map(v=>'<div style="font-weight:600;color:var(--text-muted)">'+v+'</div><div style="font-family:monospace;font-size:12px">'+(process.env&&process.env[v]||'<em style="color:#aaa">set in Render</em>')+'</div>').join('')+
-    '</div><p style="margin-top:12px;color:var(--text-muted);font-size:12px">⚠️ Env vars shown are from server startup — edit in Render Dashboard → Environment.</p>';
+    envVars.map(v=>'<div style="font-weight:600;color:var(--text-muted)">'+v+'</div><div style="font-family:monospace;font-size:12px"><em style="color:#aaa">set in Render → Environment</em></div>').join('')+
+    '</div><p style="margin-top:12px;color:var(--text-muted);font-size:12px">⚙️ Edit env vars in Render Dashboard → Environment, then redeploy to apply.</p>';
 }
 
 function cm(n){document.getElementById(n).classList.remove('open');}
