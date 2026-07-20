@@ -111,7 +111,7 @@ async function autoSeed() {
     const adminPass = await bcrypt.hash(
       process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@QEMRX2024!', 12
     );
-    const [admin] = await User.findOrCreate({
+    const [admin, adminCreated] = await User.findOrCreate({
       where: { phone: adminPhone },
       defaults: {
         name: process.env.PHARMACY_NAME || 'QEMRX Admin',
@@ -120,19 +120,23 @@ async function autoSeed() {
         password: adminPass, role: 'admin', isVerified: true,
       },
     });
+    // Update password on every deploy so env var changes take effect
+    await admin.update({ password: adminPass });
     console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
 
     if (process.env.PHARMACIST_PHONE) {
+      const pharmPhone = process.env.PHARMACIST_PHONE.trim();
       const pharmPass = await bcrypt.hash(process.env.PHARMACIST_PASSWORD || 'Pharmacist@2024!', 12);
       const [pharm] = await User.findOrCreate({
-        where: { phone: process.env.PHARMACIST_PHONE },
+        where: { phone: pharmPhone },
         defaults: {
           name: process.env.PHARMACIST_NAME || 'Lead Pharmacist',
           email: process.env.PHARMACIST_EMAIL || 'pharmacist@qemrxpharmacy.co.ke',
-          phone: process.env.PHARMACIST_PHONE,
+          phone: pharmPhone,
           password: pharmPass, role: 'pharmacist', isVerified: true,
         },
       });
+      await pharm.update({ password: pharmPass });
       console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
     } else {
       console.log(`   💊 Pharmacist: skipped (set PHARMACIST_PHONE to create)`);

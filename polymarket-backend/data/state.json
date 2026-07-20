@@ -1,12 +1,12 @@
 {
-  "bankroll": 93.43,
+  "bankroll": 87.41,
   "base_stake": 10.0,
   "factor": 2.1,
   "max_steps": 6,
-  "streak_a": 4,
+  "streak_a": 5,
   "streak_b": 0,
-  "total_pnl": 255.4,
+  "total_pnl": 253.56,
   "wins": 16,
-  "losses": 32,
-  "updated": "2026-07-20T12:10:11.899676+00:00"
+  "losses": 33,
+  "updated": "2026-07-20T13:55:40.630424+00:00"
 }
