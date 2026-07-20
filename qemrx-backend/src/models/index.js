@@ -23,8 +23,10 @@ const User = sequelize.define('User', {
   email: { type: DataTypes.STRING, unique: true },
   phone: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
-  role: { type: DataTypes.ENUM('customer', 'pharmacist', 'admin'), defaultValue: 'customer' },
+  role: { type: DataTypes.ENUM('customer', 'pharmacist', 'delivery', 'admin'), defaultValue: 'customer' },
   isVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
+  isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+  lastLogin: { type: DataTypes.DATE },
   address: { type: DataTypes.TEXT },
   county: { type: DataTypes.STRING, defaultValue: 'Nairobi' },
 }, { tableName: 'users', underscored: true });

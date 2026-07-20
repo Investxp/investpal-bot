@@ -117,6 +117,7 @@
     <a onclick="st('products')">💊 <span>Products</span></a>
     <a onclick="st('orders')">📦 <span>Orders</span></a>
     <a onclick="st('customers')">👥 <span>Customers</span></a>
+    <a onclick="st('employees')">👤 <span>Employees</span></a>
     <a onclick="st('prescriptions')">📋 <span>Prescriptions</span></a>
     <a onclick="st('delivery')">🚚 <span>Delivery Zones</span></a>
     <a onclick="st('settings')">⚙️ <span>Settings</span></a>
@@ -163,6 +164,16 @@
       <h1>👥 Customers</h1>
       <div class="toolbar"><input id="custSearch" placeholder="Search name/phone..." oninput="loadCustomers()"></div>
       <div class="table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Orders</th><th>Joined</th><th style="width:90px">Actions</th></tr></thead><tbody id="customersTable"></tbody></table></div>
+    </div>
+
+    <!-- EMPLOYEES -->
+    <div id="tab-employees" class="tab-content">
+      <h1>👤 Employees <button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button></h1>
+      <div class="toolbar">
+        <input id="empSearch" placeholder="Search name/phone..." oninput="loadEmployees()">
+        <select id="empRoleFilter" onchange="loadEmployees()"><option value="">All Roles</option><option value="admin">Admin</option><option value="pharmacist">Pharmacist</option><option value="delivery">Delivery</option></select>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Orders</th><th>Rx Reviewed</th><th style="width:100px">Actions</th></tr></thead><tbody id="employeesTable"></tbody></table></div>
     </div>
 
     <!-- PRESCRIPTIONS -->
@@ -225,6 +236,17 @@
   <div class="btn-row"><button class="btn btn-outline" onclick="cm('orderModal')">Close</button><button class="btn btn-primary" onclick="updateOrderStatus()">Update Status</button></div>
 </div></div>
 
+<!-- EMPLOYEE MODAL -->
+<div class="modal-overlay" id="employeeModal"><div class="modal">
+  <h3 id="empModalTitle">Add Employee</h3>
+  <label>Full Name *</label><input id="empName">
+  <label>Phone *</label><input id="empPhone" placeholder="+2547XXXXXXXX">
+  <label>Email</label><input id="empEmail" type="email">
+  <label>Password *</label><input id="empPassword" type="password" placeholder="Min 8 characters">
+  <label>Role *</label><select id="empRole"><option value="pharmacist">Pharmacist</option><option value="delivery">Delivery Staff</option><option value="admin">Admin</option></select>
+  <div class="btn-row"><button class="btn btn-outline" onclick="cm('employeeModal')">Cancel</button><button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee()">Create</button></div>
+</div></div>
+
 <!-- CUSTOMER ORDERS MODAL -->
 <div class="modal-overlay" id="custOrderModal"><div class="modal" style="width:600px">
   <h3 id="custOrderTitle">Customer Orders</h3>
@@ -269,6 +291,7 @@ function st(n){
   if(n==='products')loadProducts();
   if(n==='orders')loadOrders();
   if(n==='customers')loadCustomers();
+  if(n==='employees')loadEmployees();
   if(n==='prescriptions')loadPrescriptions();
   if(n==='delivery')loadDelivery();
   if(n==='settings')loadSettings();
@@ -474,6 +497,85 @@ async function viewCustomerOrders(phone){
       orders.map(o=>'<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><strong>'+o.orderNumber+'</strong> — KSh '+(parseFloat(o.total)||0).toLocaleString()+' — <span class="badge badge-'+o.status+'">'+o.status.replace(/_/g,' ')+'</span> — '+new Date(o.createdAt).toLocaleDateString()+'</div>').join('');
     document.getElementById('custOrderModal').classList.add('open');
   }catch(e){t('Failed: '+e.message,'error');}
+}
+
+// ── EMPLOYEES ──
+let empEditId = null;
+async function loadEmployees(){
+  try{
+    const s=document.getElementById('empSearch').value;
+    const r=document.getElementById('empRoleFilter').value;
+    let u='/api/admin/users';
+    const params=[];
+    if(s)params.push('search='+encodeURIComponent(s));
+    if(r)params.push('role='+r);
+    if(params.length)u+='?'+params.join('&');
+    const emps=await api(u);
+    document.getElementById('employeesTable').innerHTML=emps.length===0?'<tr><td colspan="9" class="empty">No employees. Create your first!</td></tr>':
+      emps.map(e=>'<tr>'+
+        '<td>'+(e.name||'—')+'</td>'+
+        '<td>'+e.phone+'</td>'+
+        '<td>'+(e.email||'—')+'</td>'+
+        '<td><span class="badge badge-'+(e.role||'')+'">'+(e.role||'')+'</span></td>'+
+        '<td><span class="badge '+(e.isActive===false?'badge-cancelled':'badge-paid')+'">'+(e.isActive===false?'Inactive':'Active')+'</span></td>'+
+        '<td>'+(e.lastLogin?new Date(e.lastLogin).toLocaleString():'<em style="color:#aaa">Never</em>')+'</td>'+
+        '<td>'+(e.metrics?e.metrics.ordersProcessed:0)+'</td>'+
+        '<td>'+(e.metrics?e.metrics.prescriptionsReviewed:0)+'</td>'+
+        '<td><button class="btn btn-sm btn-outline" onclick="editEmployee(\''+e.id+'\')">✏️</button> <button class="btn btn-sm '+(e.isActive===false?'btn-success':'btn-danger')+'" onclick="toggleEmployee(\''+e.id+'\','+(e.isActive===false)+')">'+(e.isActive===false?'▶️':'⏸️')+'</button></td>'+
+        '</tr>').join('');
+  }catch(e){t('Employees error: '+e.message,'error');}
+}
+
+function openEmployeeModal(){
+  empEditId=null;
+  document.getElementById('empModalTitle').textContent='Add Employee';
+  document.getElementById('empSaveBtn').textContent='Create';
+  ['empName','empPhone','empEmail','empPassword'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('empRole').value='pharmacist';
+  document.getElementById('employeeModal').classList.add('open');
+}
+
+async function editEmployee(id){
+  empEditId=id;
+  document.getElementById('empModalTitle').textContent='Edit Employee';
+  document.getElementById('empSaveBtn').textContent='Save';
+  document.getElementById('empPassword').value=''; // don't prefill
+  try{
+    const emps=await api('/api/admin/users');
+    const e=emps.find(x=>x.id===id);
+    if(!e){t('Employee not found','error');return;}
+    document.getElementById('empName').value=e.name||'';
+    document.getElementById('empPhone').value=e.phone||'';
+    document.getElementById('empEmail').value=e.email||'';
+    document.getElementById('empRole').value=e.role||'pharmacist';
+    document.getElementById('employeeModal').classList.add('open');
+  }catch(e){t('Failed: '+e.message,'error');}
+}
+
+async function saveEmployee(){
+  const name=document.getElementById('empName').value.trim();
+  const phone=document.getElementById('empPhone').value.trim();
+  const email=document.getElementById('empEmail').value.trim();
+  const password=document.getElementById('empPassword').value;
+  const role=document.getElementById('empRole').value;
+  if(!name||!phone){t('Name and phone required','error');return;}
+  try{
+    if(empEditId){
+      await api('/api/admin/users/'+empEditId,{method:'PATCH',body:{name,phone,email,role}});
+      if(password.length>=8) await api('/api/admin/users/'+empEditId+'/role',{method:'PATCH',body:{role}}); // just for role
+      t('✅ Employee updated','success');
+    }else{
+      if(password.length<8){t('Password min 8 characters','error');return;}
+      await api('/api/admin/users',{method:'POST',body:{name,phone,email,password,role}});
+      t('✅ Employee created. Share login details with them.','success');
+    }
+    cm('employeeModal');loadEmployees();
+  }catch(e){t('Failed: '+e.message,'error');}
+}
+
+async function toggleEmployee(id,isActive){
+  try{await api('/api/admin/users/'+id,{method:'PATCH',body:{isActive:!isActive}});t('✅ Updated','success');loadEmployees();}
+  catch(e){t('Failed: '+e.message,'error');}
 }
 
 // ── PRESCRIPTIONS ──
