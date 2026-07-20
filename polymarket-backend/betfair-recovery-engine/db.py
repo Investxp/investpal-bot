@@ -7,7 +7,7 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Optional
 
-from models import BetRecord, LineConfig, LineState, RecoveryMode, Side
+from models import BetOutcome, BetRecord, LineConfig, LineState, RecoveryMode, Side
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS line_configs (

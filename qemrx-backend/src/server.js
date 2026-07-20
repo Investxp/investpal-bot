@@ -62,7 +62,7 @@ app.use('/api/delivery',      deliveryRoutes);
 
 // ── Serve Frontend ──────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '..', 'public')));
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Route not found' });
   }
