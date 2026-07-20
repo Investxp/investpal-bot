@@ -27,10 +27,460 @@
       "end_date": "2026-07-20T15:30:00Z"
     }
   ],
-  "cycles": 1741,
+  "cycles": 1786,
   "wins": 16,
   "losses": 33,
   "log": [
+    {
+      "time": "17:45:57",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:45:57",
+      "msg": "Cycle #1786 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:44:57",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:44:57",
+      "msg": "Cycle #1785 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:43:56",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:43:56",
+      "msg": "Cycle #1784 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:42:56",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:42:56",
+      "msg": "Cycle #1783 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:41:56",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:41:56",
+      "msg": "Cycle #1782 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:40:55",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:40:55",
+      "msg": "Cycle #1781 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:39:55",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:39:55",
+      "msg": "Cycle #1780 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:38:55",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:38:55",
+      "msg": "Cycle #1779 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2272 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:37:54",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:37:54",
+      "msg": "Cycle #1778 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:36:54",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:36:54",
+      "msg": "Cycle #1777 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:35:54",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:35:54",
+      "msg": "Cycle #1776 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:34:53",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:34:53",
+      "msg": "Cycle #1775 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:33:53",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:33:53",
+      "msg": "Cycle #1774 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:32:52",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:32:52",
+      "msg": "Cycle #1773 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:31:52",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:31:52",
+      "msg": "Cycle #1772 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:30:52",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:30:52",
+      "msg": "Cycle #1771 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:29:52",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:29:52",
+      "msg": "Cycle #1770 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:28:51",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:28:51",
+      "msg": "Cycle #1769 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:27:51",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:27:51",
+      "msg": "Cycle #1768 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:26:51",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:26:51",
+      "msg": "Cycle #1767 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:25:50",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:25:50",
+      "msg": "Cycle #1766 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:24:50",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:24:50",
+      "msg": "Cycle #1765 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:23:49",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:23:49",
+      "msg": "Cycle #1764 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:22:48",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:22:48",
+      "msg": "Cycle #1763 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:21:48",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:21:48",
+      "msg": "Cycle #1762 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2370 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:20:48",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:20:48",
+      "msg": "Cycle #1761 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:19:47",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:19:47",
+      "msg": "Cycle #1760 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:18:47",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:18:47",
+      "msg": "Cycle #1759 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:17:46",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:17:46",
+      "msg": "Cycle #1758 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:16:46",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:16:46",
+      "msg": "Cycle #1757 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:15:46",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:15:46",
+      "msg": "Cycle #1756 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:14:46",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:14:46",
+      "msg": "Cycle #1755 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:13:46",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:13:46",
+      "msg": "Cycle #1754 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:12:45",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:12:45",
+      "msg": "Cycle #1753 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:11:45",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:11:45",
+      "msg": "Cycle #1752 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:10:45",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:10:45",
+      "msg": "Cycle #1751 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:09:45",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:09:45",
+      "msg": "Cycle #1750 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:08:45",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:08:45",
+      "msg": "Cycle #1749 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:07:44",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:07:44",
+      "msg": "Cycle #1748 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2488 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:06:43",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:06:43",
+      "msg": "Cycle #1747 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:05:43",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:05:43",
+      "msg": "Cycle #1746 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:04:43",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:04:43",
+      "msg": "Cycle #1745 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:03:43",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:03:43",
+      "msg": "Cycle #1744 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:02:42",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:02:42",
+      "msg": "Cycle #1743 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
+      "type": "info"
+    },
+    {
+      "time": "17:01:42",
+      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
+      "type": "info"
+    },
+    {
+      "time": "17:01:42",
+      "msg": "Cycle #1742 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
+      "type": "info"
+    },
     {
       "time": "17:00:42",
       "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
@@ -79,456 +529,6 @@
     {
       "time": "16:56:41",
       "msg": "Cycle #1737 (SIMULATION/poly1271) \u2014 Streaks: A=5 B=0 | 2521 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:55:40",
-      "msg": "Cycle done. Bankroll: $87.41 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:55:40",
-      "msg": "[SIM] HEDGE on FC Corvinul 1921 Hunedoara vs. FK C | A: $4.08 @2.0 | B: $0.1 @2.0",
-      "type": "info"
-    },
-    {
-      "time": "16:55:40",
-      "msg": "[SIM] Resolved: Game 1: Any Player Quadra Kill? | A:LOST \u2717 (-1.94 USDC), B:WON \u2713 (+0.10 USDC) | Net PnL: -1.84 USDC (Winner: NO)",
-      "type": "error"
-    },
-    {
-      "time": "16:55:40",
-      "msg": "Cycle #1736 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:54:40",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:54:40",
-      "msg": "Cycle #1735 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:53:40",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:53:40",
-      "msg": "Cycle #1734 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:52:39",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:52:39",
-      "msg": "Cycle #1733 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:51:39",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:51:39",
-      "msg": "Cycle #1732 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:50:39",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:50:39",
-      "msg": "Cycle #1731 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:49:39",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:49:39",
-      "msg": "Cycle #1730 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:48:38",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:48:38",
-      "msg": "Cycle #1729 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:47:38",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:47:38",
-      "msg": "Cycle #1728 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:46:38",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:46:38",
-      "msg": "Cycle #1727 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:45:37",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:45:37",
-      "msg": "Cycle #1726 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:44:37",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:44:37",
-      "msg": "Cycle #1725 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:43:37",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:43:37",
-      "msg": "Cycle #1724 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:42:37",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:42:37",
-      "msg": "Cycle #1723 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:41:36",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:41:36",
-      "msg": "Cycle #1722 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:40:36",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:40:36",
-      "msg": "Cycle #1721 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:39:36",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:39:36",
-      "msg": "Cycle #1720 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:38:35",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:38:35",
-      "msg": "Cycle #1719 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:37:35",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:37:35",
-      "msg": "Cycle #1718 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:36:35",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:36:35",
-      "msg": "Cycle #1717 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:35:35",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:35:35",
-      "msg": "Cycle #1716 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:34:34",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:34:34",
-      "msg": "Cycle #1715 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:33:34",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:33:34",
-      "msg": "Cycle #1714 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2516 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:32:34",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:32:34",
-      "msg": "Cycle #1713 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:31:34",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:31:34",
-      "msg": "Cycle #1712 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:30:34",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:30:34",
-      "msg": "Cycle #1711 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:29:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:29:33",
-      "msg": "Cycle #1710 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:28:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:28:33",
-      "msg": "Cycle #1709 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:27:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:27:33",
-      "msg": "Cycle #1708 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:26:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:26:33",
-      "msg": "Cycle #1707 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:25:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:25:33",
-      "msg": "Cycle #1706 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:24:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:24:33",
-      "msg": "Cycle #1705 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:23:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:23:33",
-      "msg": "Cycle #1704 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 1283 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:22:33",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:22:33",
-      "msg": "Cycle #1703 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 0 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:22:33",
-      "msg": "Market cache empty. Warmup in progress.",
-      "type": "warn"
-    },
-    {
-      "time": "16:21:32",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:21:32",
-      "msg": "Cycle #1702 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:20:32",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:20:32",
-      "msg": "Cycle #1701 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:19:32",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:19:32",
-      "msg": "Cycle #1700 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:18:31",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:18:31",
-      "msg": "Cycle #1699 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:17:31",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:17:31",
-      "msg": "Cycle #1698 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:16:30",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:16:30",
-      "msg": "Cycle #1697 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:15:30",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:15:30",
-      "msg": "Cycle #1696 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:14:30",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:14:30",
-      "msg": "Cycle #1695 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:13:29",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
-      "type": "info"
-    },
-    {
-      "time": "16:13:29",
-      "msg": "Cycle #1694 (SIMULATION/poly1271) \u2014 Streaks: A=4 B=0 | 2447 markets",
-      "type": "info"
-    },
-    {
-      "time": "16:12:29",
-      "msg": "Cycle done. Bankroll: $93.43 | Active: 2",
       "type": "info"
     }
   ],

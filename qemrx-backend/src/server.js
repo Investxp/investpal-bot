@@ -115,7 +115,7 @@ async function autoSeed() {
       where: { phone: adminPhone },
       defaults: {
         name: process.env.PHARMACY_NAME || 'QEMRX Admin',
-        email: process.env.ADMIN_EMAIL || 'admin@qemrxpharmacy.co.ke',
+        email: process.env.ADMIN_EMAIL || 'qemrxpharmacy1@gmail.com',
         phone: adminPhone,
         password: adminPass, role: 'admin', isVerified: true,
       },
