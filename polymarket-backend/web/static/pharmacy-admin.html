@@ -124,7 +124,11 @@
     <a onclick="doLogout()" style="color:rgba(255,255,255,0.5)">🚪 <span>Sign Out</span></a>
   </nav>
 
-  <div class="main">
+    <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div></div>
+      <button class="btn btn-sm btn-danger" onclick="doLogout()">🚪 Sign Out</button>
+    </div>
     <div id="tab-dashboard" class="tab-content active">
       <h1>Dashboard</h1>
       <div class="stats" id="statsContainer">
