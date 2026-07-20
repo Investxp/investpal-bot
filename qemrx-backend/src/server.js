@@ -86,7 +86,7 @@ async function autoSeed() {
   try {
     await sequelize.authenticate();
     console.log('📦 Database connected');
-    await sequelize.sync({ alter: false });
+    await sequelize.sync({ alter: true });
     const count = await Product.count();
     if (count > 0) {
       console.log(`📦 ${count} products already in DB — skipping seed`);

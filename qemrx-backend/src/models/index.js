@@ -132,7 +132,7 @@ const syncDB = async () => {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connected');
-    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
+    await sequelize.sync({ alter: true });
     console.log('✅ Tables synced');
   } catch (err) {
     console.error('❌ Database error:', err.message);
