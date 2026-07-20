@@ -34,6 +34,7 @@ const Product = sequelize.define('Product', {
   name: { type: DataTypes.STRING, allowNull: false },
   brand: { type: DataTypes.STRING },
   category: { type: DataTypes.STRING, allowNull: false },
+  subcategory: { type: DataTypes.STRING },
   type: { type: DataTypes.ENUM('otc', 'rx'), defaultValue: 'otc' },
   description: { type: DataTypes.TEXT },
   price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },

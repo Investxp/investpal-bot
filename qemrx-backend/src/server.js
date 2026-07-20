@@ -95,10 +95,13 @@ async function autoSeed() {
     console.log('📦 Database empty — seeding 199 products...');
     const products = require('../seed_data');
     let created = 0;
+    const productFields = ['name','brand','category','subcategory','type','description','price','oldPrice','stock','emoji','imageUrl','isActive','requiresPrescription'];
     for (const p of products) {
+      const defaults = {};
+      productFields.forEach(f => { if (p[f] !== undefined) defaults[f] = p[f]; });
       const [, wasCreated] = await Product.findOrCreate({
         where: { name: p.name, brand: p.brand },
-        defaults: p,
+        defaults,
       });
       if (wasCreated) created++;
     }
