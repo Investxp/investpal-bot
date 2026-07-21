@@ -64,6 +64,8 @@ services:
         sync: false
       - key: MPESA_ENV
         value: sandbox       # change to production when ready
+      - key: MPESA_DEMO_MODE
+        value: "true"        # set to "false" once live M-Pesa is confirmed working
       - key: MPESA_CALLBACK_URL
         sync: false          # https://yourdomain/api/payments/mpesa/callback
       - key: STRIPE_PUBLIC_KEY

@@ -16,24 +16,32 @@ router.post('/mpesa/stk', auth, async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (order.paymentStatus === 'paid') return res.status(400).json({ error: 'Order already paid' });
 
-    // Initiate STK push
-    const stkResult = await mpesa.initiateSTKPush(
-      phone,
-      parseFloat(order.total),
-      order.id,
-      `QEMRX Pharmacy ${order.orderNumber}`
-    );
+    let stkResult;
+    const isDemo = process.env.MPESA_DEMO_MODE === 'true';
 
-    if (stkResult.responseCode !== '0') {
-      return res.status(400).json({ error: 'STK push failed', details: stkResult });
+    if (isDemo) {
+      const fakeId = 'DEMO-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      stkResult = {
+        checkoutRequestId: fakeId,
+        merchantRequestId: 'MR-' + fakeId,
+        responseCode: '0',
+        responseDescription: 'Success. Demo mode — no real STK sent.',
+        customerMessage: 'Demo mode activated.',
+        raw: { demo: true, fakeId },
+      };
+      console.log(`[M-Pesa DEMO] Simulated STK push → ${fakeId}`);
+    } else {
+      stkResult = await mpesa.initiateSTKPush(phone, parseFloat(order.total), order.id, `QEMRX Pharmacy ${order.orderNumber}`);
+      if (stkResult.responseCode !== '0') {
+        return res.status(400).json({ error: 'STK push failed', details: stkResult });
+      }
     }
 
-    // Save pending payment record
     await Payment.upsert({
       orderId: order.id,
       method: 'mpesa',
       amount: order.total,
-      status: 'pending',
+      status: isDemo ? 'pending' : 'pending',
       mpesaCheckoutRequestId: stkResult.checkoutRequestId,
       mpesaMerchantRequestId: stkResult.merchantRequestId,
       mpesaPhone: mpesa.formatPhone(phone),
@@ -41,7 +49,7 @@ router.post('/mpesa/stk', auth, async (req, res) => {
     });
 
     res.json({
-      message: 'STK push sent. Check your phone and enter M-Pesa PIN.',
+      message: isDemo ? '🔬 DEMO: STK push simulated. Auto-confirming in 12s…' : 'STK push sent. Check your phone and enter M-Pesa PIN.',
       checkoutRequestId: stkResult.checkoutRequestId,
       customerMessage: stkResult.customerMessage,
     });
@@ -100,15 +108,24 @@ router.get('/mpesa/status/:checkoutRequestId', auth, async (req, res) => {
     });
     if (!payment) return res.status(404).json({ error: 'Payment not found' });
 
-    // If still pending, query Safaricom directly
     if (payment.status === 'pending') {
-      try {
-        const status = await mpesa.queryStkStatus(req.params.checkoutRequestId);
-        if (status.ResultCode === 0) {
-          await payment.update({ status: 'completed', paidAt: new Date() });
+      const isDemo = process.env.MPESA_DEMO_MODE === 'true';
+      if (isDemo && payment.mpesaCheckoutRequestId?.startsWith('DEMO-')) {
+        const elapsed = Date.now() - new Date(payment.createdAt).getTime();
+        if (elapsed > 12000) { // auto-confirm after 12 seconds
+          await payment.update({ status: 'completed', mpesaReceiptNumber: 'DEMO-' + Date.now(), paidAt: new Date() });
           await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: payment.orderId } });
+          console.log(`[M-Pesa DEMO] Auto-confirmed payment ${payment.id} after ${elapsed}ms`);
         }
-      } catch (_) {}
+      } else {
+        try {
+          const status = await mpesa.queryStkStatus(req.params.checkoutRequestId);
+          if (status.ResultCode === 0) {
+            await payment.update({ status: 'completed', paidAt: new Date() });
+            await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: payment.orderId } });
+          }
+        } catch (_) {}
+      }
     }
 
     res.json({ status: payment.status, receipt: payment.mpesaReceiptNumber });

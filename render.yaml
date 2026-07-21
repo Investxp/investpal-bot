@@ -17,5 +17,7 @@ services:
         value: "true"
       - key: POLYMARKET_PROXY
         sync: false
+      - key: MPESA_DEMO_MODE
+        value: "true"
     healthCheckPath: /
     autoDeploy: true
