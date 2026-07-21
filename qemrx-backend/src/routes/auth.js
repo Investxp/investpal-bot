@@ -86,8 +86,9 @@ router.post('/reset-admin', async (req, res) => {
     const user = await User.findOne({ where: { phone } });
     if (!user) return res.status(404).json({ error: 'Admin not found' });
     const hashed = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS) || 12);
-    await user.update({ password: hashed, role: 'admin' });
-    res.json({ message: `Admin ${phone} password reset successfully` });
+    const newRole = user.role === 'admin' || user.role === 'pharmacist' ? user.role : 'admin';
+    await user.update({ password: hashed, role: newRole });
+    res.json({ message: `Password for ${phone} reset successfully (role: ${newRole})` });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
