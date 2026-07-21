@@ -113,10 +113,8 @@ async function autoSeed() {
 
     // ── Users (ALWAYS runs to ensure admin exists) ─────────
     const adminPhone = process.env.PHARMACY_PHONE || '+254736474493';
-    const adminPass = await bcrypt.hash(
-      process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@QEMRX2024!', 12
-    );
-    // Force-find any user matching the admin phone, or create if missing
+    const isAdminPwSet = !!process.env.ADMIN_DEFAULT_PASSWORD;
+    const adminPass = await bcrypt.hash(isAdminPwSet ? process.env.ADMIN_DEFAULT_PASSWORD : 'Admin@QEMRX2024!', 12);
     let admin = await User.findOne({ where: { phone: adminPhone } });
     if (!admin) {
       admin = await User.create({
@@ -126,14 +124,16 @@ async function autoSeed() {
         password: adminPass, role: 'admin', isVerified: true,
       });
       console.log(`   👤 Admin created`);
+    } else if (isAdminPwSet) {
+      // Only sync password if env var is explicitly set
+      await admin.update({ password: adminPass, role: 'admin' });
     }
-    // Sync password + role on every deploy so env var changes take effect
-    await admin.update({ password: adminPass, role: 'admin' });
     console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
 
     if (process.env.PHARMACIST_PHONE) {
       const pharmPhone = process.env.PHARMACIST_PHONE.trim();
-      const pharmPass = await bcrypt.hash(process.env.PHARMACIST_PASSWORD || 'Pharmacist@2024!', 12);
+      const isPharmPwSet = !!process.env.PHARMACIST_PASSWORD;
+      const pharmPass = await bcrypt.hash(isPharmPwSet ? process.env.PHARMACIST_PASSWORD : 'Pharmacist@2024!', 12);
       let pharm = await User.findOne({ where: { phone: pharmPhone } });
       if (!pharm) {
         pharm = await User.create({
@@ -141,8 +141,11 @@ async function autoSeed() {
           email: process.env.PHARMACIST_EMAIL || 'pharmacist@qemrxpharmacy.co.ke',
           phone: pharmPhone, password: pharmPass, role: 'pharmacist', isVerified: true,
         });
+        console.log(`   💊 Pharmacist created`);
+      } else if (isPharmPwSet) {
+        // Only sync password if env var is explicitly set
+        await pharm.update({ password: pharmPass, role: 'pharmacist' });
       }
-      await pharm.update({ password: pharmPass, role: 'pharmacist' });
       console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
     } else {
       console.log(`   💊 Pharmacist: skipped (set PHARMACIST_PHONE to create)`);
