@@ -125,8 +125,7 @@ async function autoSeed() {
       });
       console.log(`   👤 Admin created`);
     } else if (isAdminPwSet) {
-      // Only sync password if env var is explicitly set
-      await admin.update({ password: adminPass, role: 'admin' });
+      await admin.update({ password: adminPass, role: 'admin', name: process.env.PHARMACY_NAME || 'QEMRX Admin' });
     }
     console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
 
@@ -143,8 +142,7 @@ async function autoSeed() {
         });
         console.log(`   💊 Pharmacist created`);
       } else if (isPharmPwSet) {
-        // Only sync password if env var is explicitly set
-        await pharm.update({ password: pharmPass, role: 'pharmacist' });
+        await pharm.update({ password: pharmPass, role: 'pharmacist', name: process.env.PHARMACIST_NAME || 'Lead Pharmacist' });
       }
       console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
     } else {
