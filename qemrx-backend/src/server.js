@@ -89,26 +89,29 @@ async function autoSeed() {
     await sequelize.authenticate();
     console.log('📦 Database connected');
     await sequelize.sync({ alter: true });
-    const count = await Product.count();
-    if (count > 0) {
-      console.log(`📦 ${count} products already in DB — skipping seed`);
-      return;
-    }
-    console.log('📦 Database empty — seeding 199 products...');
-    const products = require('../seed_data');
-    let created = 0;
-    const productFields = ['name','brand','category','subcategory','type','description','price','oldPrice','stock','emoji','imageUrl','isActive','requiresPrescription'];
-    for (const p of products) {
-      const defaults = {};
-      productFields.forEach(f => { if (p[f] !== undefined) defaults[f] = p[f]; });
-      const [, wasCreated] = await Product.findOrCreate({
-        where: { name: p.name, brand: p.brand },
-        defaults,
-      });
-      if (wasCreated) created++;
-    }
-    console.log(`   ✅ ${created} products seeded`);
 
+    // ── Products (only if DB is empty) ─────────────────────
+    const count = await Product.count();
+    if (count === 0) {
+      console.log('📦 Database empty — seeding 199 products...');
+      const products = require('../seed_data');
+      let created = 0;
+      const productFields = ['name','brand','category','subcategory','type','description','price','oldPrice','stock','emoji','imageUrl','isActive','requiresPrescription'];
+      for (const p of products) {
+        const defaults = {};
+        productFields.forEach(f => { if (p[f] !== undefined) defaults[f] = p[f]; });
+        const [, wasCreated] = await Product.findOrCreate({
+          where: { name: p.name, brand: p.brand },
+          defaults,
+        });
+        if (wasCreated) created++;
+      }
+      console.log(`   ✅ ${created} products seeded`);
+    } else {
+      console.log(`   📦 ${count} products already in DB — skipping product seed`);
+    }
+
+    // ── Users (ALWAYS runs to ensure admin exists) ─────────
     const adminPhone = process.env.PHARMACY_PHONE || '+254736474493';
     const adminPass = await bcrypt.hash(
       process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@QEMRX2024!', 12
@@ -122,8 +125,8 @@ async function autoSeed() {
         password: adminPass, role: 'admin', isVerified: true,
       },
     });
-    // Update password on every deploy so env var changes take effect
-    await admin.update({ password: adminPass });
+    // Sync password + role on every deploy so env var changes take effect
+    await admin.update({ password: adminPass, role: 'admin' });
     console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
 
     if (process.env.PHARMACIST_PHONE) {
