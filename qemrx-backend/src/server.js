@@ -116,15 +116,17 @@ async function autoSeed() {
     const adminPass = await bcrypt.hash(
       process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@QEMRX2024!', 12
     );
-    const [admin, adminCreated] = await User.findOrCreate({
-      where: { phone: adminPhone },
-      defaults: {
+    // Force-find any user matching the admin phone, or create if missing
+    let admin = await User.findOne({ where: { phone: adminPhone } });
+    if (!admin) {
+      admin = await User.create({
         name: process.env.PHARMACY_NAME || 'QEMRX Admin',
         email: process.env.ADMIN_EMAIL || 'qemrxpharmacy1@gmail.com',
         phone: adminPhone,
         password: adminPass, role: 'admin', isVerified: true,
-      },
-    });
+      });
+      console.log(`   👤 Admin created`);
+    }
     // Sync password + role on every deploy so env var changes take effect
     await admin.update({ password: adminPass, role: 'admin' });
     console.log(`   👤 Admin: ${admin.phone} (${admin.role})`);
@@ -132,16 +134,15 @@ async function autoSeed() {
     if (process.env.PHARMACIST_PHONE) {
       const pharmPhone = process.env.PHARMACIST_PHONE.trim();
       const pharmPass = await bcrypt.hash(process.env.PHARMACIST_PASSWORD || 'Pharmacist@2024!', 12);
-      const [pharm] = await User.findOrCreate({
-        where: { phone: pharmPhone },
-        defaults: {
+      let pharm = await User.findOne({ where: { phone: pharmPhone } });
+      if (!pharm) {
+        pharm = await User.create({
           name: process.env.PHARMACIST_NAME || 'Lead Pharmacist',
           email: process.env.PHARMACIST_EMAIL || 'pharmacist@qemrxpharmacy.co.ke',
-          phone: pharmPhone,
-          password: pharmPass, role: 'pharmacist', isVerified: true,
-        },
-      });
-      await pharm.update({ password: pharmPass });
+          phone: pharmPhone, password: pharmPass, role: 'pharmacist', isVerified: true,
+        });
+      }
+      await pharm.update({ password: pharmPass, role: 'pharmacist' });
       console.log(`   💊 Pharmacist: ${pharm.phone} (${pharm.role})`);
     } else {
       console.log(`   💊 Pharmacist: skipped (set PHARMACIST_PHONE to create)`);

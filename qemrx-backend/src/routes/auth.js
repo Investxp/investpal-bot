@@ -76,6 +76,20 @@ router.patch('/profile', auth, async (req, res) => {
   }
 });
 
+// POST /api/auth/reset-admin — force reset admin password (requires ADMIN_SECRET env var)
+router.post('/reset-admin', async (req, res) => {
+  try {
+    if (req.body.secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: 'Invalid secret' });
+    const phone = req.body.phone || process.env.PHARMACY_PHONE || '+254736474493';
+    const password = req.body.password || 'Admin@QEMRX2024!';
+    const user = await User.findOne({ where: { phone } });
+    if (!user) return res.status(404).json({ error: 'Admin not found' });
+    const hashed = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS) || 12);
+    await user.update({ password: hashed, role: 'admin' });
+    res.json({ message: `Admin ${phone} password reset successfully` });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/auth/change-password
 router.post('/change-password', auth, async (req, res) => {
   try {
