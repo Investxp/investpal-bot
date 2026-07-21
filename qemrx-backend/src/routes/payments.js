@@ -176,29 +176,29 @@ router.post('/stripe/intent', auth, async (req, res) => {
 });
 
 // ── STRIPE WEBHOOK ────────────────────────────────────────────
-router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const isDemo = process.env.MPESA_DEMO_MODE === 'true' || !process.env.STRIPE_WEBHOOK_SECRET;
-  if (isDemo) {
-    try { const intentId = JSON.parse(req.body.toString())?.data?.object?.id; if (intentId) { const p = await Payment.findOne({ where: { stripePaymentIntentId: intentId } }); if (p) { await p.update({ status: 'completed', paidAt: new Date() }); await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: p.orderId } }); } } } catch (_) {}
-    return res.json({ received: true, demo: true });
-  }
-  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  const sig = req.headers['stripe-signature'];
-  let event;
+router.post('/stripe/webhook', async (req, res) => {
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-  if (event.type === 'payment_intent.succeeded') {
-    const intent = event.data.object;
-    const payment = await Payment.findOne({ where: { stripePaymentIntentId: intent.id } });
-    if (payment) {
-      await payment.update({ status: 'completed', paidAt: new Date() });
-      await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: payment.orderId } });
+    const isDemo = process.env.MPESA_DEMO_MODE === 'true' || !process.env.STRIPE_WEBHOOK_SECRET;
+    if (isDemo) {
+      const body = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+      const intentId = body?.data?.object?.id;
+      if (intentId) {
+        const p = await Payment.findOne({ where: { stripePaymentIntentId: intentId } });
+        if (p) { await p.update({ status: 'completed', paidAt: new Date() }); await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: p.orderId } }); }
+      }
+      return res.json({ received: true, demo: true });
     }
-  }
-  res.json({ received: true });
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+    const sig = req.headers['stripe-signature'];
+    const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+    const event = stripe.webhooks.constructEvent(raw, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    if (event.type === 'payment_intent.succeeded') {
+      const intent = event.data.object;
+      const payment = await Payment.findOne({ where: { stripePaymentIntentId: intent.id } });
+      if (payment) { await payment.update({ status: 'completed', paidAt: new Date() }); await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: payment.orderId } }); }
+    }
+    res.json({ received: true });
+  } catch (err) { res.status(400).send(`Webhook Error: ${err.message}`); }
 });
 
 // ── CASH ON DELIVERY ─────────────────────────────────────────
