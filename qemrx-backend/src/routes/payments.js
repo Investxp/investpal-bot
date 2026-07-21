@@ -149,26 +149,26 @@ router.post('/mpesa/timeout', async (req, res) => {
 // POST /api/payments/stripe/intent
 router.post('/stripe/intent', auth, async (req, res) => {
   try {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const { orderId } = req.body;
     const order = await Order.findOne({ where: { id: orderId, userId: req.user.id } });
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
+    const isDemo = process.env.MPESA_DEMO_MODE === 'true' || !process.env.STRIPE_SECRET_KEY;
+
+    if (isDemo) {
+      const fakeId = 'pi_demo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      const fakeSecret = fakeId + '_secret_demo_' + Math.random().toString(36).slice(2, 15);
+      await Payment.upsert({ orderId: order.id, method: 'card', amount: order.total, status: 'pending', stripePaymentIntentId: fakeId, stripeClientSecret: fakeSecret });
+      return res.json({ clientSecret: fakeSecret, demo: true });
+    }
+
+    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
     const intent = await stripe.paymentIntents.create({
-      amount: Math.round(parseFloat(order.total) * 100), // Stripe uses cents
+      amount: Math.round(parseFloat(order.total) * 100),
       currency: 'kes',
       metadata: { orderId: order.id, orderNumber: order.orderNumber },
     });
-
-    await Payment.upsert({
-      orderId: order.id,
-      method: 'card',
-      amount: order.total,
-      status: 'pending',
-      stripePaymentIntentId: intent.id,
-      stripeClientSecret: intent.client_secret,
-    });
-
+    await Payment.upsert({ orderId: order.id, method: 'card', amount: order.total, status: 'pending', stripePaymentIntentId: intent.id, stripeClientSecret: intent.client_secret });
     res.json({ clientSecret: intent.client_secret });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -177,6 +177,11 @@ router.post('/stripe/intent', auth, async (req, res) => {
 
 // ── STRIPE WEBHOOK ────────────────────────────────────────────
 router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const isDemo = process.env.MPESA_DEMO_MODE === 'true' || !process.env.STRIPE_WEBHOOK_SECRET;
+  if (isDemo) {
+    try { const intentId = JSON.parse(req.body.toString())?.data?.object?.id; if (intentId) { const p = await Payment.findOne({ where: { stripePaymentIntentId: intentId } }); if (p) { await p.update({ status: 'completed', paidAt: new Date() }); await Order.update({ paymentStatus: 'paid', status: 'confirmed' }, { where: { id: p.orderId } }); } } } catch (_) {}
+    return res.json({ received: true, demo: true });
+  }
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
   const sig = req.headers['stripe-signature'];
   let event;
