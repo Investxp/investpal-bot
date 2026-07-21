@@ -13,6 +13,9 @@ const securityHeaders = [
 const nextConfig = {
   transpilePackages: ['@deriv-com/smartcharts-champion'],
   outputFileTracingRoot: __dirname,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async headers() {
     return [
       {

@@ -26,6 +26,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY bot-dist /app/bot-dist
 
 COPY polymarket-backend /app/polymarket-backend
 COPY qemrx-backend /app/qemrx-backend

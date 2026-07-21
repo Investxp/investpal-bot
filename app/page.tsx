@@ -15,7 +15,7 @@ import { RiseFallView } from '../components/rise-fall-view';
 import { DigitsView } from '../components/digits-view';
 import { DashboardView } from '../components/custom/dashboard-view';
 import { AutoTradeView } from '../components/custom/autotrade-view';
-import { BotBuilderView } from '../components/bot-builder/bot-builder-view';
+import { BotView } from '../components/custom/bot-view';
 import { PolymarketView } from '../components/custom/polymarket-view';
 import { PharmacyView } from '../components/custom/pharmacy-view';
 import { BetsView } from '../components/custom/bets-view';
@@ -451,7 +451,7 @@ export default function UniversalPage() {
           {activeTab === 'digits' && <DigitsTab auth={auth} />}
           {activeTab === 'accumulators' && <AccumulatorsTab auth={auth} />}
           
-          {activeTab === 'dbot' && <BotBuilderView auth={auth} />}
+          {activeTab === 'dbot' && <BotView />}
 
           {activeTab === 'autotrade' && <AutoTradeView auth={auth} />}
 
