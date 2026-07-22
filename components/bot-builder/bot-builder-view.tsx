@@ -9,8 +9,6 @@ import { TradingEngine, type TradeResult, type StrategySettings, DEFAULT_SETTING
 import { TickChart } from './tick-chart';
 import { TelegramSettings } from './telegram-settings';
 import { useSmartChartsApi } from '@/hooks/use-smartcharts-api';
-import { QuickStrategyModal } from './quick-strategy/quick-strategy-modal';
-import { SearchableToolbox } from './searchable-toolbox';
 
 function formatTime() {
   return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -413,7 +411,6 @@ const PRESETS: Record<string, string> = {
 export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
   const { ws } = useDerivWSContext();
   const workspaceRef = useRef<BlocklyWorkspaceHandle | null>(null);
-  const blocklyWorkspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
   const engineRef = useRef<TradingEngine | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
@@ -428,10 +425,6 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
   const [tickHistory, setTickHistory] = useState<number[]>([]);
   const [showTelegram, setShowTelegram] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
-  const [showQuickStrategy, setShowQuickStrategy] = useState(false);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Strategy tabs
   const [tabs, setTabs] = useState<StrategyTab[]>([{ id: 'default', name: 'Untitled Strategy', xml: '', settings: { ...DEFAULT_SETTINGS } }]);
@@ -538,14 +531,6 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
     if (!handle) return;
     const xml = PRESETS[name];
     if (!xml) return;
-    handle.loadXml(xml);
-    setStrategyName(name);
-    addLog(`Quick strategy loaded: ${name}`);
-  }, [addLog]);
-
-  const applyQuickStrategy = useCallback((xml: string, name: string) => {
-    const handle = workspaceRef.current;
-    if (!handle) return;
     handle.loadXml(xml);
     setStrategyName(name);
     addLog(`Quick strategy loaded: ${name}`);
@@ -682,57 +667,13 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
     input.click();
   }, [addLog]);
 
-  const updateUndoRedo = useCallback(() => {
-    const ws = workspaceRef.current?.getWorkspace();
-    if (ws) {
-      setCanUndo(ws.undoStack_.length > 0);
-      setCanRedo(ws.redoStack_.length > 0);
-    }
+  const undoAction = useCallback(() => {
+    workspaceRef.current?.getWorkspace()?.undo(false);
   }, []);
 
-  const undoAction = useCallback(() => {
-    const ws = workspaceRef.current?.getWorkspace();
-    if (ws) {
-      ws.undo(false);
-      updateUndoRedo();
-    }
-  }, [updateUndoRedo]);
-
   const redoAction = useCallback(() => {
-    const ws = workspaceRef.current?.getWorkspace();
-    if (ws) {
-      ws.undo(true);
-      updateUndoRedo();
-    }
-  }, [updateUndoRedo]);
-
-  // Track undo/redo changes
-  useEffect(() => {
-    const ws = workspaceRef.current?.getWorkspace();
-    if (!ws) return;
-    const listener = () => updateUndoRedo();
-    ws.addChangeListener(listener);
-    return () => { try { ws.removeChangeListener(listener); } catch {} };
-  }, [updateUndoRedo]);
-
-  const sortBlocks = useCallback(() => {
-    const ws = workspaceRef.current?.getWorkspace();
-    if (!ws) return;
-    Blockly.Events.disable();
-    try {
-      ws.removeWorkspaceScreenshot();
-      const topBlocks = ws.getTopBlocks(true);
-      let y = 20;
-      topBlocks.forEach(b => {
-        const h = b.getHeightWidth().height;
-        b.moveBy(0, y - b.getRelativeToSurfaceXY().y);
-        y += h + 30;
-      });
-      addLog('Blocks sorted');
-    } finally {
-      Blockly.Events.enable();
-    }
-  }, [addLog]);
+    workspaceRef.current?.getWorkspace()?.undo(true);
+  }, []);
 
   const zoomIn = useCallback(() => {
     const wsInst = workspaceRef.current?.getWorkspace();
@@ -749,11 +690,6 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
   }, []);
 
   const resetWorkspace = useCallback(() => {
-    setShowResetConfirm(true);
-  }, []);
-
-  const confirmReset = useCallback(() => {
-    setShowResetConfirm(false);
     const handle = workspaceRef.current;
     if (!handle) return;
     const wsInst = handle.getWorkspace();
@@ -778,24 +714,31 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
             ⚡ InvestPal Bot
           </span>
           {/* Undo / Redo */}
-          <button onClick={undoAction} disabled={!canUndo} className="px-2 py-1 rounded text-[11px] transition-all" style={{ background: '#2a2a2a', color: canUndo ? '#a1a1aa' : '#3a3a3a', cursor: canUndo ? 'pointer' : 'default' }} title="Undo">↩</button>
-          <button onClick={redoAction} disabled={!canRedo} className="px-2 py-1 rounded text-[11px] transition-all" style={{ background: '#2a2a2a', color: canRedo ? '#a1a1aa' : '#3a3a3a', cursor: canRedo ? 'pointer' : 'default' }} title="Redo">↪</button>
+          <button onClick={undoAction} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Undo">↩</button>
+          <button onClick={redoAction} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Redo">↪</button>
           <div className="w-px h-4 bg-zinc-700"/>
           {/* Zoom */}
           <button onClick={zoomIn} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Zoom in">🔍+</button>
           <button onClick={zoomOut} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Zoom out">🔍−</button>
           <button onClick={zoomToFit} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Fit to screen">⊞</button>
-          <button onClick={sortBlocks} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Sort blocks">⇅</button>
           <button onClick={resetWorkspace} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-red-400 transition-all" style={{ background: '#2a2a2a' }} title="Reset workspace">⟳</button>
           <div className="w-px h-4 bg-zinc-700"/>
-          {/* Quick Strategy */}
-          <button
-            className="px-2 py-1 rounded text-[10px] font-bold text-zinc-400 hover:text-white transition-all"
-            style={{ background: '#2a2a2a' }}
-            onClick={() => setShowQuickStrategy(true)}
-          >
-            📋 Quick Strategy
-          </button>
+          {/* Quick Strategy presets */}
+          <div className="relative group">
+            <button className="px-2 py-1 rounded text-[10px] font-bold text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }}>
+              📋 Quick Strategy ▾
+            </button>
+            <div className="absolute top-full left-0 mt-1 w-40 rounded border z-20 hidden group-hover:block"
+              style={{ background: '#151717', borderColor: '#2a2a2a' }}>
+              {Object.keys(PRESETS).map(name => (
+                <button key={name}
+                  className="block w-full text-left px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
+                  onMouseDown={() => applyPreset(name)}>
+                  {name}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Right: Strategy controls + Run/Stop */}
@@ -999,13 +942,10 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
         <div className="flex-1 flex overflow-hidden">
         {/* Blockly workspace */}
         <div className="flex-1 relative">
-          <SearchableToolbox workspaceRef={blocklyWorkspaceRef}>
-            <BlocklyWorkspace
-              ref={workspaceRef}
-              onWorkspaceReady={(ws) => { blocklyWorkspaceRef.current = ws; }}
-              onWorkspaceChange={setGeneratedCode}
-            />
-          </SearchableToolbox>
+          <BlocklyWorkspace
+            ref={workspaceRef}
+            onWorkspaceChange={setGeneratedCode}
+          />
           {/* Error banner */}
           {error && (
             <div className="absolute top-0 left-0 right-0 z-30 px-4 py-2 text-xs font-mono"
@@ -1153,24 +1093,6 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
           open={true}
           onClose={() => setShowTelegram(false)}
         />
-      )}
-      <QuickStrategyModal
-        open={showQuickStrategy}
-        onClose={() => setShowQuickStrategy(false)}
-        onApply={applyQuickStrategy}
-      />
-      {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setShowResetConfirm(false)} />
-          <div className="relative bg-[#1c1c1c] rounded-lg border border-[#2a2a2a] p-6 w-80 shadow-2xl">
-            <h3 className="text-sm font-bold text-zinc-200 mb-2">Reset workspace?</h3>
-            <p className="text-xs text-zinc-400 mb-4">This will clear all blocks. Unsaved progress will be lost.</p>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowResetConfirm(false)} className="px-3 py-1.5 rounded text-xs text-zinc-400 border border-[#2a2a2a] hover:text-zinc-200">Cancel</button>
-              <button onClick={confirmReset} className="px-3 py-1.5 rounded text-xs font-bold text-white" style={{ background: '#ef4444' }}>Reset</button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

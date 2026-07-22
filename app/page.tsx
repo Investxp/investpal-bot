@@ -446,21 +446,15 @@ export default function UniversalPage() {
         <main className="flex-1 overflow-y-auto relative min-h-0 bg-zinc-950/20">
           {activeTab === 'dashboard' && <DashboardView auth={auth} />}
           
-          {/* Trading tabs stay mounted (display:none when hidden) so background activity persists */}
-          <div className="h-full" style={{ display: activeTab === 'rise-fall' ? 'flex' : 'none' }}>
-            <RiseFallTab auth={auth} />
-          </div>
-          <div className="h-full" style={{ display: activeTab === 'digits' ? 'flex' : 'none' }}>
-            <DigitsTab auth={auth} />
-          </div>
-          <div className="h-full" style={{ display: activeTab === 'accumulators' ? 'flex' : 'none' }}>
-            <AccumulatorsTab auth={auth} />
-          </div>
-          <div className="h-full" style={{ display: activeTab === 'autotrade' ? 'flex' : 'none' }}>
-            <AutoTradeView auth={auth} />
-          </div>
-
+          {/* Lazy mounts for trade views to manage connections */}
+          {activeTab === 'rise-fall' && <RiseFallTab auth={auth} />}
+          {activeTab === 'digits' && <DigitsTab auth={auth} />}
+          {activeTab === 'accumulators' && <AccumulatorsTab auth={auth} />}
+          
           {activeTab === 'dbot' && <BotView />}
+
+          {activeTab === 'autotrade' && <AutoTradeView auth={auth} />}
+
           {activeTab === 'polymarket' && <PolymarketView />}
           {activeTab === 'pharmacy' && <PharmacyView />}
           {activeTab === 'bets' && <BetsView />}
