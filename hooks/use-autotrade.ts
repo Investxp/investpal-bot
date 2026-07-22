@@ -185,9 +185,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitStake2Ref = useRef(0);
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
-  const executeDigitBurstRef = useRef<((...args: any[]) => Promise<void>) | null>(null);
-  const wsPoolRef = useRef<DerivWS[]>([]);
-  const WS_POOL_SIZE = 5; 
+
   // Sync refs with state
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
   useEffect(() => { leg2Ref.current = leg2; }, [leg2]);
@@ -215,30 +213,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       cleanupSubscriptions();
     };
   }, [isConnected, cleanupSubscriptions]);
-
-  // Initialize WS pool for parallel burst trading
-  useEffect(() => {
-    if (!ws) return;
-    // Disconnect any stale pool first
-    for (const pws of wsPoolRef.current) {
-      try { pws.disconnect(); } catch {}
-    }
-    wsPoolRef.current = [];
-    // Create and connect pool connections
-    const pool: DerivWS[] = [];
-    for (let i = 0; i < WS_POOL_SIZE; i++) {
-      const clone = ws.clone();
-      clone.connect().catch(() => {});
-      pool.push(clone);
-    }
-    wsPoolRef.current = pool;
-    return () => {
-      for (const pws of wsPoolRef.current) {
-        try { pws.disconnect(); } catch {}
-      }
-      wsPoolRef.current = [];
-    };
-  }, [ws]);
 
   const addLog = useCallback((message: string, type: AutoTradeLog['type'] = 'info') => {
     const newLog: AutoTradeLog = {
@@ -586,11 +560,77 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
     const burstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
     if (isDigitType && Array.isArray(burstDigits) && burstDigits.length > 0 && !config.aiDigitsMode && !config.multiDigitObjectives) {
-      const burstFn = executeDigitBurstRef.current;
-      if (!burstFn) return;
+      // Inline burst logic — no refs, no closures, direct execution
+      const executeDigitBurst = async (
+        bLegKey: 'leg1' | 'leg2',
+        bContractType: string,
+        bStake: number,
+        bDigits: number[],
+        bSetLegState: React.Dispatch<React.SetStateAction<RunnerState>>,
+        bIsLeg1: boolean,
+      ) => {
+        if (!ws || !isRunningRef.current) return;
+        const bLegLabel = bIsLeg1 ? 'Leg 1' : 'Leg 2';
+        addLog(`[${bLegLabel}] ⚡ Burst: ${bDigits.length} contracts (digits: ${bDigits.join(',')})`, 'info');
+
+        const proposals = await Promise.allSettled(
+          bDigits.map(d => placeProposal(bContractType, bStake, config, d))
+        );
+        const validProposals: { digit: number; proposalId: string }[] = [];
+        proposals.forEach((res, i) => {
+          if (res.status === 'fulfilled') validProposals.push({ digit: bDigits[i], proposalId: res.value });
+          else addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${res.reason}`, 'error');
+        });
+        if (validProposals.length === 0) {
+          addLog(`[${bLegLabel}] All proposals failed. Retrying...`, 'error');
+          bSetLegState((prev) => ({ ...prev, isTrading: false }));
+          setTimeout(() => { if (isRunningRef.current) executeTrade(bLegKey); }, 2000);
+          return;
+        }
+
+        const buys = await Promise.allSettled(
+          validProposals.map(p => buyContract(p.proposalId, bStake))
+        );
+        const contracts: { digit: number; contractId: number }[] = [];
+        buys.forEach((res, i) => {
+          if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId });
+          else addLog(`[${bLegLabel}] Buy failed for digit ${validProposals[i].digit}: ${res.reason}`, 'error');
+        });
+        if (contracts.length === 0) {
+          addLog(`[${bLegLabel}] All buys failed. Retrying...`, 'error');
+          bSetLegState((prev) => ({ ...prev, isTrading: false }));
+          setTimeout(() => { if (isRunningRef.current) executeTrade(bLegKey); }, 2000);
+          return;
+        }
+
+        addLog(`[${bLegLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
+
+        const outcomes = await Promise.allSettled(
+          contracts.map(c => waitForResult(c.contractId))
+        );
+        let wins = 0, losses = 0, totalPnl = 0;
+        const detail: string[] = [];
+        outcomes.forEach((res, i) => {
+          const digit = contracts[i].digit;
+          if (res.status === 'fulfilled') {
+            if (res.value.won) wins++; else losses++;
+            totalPnl += res.value.profit;
+            detail.push(`#${digit}: ${res.value.won ? 'WIN' : 'LOSS'} ($${res.value.profit.toFixed(2)})`);
+          } else { losses++; detail.push(`#${digit}: ERROR`); }
+        });
+        addLog(`[${bLegLabel}] ⚡ Burst results: ${wins}W/${losses}L — P&L: $${totalPnl.toFixed(2)} [${detail.join(', ')}]`, totalPnl >= 0 ? 'success' : 'error');
+
+        const isWinRound = wins >= losses;
+        setStats((prev) => ({ ...prev, wins: prev.wins + wins, losses: prev.losses + losses, totalProfit: prev.totalProfit + totalPnl, totalTrades: prev.totalTrades + contracts.length }));
+
+        let finalRecovery = config.recoveryMethod || 'martingale';
+        const nextStake = calculateNextStake(bLegKey, isWinRound, bStake, config.baseStake, config.martingaleMultiplier, finalRecovery);
+        bSetLegState((prev) => ({ ...prev, isTrading: false, activeContractId: null, lastResult: isWinRound ? 'win' : 'loss', profit: prev.profit + totalPnl, currentStake: nextStake }));
+
+        setTimeout(() => { if (isRunningRef.current) executeTrade(bLegKey); }, 1000);
+      };
 
       if (config.isHedgeMode) {
-        // Fire burst for both legs simultaneously
         const otherLegKey = isLeg1 ? 'leg2' : 'leg1';
         const otherIsLeg1 = !isLeg1;
         const otherDigits = otherIsLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
@@ -598,23 +638,19 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         const otherContractType = otherIsLeg1 ? leg1Ref.current.contractType : leg2Ref.current.contractType;
         const otherStake = Math.round(((otherIsLeg1 ? config.baseStake : (config.baseStake2 || config.baseStake)) * 100)) / 100;
 
-        // Set both legs as trading
         setLegState((prev) => ({ ...prev, isTrading: true }));
         otherSetLegState((prev) => ({ ...prev, isTrading: true }));
-
         addLog(`[System] ⚡ Hedge Burst: L1 (${burstDigits.length} digits) + L2 (${otherDigits.length} digits) simultaneously`, 'info');
 
         return Promise.all([
-          burstFn(legKey, contractType, roundedStake, burstDigits, config, legKey, setLegState, isLeg1),
-          burstFn(otherLegKey, otherContractType, otherStake, otherDigits, config, otherLegKey, otherSetLegState, otherIsLeg1),
+          executeDigitBurst(legKey, contractType, roundedStake, burstDigits, setLegState, isLeg1),
+          executeDigitBurst(otherLegKey, otherContractType, otherStake, otherDigits, otherSetLegState, otherIsLeg1),
         ]).then(() => {
-          setTimeout(() => {
-            if (isRunningRef.current) executeTrade(legKey);
-          }, 1000);
+          setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 1000);
         });
       } else {
         setLegState((prev) => ({ ...prev, isTrading: true }));
-        return burstFn(legKey, contractType, roundedStake, burstDigits, config, nextLegToExecute, setLegState, isLeg1);
+        return executeDigitBurst(legKey, contractType, roundedStake, burstDigits, setLegState, isLeg1);
       }
     }
 
@@ -1028,112 +1064,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     },
     [ws]
   );
-
-  // ── Helper: execute digit burst (all selected digits at once) ──────────────────────
-  executeDigitBurstRef.current = async (
-    legKey: 'leg1' | 'leg2',
-    contractType: string,
-    stake: number,
-    digits: number[],
-    config: AutoTradeConfig,
-    nextLegToExecute: 'leg1' | 'leg2',
-    setLegStateFn: React.Dispatch<React.SetStateAction<RunnerState>>,
-    isLeg1: boolean,
-  ) => {
-    if (!ws || !isRunningRef.current) return;
-    const legLabel = isLeg1 ? 'Leg 1' : 'Leg 2';
-
-    addLog(`[${legLabel}] ⚡ Burst mode: opening ${digits.length} contracts (digits: ${digits.join(',')})`, 'info');
-
-    // Distribute trades across WS pool for parallel execution (fallback to main ws if pool not ready)
-    const pool = wsPoolRef.current;
-    const getPoolWs = (idx: number) => {
-      const pws = pool.length > 0 ? pool[idx % pool.length] : null;
-      return (pws && pws.isConnected) ? pws : ws;
-    };
-
-    const proposals = await Promise.allSettled(
-      digits.map((d, i) => placeProposal(contractType, stake, config, d, getPoolWs(i)))
-    );
-
-    const validProposals: { digit: number; proposalId: string; wsIdx: number }[] = [];
-    proposals.forEach((res, i) => {
-      if (res.status === 'fulfilled') validProposals.push({ digit: digits[i], proposalId: res.value, wsIdx: i % (pool.length || 1) });
-      else addLog(`[${legLabel}] Proposal failed for digit ${digits[i]}: ${res.reason}`, 'error');
-    });
-
-    if (validProposals.length === 0) {
-      addLog(`[${legLabel}] All proposals failed in burst mode. Retrying...`, 'error');
-      setLegStateFn((prev) => ({ ...prev, isTrading: false }));
-      setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 2000);
-      return;
-    }
-
-    const buys = await Promise.allSettled(
-      validProposals.map(p => buyContract(p.proposalId, stake, getPoolWs(p.wsIdx)))
-    );
-
-    const contracts: { digit: number; contractId: number; wsIdx: number }[] = [];
-    buys.forEach((res, i) => {
-      if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId, wsIdx: validProposals[i].wsIdx });
-      else addLog(`[${legLabel}] Buy failed for digit ${validProposals[i].digit}: ${res.reason}`, 'error');
-    });
-
-    if (contracts.length === 0) {
-      addLog(`[${legLabel}] All buys failed in burst mode. Retrying...`, 'error');
-      setLegStateFn((prev) => ({ ...prev, isTrading: false }));
-      setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 2000);
-      return;
-    }
-
-    addLog(`[${legLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
-
-    const outcomes = await Promise.allSettled(
-      contracts.map(c => waitForResult(c.contractId, getPoolWs(c.wsIdx)))
-    );
-
-    let wins = 0, losses = 0, totalPnl = 0;
-    const detail: string[] = [];
-    outcomes.forEach((res, i) => {
-      const digit = contracts[i].digit;
-      if (res.status === 'fulfilled') {
-        if (res.value.won) wins++;
-        else losses++;
-        totalPnl += res.value.profit;
-        detail.push(`#${digit}: ${res.value.won ? 'WIN' : 'LOSS'} ($${res.value.profit.toFixed(2)})`);
-      } else {
-        losses++;
-        detail.push(`#${digit}: ERROR`);
-      }
-    });
-
-    addLog(`[${legLabel}] ⚡ Burst results: ${wins}W/${losses}L — P&L: $${totalPnl.toFixed(2)} [${detail.join(', ')}]`, totalPnl >= 0 ? 'success' : 'error');
-
-    const isWinRound = wins >= losses;
-    setStats((prev) => ({
-      ...prev,
-      wins: prev.wins + wins,
-      losses: prev.losses + losses,
-      totalProfit: prev.totalProfit + totalPnl,
-      totalTrades: prev.totalTrades + contracts.length,
-    }));
-
-    let finalRecovery = config.recoveryMethod || 'martingale';
-    const nextStake = calculateNextStake(legKey, isWinRound, stake, config.baseStake, config.martingaleMultiplier, finalRecovery);
-
-    setLegStateFn((prev) => ({
-      ...prev,
-      isTrading: false,
-      activeContractId: null,
-      lastResult: isWinRound ? 'win' : 'loss',
-      profit: prev.profit + totalPnl,
-      currentStake: nextStake,
-    }));
-
-    setTimeout(() => {
-      if (isRunningRef.current) executeTrade(nextLegToExecute);
-    }, 1000);
-  };
 
   // ── Unified Simultaneous Hedge/Triple Loop ───────────────────────────────────────
   const executeHedgeRound = useCallback(async () => {
