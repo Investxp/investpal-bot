@@ -7,6 +7,13 @@ import {
 } from './storage';
 import { getApiBaseUrl } from '../config/urls';
 
+function getWsDomain(): string {
+  const env = typeof process !== 'undefined'
+    ? (process.env.NEXT_PUBLIC_DERIV_ENV === 'preview' ? 'preview' : 'production')
+    : 'production';
+  return env === 'preview' ? 'staging-ws.derivws.com' : 'ws.derivws.com';
+}
+
 /**
  * Fetch the list of trading accounts for the authenticated user.
  */
@@ -60,6 +67,22 @@ export async function getWebSocketOTP(
   }
 
   const data: OTPResponse = await response.json();
+
+  // Convert the Deriv-provided OTP URL to the standard WebSocket URL format.
+  // The server returns something like:
+  //   wss://api.derivws.com/trading/v1/options/ws/demo?otp=sV4Trsf1
+  // We need:
+  //   wss://ws.derivws.com/websockets/v3?app_id=...&otp=...&login1=...&l=EN&brand=deriv
+  try {
+    const parsed = new URL(data.data.url);
+    const otp = parsed.searchParams.get('otp');
+    if (otp) {
+      const domain = getWsDomain();
+      return `wss://${domain}/websockets/v3?app_id=${clientId}&otp=${otp}&login1=${accountId}&l=EN&brand=deriv`;
+    }
+  } catch {
+    // If URL parsing fails, fall back to the server-provided URL
+  }
   return data.data.url;
 }
 

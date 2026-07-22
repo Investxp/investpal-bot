@@ -12,13 +12,13 @@ const URLS = {
   production: {
     authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://api.derivws.com/trading/v1/options',
-    publicWs: 'wss://api.derivws.com/trading/v1/options/ws/public',
+    wsDomain: 'ws.derivws.com',
     appBuilder: 'https://developers.deriv.com',
   },
   preview: {
     authBase: 'https://staging-auth.deriv.com/oauth2',
     apiBase: 'https://staging-api.derivws.com/trading/v1/options',
-    publicWs: 'wss://staging-api.derivws.com/trading/v1/options/ws/public',
+    wsDomain: 'staging-ws.derivws.com',
     appBuilder: 'https://staging-developers.deriv.com',
   },
 } as const;
@@ -32,7 +32,11 @@ export function getApiBaseUrl(): string {
 }
 
 export function getPublicWsUrl(): string {
-  return URLS[getEnv()].publicWs;
+  const env = getEnv();
+  const appId = typeof process !== 'undefined'
+    ? process.env.NEXT_PUBLIC_DERIV_APP_ID ?? '1089'
+    : '1089';
+  return `wss://${URLS[env].wsDomain}/websockets/v3?app_id=${appId}&l=EN&brand=deriv`;
 }
 
 /**
