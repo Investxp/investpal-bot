@@ -431,15 +431,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                   <SelectValue placeholder="Select symbol" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                  {POPULAR_SYMBOLS.filter((s) => {
-                    const isDigitMode = mode.startsWith('digits') ||
-                      ['even-only', 'odd-only', 'match-only', 'differ-only', 'over-only', 'under-only'].includes(mode) ||
-                      mode.startsWith('ai-auto');
-                    if (mode === 'accumulators' || isDigitMode) {
-                      return ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'].includes(s.value);
-                    }
-                    return true;
-                  }).map((s) => (
+                  {POPULAR_SYMBOLS.map((s) => (
                     <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
