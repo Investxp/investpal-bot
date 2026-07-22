@@ -1213,7 +1213,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
             <AISignalsWidget symbol={symbol} ws={ws} isConnected={isConnected} />
             <CopyTradingBridge 
               activeAccountId={auth.activeAccountId} 
-              appId={(typeof window !== 'undefined' ? localStorage.getItem('custom_app_id') : null) || process.env.NEXT_PUBLIC_DERIV_APP_ID || '1089'} 
+              appId={(typeof window !== 'undefined' ? localStorage.getItem('custom_app_id') : null) || process.env.NEXT_PUBLIC_DERIV_APP_ID || ''} 
             />
           </div>
 

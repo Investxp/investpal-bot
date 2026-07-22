@@ -61,18 +61,8 @@ export async function getWebSocketOTP(
 
   const data: OTPResponse = await response.json();
 
-  // Convert to same-origin proxied URL so the browser WS handshake travels
-  // through our Nginx proxy, avoiding cross-origin Origin restrictions.
-  // Server-provided: wss://api.derivws.com/trading/v1/options/ws/demo?otp=...
-  // Proxied:         /ws/ws/demo?otp=...
-  try {
-    const parsed = new URL(data.data.url);
-    if (typeof window !== 'undefined') {
-      return `/ws${parsed.pathname}${parsed.search}`;
-    }
-  } catch {
-    // fall through to raw URL
-  }
+  // Use the OTP URL directly — per the Options API documentation, the URL
+  // returned by the OTP endpoint is ready to use as your WebSocket endpoint.
   return data.data.url;
 }
 

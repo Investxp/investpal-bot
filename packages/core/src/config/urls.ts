@@ -32,12 +32,9 @@ export function getApiBaseUrl(): string {
 }
 
 export function getPublicWsUrl(): string {
-  // In the browser, use a same-origin relative URL so the WS handshake goes
-  // through our Nginx proxy (/ws/ → api.derivws.com/trading/v1/options/),
-  // avoiding browser Origin restrictions on cross-origin WebSocket connections.
-  if (typeof window !== 'undefined') {
-    return '/ws/ws/public';
-  }
+  // Connect directly to the Deriv Options API public WebSocket.
+  // Per the Options API docs, this endpoint accepts browser connections
+  // from any origin. No proxy needed.
   return URLS[getEnv()].publicWs;
 }
 
