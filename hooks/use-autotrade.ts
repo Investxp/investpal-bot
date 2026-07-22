@@ -207,7 +207,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   }, []);
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!isConnected && isRunningRef.current) {
       stopAutoTrade('WebSocket disconnected.');
     }
     return () => {
