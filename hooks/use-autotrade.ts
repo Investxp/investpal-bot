@@ -186,6 +186,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
   const executeDigitBurstRef = useRef<((...args: any[]) => Promise<void>) | null>(null);
+  const contractTypeStatsRef = useRef<Record<string, { wins: number; losses: number }>>({});
+  const CONTRACT_TYPE_LIMIT = 10;
 
   // Sync refs with state
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
@@ -504,6 +506,16 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       }
     }
 
+    // Per-contract-type win/loss limit check (max 10/10)
+    const trackedTypes = ['DIGITMATCH', 'DIGITOVER', 'DIGITDIFF', 'DIGITUNDER'];
+    if (trackedTypes.includes(contractType)) {
+      const ctStats = contractTypeStatsRef.current[contractType];
+      if (ctStats && (ctStats.wins >= CONTRACT_TYPE_LIMIT || ctStats.losses >= CONTRACT_TYPE_LIMIT)) {
+        stopAutoTrade(`${contractType} reached ${CONTRACT_TYPE_LIMIT} ${ctStats.wins >= CONTRACT_TYPE_LIMIT ? 'wins' : 'losses'}. Stopping bot.`);
+        return;
+      }
+    }
+
     // Stake Selection & dynamic AI Stake scaling
     const useUnifiedRefs = !config.isHedgeMode;
     const splitCountRef = useUnifiedRefs ? splitCount1Ref : (isLeg1 ? splitCount1Ref : splitCount2Ref);
@@ -562,13 +574,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const setLegState = isLeg1 ? setLeg1 : setLeg2;
     setLegState((prev) => ({ ...prev, isTrading: true }));
 
-    // Burst mode: trade ALL selected digits simultaneously
-    const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
-    const burstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
-    if (isDigitType && Array.isArray(burstDigits) && burstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives) {
-      const burstFn = executeDigitBurstRef.current;
-      if (burstFn) return burstFn(legKey, contractType, roundedStake, burstDigits, config, nextLegToExecute, setLegState, isLeg1);
-    }
+    // Sequential digit trading — single trade per digit, cycles through selected digits
 
     try {
       const proposalPayload: Record<string, unknown> = {
@@ -686,6 +692,18 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
               totalProfit: nextProfit,
             };
           });
+
+          // Per-contract-type win/loss tracking
+          const trackedTypes = ['DIGITMATCH', 'DIGITOVER', 'DIGITDIFF', 'DIGITUNDER'];
+          if (trackedTypes.includes(contractType)) {
+            const prev = contractTypeStatsRef.current[contractType] || { wins: 0, losses: 0 };
+            contractTypeStatsRef.current[contractType] = {
+              wins: prev.wins + (isWin ? 1 : 0),
+              losses: prev.losses + (isWin ? 0 : 1),
+            };
+            const ct = contractTypeStatsRef.current[contractType];
+            addLog(`[${leg.label}] ${contractType} stats: ${ct.wins}W/${ct.losses}L (limit: ${CONTRACT_TYPE_LIMIT})`, 'info');
+          }
 
           // Dynamic AI Recovery selection
           let finalRecovery = config.recoveryMethod || 'martingale';
@@ -1934,6 +1952,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     splitStake2Ref.current = 0;
     splitCount3Ref.current = 0;
     splitStake3Ref.current = 0;
+    contractTypeStatsRef.current = {};
 
     setLeg1({
       label: leg1Label,
