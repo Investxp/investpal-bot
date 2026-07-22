@@ -240,7 +240,7 @@ export default function UniversalPage() {
     { name: 'rise-fall', label: 'Rise / Fall', icon: TrendingUp, authRequired: true },
     { name: 'digits', label: 'Digits', icon: Hash, authRequired: true },
     { name: 'accumulators', label: 'Accumulators', icon: Zap, authRequired: true },
-    { name: 'dbot', label: 'Bot Builder', icon: Bot, authRequired: true },
+    { name: 'dbot', label: 'Bot Builder', icon: Bot, authRequired: false },
     { name: 'autotrade', label: 'Hedge Bot', icon: Activity, authRequired: true },
     { name: 'polymarket', label: 'Polymarket', icon: Activity, authRequired: false },
     { name: 'pharmacy', label: 'Pharmacy', icon: Activity, authRequired: false },
