@@ -12,13 +12,13 @@ const URLS = {
   production: {
     authBase: 'https://auth.deriv.com/oauth2',
     apiBase: 'https://api.derivws.com/trading/v1/options',
-    wsDomain: 'ws.derivws.com',
+    publicWs: 'wss://api.derivws.com/trading/v1/options/ws/public',
     appBuilder: 'https://developers.deriv.com',
   },
   preview: {
     authBase: 'https://staging-auth.deriv.com/oauth2',
     apiBase: 'https://staging-api.derivws.com/trading/v1/options',
-    wsDomain: 'staging-ws.derivws.com',
+    publicWs: 'wss://staging-api.derivws.com/trading/v1/options/ws/public',
     appBuilder: 'https://staging-developers.deriv.com',
   },
 } as const;
@@ -32,11 +32,13 @@ export function getApiBaseUrl(): string {
 }
 
 export function getPublicWsUrl(): string {
-  const env = getEnv();
-  const appId = typeof process !== 'undefined'
-    ? process.env.NEXT_PUBLIC_DERIV_APP_ID ?? '1089'
-    : '1089';
-  return `wss://${URLS[env].wsDomain}/websockets/v3?app_id=${appId}&l=EN&brand=deriv`;
+  // In the browser, use a same-origin relative URL so the WS handshake goes
+  // through our Nginx proxy (/ws/ → api.derivws.com/trading/v1/options/),
+  // avoiding browser Origin restrictions on cross-origin WebSocket connections.
+  if (typeof window !== 'undefined') {
+    return '/ws/ws/public';
+  }
+  return URLS[getEnv()].publicWs;
 }
 
 /**
