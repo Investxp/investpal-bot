@@ -48,8 +48,8 @@ export interface AutoTradeConfig {
   martingaleMultiplier: number;
   takeProfit: number;
   stopLoss: number;
-  selectedDigit: number; // for matches/differs and over/under
-  selectedDigit2?: number; // for digits over/under or match/differ Leg 2
+  selectedDigit: number[]; // digit array — trades cycle through them
+  selectedDigit2?: number[]; // digit array for Leg 2 — trades cycle through them
   growthRate: number; // for accumulators
   isHedgeMode: boolean; // true: trade both legs, false: trade leg 1 only
   isAlternateMode: boolean; // true: alternate recovery trades, false: single leg
@@ -176,6 +176,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const ghostLosses2Ref = useRef(0);
   const ghostLosses3Ref = useRef(0);
   const multiDigitIndexRef = useRef(0);
+  const digitIndex1Ref = useRef(0);
+  const digitIndex2Ref = useRef(0);
+  const digitIndex3Ref = useRef(0);
   const splitCount1Ref = useRef(0);
   const splitStake1Ref = useRef(0);
   const splitCount2Ref = useRef(0);
@@ -423,7 +426,13 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     }
 
     // Dynamic Digit / Operator Objectives Parser
-    let selectedDigit = config.selectedDigit;
+    let selectedDigit: number;
+    if (Array.isArray(config.selectedDigit) && config.selectedDigit.length > 0) {
+      selectedDigit = config.selectedDigit[digitIndex1Ref.current % config.selectedDigit.length];
+      digitIndex1Ref.current++;
+    } else {
+      selectedDigit = 5;
+    }
     let computedMode = config.mode;
 
     if (config.aiDigitsMode && typeof window !== 'undefined' && (window as any).latestAiSignal) {
@@ -842,7 +851,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         
         const isDigitPrediction = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
         if (isDigitPrediction) {
-          proposalPayload.barrier = String(dynamicDigit !== undefined ? dynamicDigit : config.selectedDigit);
+          proposalPayload.barrier = String(dynamicDigit !== undefined ? dynamicDigit : config.selectedDigit[0]);
         }
 
         const isBarrierContract = ['HIGHER', 'LOWER', 'ONETOUCH', 'NOTOUCH'].includes(contractType);
@@ -1030,13 +1039,23 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       return { type: 'DIGITMATCH', digit: 5 };
     };
 
-    let selectedDigit = config.selectedDigit;
+    // Cycle digit indices once per round for multi-leg trades
+    const dArr1 = config.selectedDigit;
+    const dArr2 = config.selectedDigit2 || config.selectedDigit;
+    const dArr3 = config.selectedDigit;
+    const dig1 = dArr1.length > 0 ? dArr1[digitIndex1Ref.current % dArr1.length] : 5;
+    const dig2 = dArr2.length > 0 ? dArr2[digitIndex2Ref.current % dArr2.length] : dig1;
+    const dig3 = dArr3.length > 0 ? dArr3[digitIndex3Ref.current % dArr3.length] : 5;
+    if (dArr1.length > 1) digitIndex1Ref.current++;
+    if (dArr2.length > 1) digitIndex2Ref.current++;
+    if (dArr3.length > 1) digitIndex3Ref.current++;
+    let selectedDigit = dig1;
     let contractType1 = leg1Ref.current.contractType;
     let contractType2 = leg2Ref.current.contractType;
     let contractType3 = leg3Ref.current.contractType;
-    let digit1 = selectedDigit;
-    let digit2 = config.selectedDigit2 !== undefined ? config.selectedDigit2 : selectedDigit;
-    let digit3 = selectedDigit;
+    let digit1 = dig1;
+    let digit2 = dig2;
+    let digit3 = dig3;
 
     if (isTripleMode) {
       const p1 = parseTarget(targetsList[0]);
@@ -1796,6 +1815,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     ghostLosses2Ref.current = 0;
     ghostLosses3Ref.current = 0;
     multiDigitIndexRef.current = 0;
+    digitIndex1Ref.current = 0;
+    digitIndex2Ref.current = 0;
+    digitIndex3Ref.current = 0;
     splitCount1Ref.current = 0;
     splitStake1Ref.current = 0;
     splitCount2Ref.current = 0;

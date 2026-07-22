@@ -446,14 +446,21 @@ export default function UniversalPage() {
         <main className="flex-1 overflow-y-auto relative min-h-0 bg-zinc-950/20">
           {activeTab === 'dashboard' && <DashboardView auth={auth} />}
           
-          {/* Lazy mounts for trade views to manage connections */}
-          {activeTab === 'rise-fall' && <RiseFallTab auth={auth} />}
-          {activeTab === 'digits' && <DigitsTab auth={auth} />}
-          {activeTab === 'accumulators' && <AccumulatorsTab auth={auth} />}
+          {/* Trading tabs always mounted (display:none) so WS + trading continue in background */}
+          <div style={{ display: activeTab === 'rise-fall' ? 'flex' : 'none', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+            <RiseFallTab auth={auth} />
+          </div>
+          <div style={{ display: activeTab === 'digits' ? 'flex' : 'none', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+            <DigitsTab auth={auth} />
+          </div>
+          <div style={{ display: activeTab === 'accumulators' ? 'flex' : 'none', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+            <AccumulatorsTab auth={auth} />
+          </div>
+          <div style={{ display: activeTab === 'autotrade' ? 'flex' : 'none', flex: 1, flexDirection: 'column', minHeight: 0 }}>
+            <AutoTradeView auth={auth} />
+          </div>
           
           {activeTab === 'dbot' && <BotView />}
-
-          {activeTab === 'autotrade' && <AutoTradeView auth={auth} />}
 
           {activeTab === 'polymarket' && <PolymarketView />}
           {activeTab === 'pharmacy' && <PharmacyView />}

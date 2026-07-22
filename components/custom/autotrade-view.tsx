@@ -164,8 +164,8 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [martingale, setMartingale] = useState('2.5');
   const [takeProfit, setTakeProfit] = useState('1000');
   const [stopLoss, setStopLoss] = useState('1000');
-  const [selectedDigit, setSelectedDigit] = useState('5');
-  const [selectedDigit2, setSelectedDigit2] = useState('5');
+  const [selectedDigit, setSelectedDigit] = useState<string[]>(['5']);
+  const [selectedDigit2, setSelectedDigit2] = useState<string[]>(['5']);
   const [growthRate, setGrowthRate] = useState('0.01');
   const [isHedgeMode, setIsHedgeMode] = useState(true);
   const [isAlternateMode, setIsAlternateMode] = useState(false);
@@ -306,8 +306,8 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
       martingaleMultiplier: parseFloat(martingale) || 2.5,
       takeProfit: parseFloat(takeProfit) || 1000,
       stopLoss: parseFloat(stopLoss) || 1000,
-      selectedDigit: parseInt(selectedDigit, 10) || 5,
-      selectedDigit2: parseInt(selectedDigit2, 10) || 5,
+      selectedDigit: selectedDigit.length > 0 ? selectedDigit.map(x => parseInt(x, 10)) : [5],
+      selectedDigit2: selectedDigit2.length > 0 ? selectedDigit2.map(x => parseInt(x, 10)) : [5],
       growthRate: parseFloat(growthRate) || 0.01,
       isHedgeMode: (mode.endsWith('-only') || mode === 'ai-auto-individual') ? false : isHedgeMode,
       isAlternateMode: (mode.endsWith('-only') || mode === 'ai-auto-individual') ? false : isAlternateMode,
@@ -568,46 +568,74 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                   <div className="flex justify-between items-center">
                     <Label className="text-xs text-zinc-300 font-semibold">
                       {['digits-match-differ', 'digits-over-under'].includes(mode)
-                        ? 'Selected Digit 1 (Match / Over)'
-                        : 'Selected Digit (0-9)'}
+                        ? 'Multi-Digit 1 (Match / Over)'
+                        : 'Multi-Digit (0-9)'}
                     </Label>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-zinc-500 font-medium">AI Auto Digit</span>
-                      <Switch
-                        checked={aiDigitsMode}
-                        onCheckedChange={setAiDigitsMode}
-                        disabled={isRunning}
-                        className="scale-75 origin-right"
-                      />
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setSelectedDigit([])}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-30"
+                        disabled={isRunning || aiDigitsMode}>None</button>
+                      <button onClick={() => setSelectedDigit(['0','1','2','3','4','5','6','7','8','9'])}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-30"
+                        disabled={isRunning || aiDigitsMode}>All</button>
+                      <span className="text-[10px] text-zinc-500 font-medium">AI</span>
+                      <Switch checked={aiDigitsMode} onCheckedChange={setAiDigitsMode} disabled={isRunning}
+                        className="scale-75 origin-right" />
                     </div>
                   </div>
-                  <Select value={selectedDigit} onValueChange={setSelectedDigit} disabled={isRunning || aiDigitsMode}>
-                    <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                      <SelectValue placeholder="Select digit" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-                        <SelectItem key={d} value={d.toString()}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap gap-1">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+                      const s = d.toString();
+                      const selected = selectedDigit.includes(s);
+                      return (
+                        <button key={d} onClick={() => {
+                          if (selected) setSelectedDigit(selectedDigit.filter(x => x !== s));
+                          else setSelectedDigit([...selectedDigit, s]);
+                        }} disabled={isRunning || aiDigitsMode}
+                          style={{
+                            width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                            background: selected ? '#7c3aed' : '#2a2a3e', color: selected ? '#fff' : '#aaa',
+                            border: selected ? '1px solid #7c3aed' : '1px solid #3a3a4e',
+                            opacity: (isRunning || aiDigitsMode) ? 0.4 : 1,
+                          }}>{d}</button>
+                      );
+                    })}
+                  </div>
+                  <span className="text-[10px] text-zinc-500">{selectedDigit.length} digit{selectedDigit.length !== 1 ? 's' : ''} selected — trades cycle through them</span>
                 </div>
 
                 {['digits-match-differ', 'digits-over-under'].includes(mode) && (
                   <div className="space-y-1.5 animate-in slide-in-from-top duration-200">
                     <Label className="text-xs text-zinc-300 font-semibold">
-                      Selected Digit 2 (Differ / Under)
+                      Multi-Digit 2 (Differ / Under)
                     </Label>
-                    <Select value={selectedDigit2} onValueChange={setSelectedDigit2} disabled={isRunning || aiDigitsMode}>
-                      <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                        <SelectValue placeholder="Select digit" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-                          <SelectItem key={d} value={d.toString()}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2 items-center mb-2">
+                      <button onClick={() => setSelectedDigit2([])}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-30"
+                        disabled={isRunning || aiDigitsMode}>None</button>
+                      <button onClick={() => setSelectedDigit2(['0','1','2','3','4','5','6','7','8','9'])}
+                        className="text-[9px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 hover:text-white disabled:opacity-30"
+                        disabled={isRunning || aiDigitsMode}>All</button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
+                        const s = d.toString();
+                        const selected = selectedDigit2.includes(s);
+                        return (
+                          <button key={d} onClick={() => {
+                            if (selected) setSelectedDigit2(selectedDigit2.filter(x => x !== s));
+                            else setSelectedDigit2([...selectedDigit2, s]);
+                          }} disabled={isRunning || aiDigitsMode}
+                            style={{
+                              width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                              background: selected ? '#7c3aed' : '#2a2a3e', color: selected ? '#fff' : '#aaa',
+                              border: selected ? '1px solid #7c3aed' : '1px solid #3a3a4e',
+                              opacity: (isRunning || aiDigitsMode) ? 0.4 : 1,
+                            }}>{d}</button>
+                        );
+                      })}
+                    </div>
+                    <span className="text-[10px] text-zinc-500">{selectedDigit2.length} digit{selectedDigit2.length !== 1 ? 's' : ''} selected — trades cycle through them</span>
                   </div>
                 )}
               </div>

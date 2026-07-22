@@ -9,6 +9,10 @@ import { TradingEngine, type TradeResult, type StrategySettings, DEFAULT_SETTING
 import { TickChart } from './tick-chart';
 import { TelegramSettings } from './telegram-settings';
 import { useSmartChartsApi } from '@/hooks/use-smartcharts-api';
+import { SearchableToolbox } from './searchable-toolbox';
+import { QuickStrategyModal } from './quick-strategy/quick-strategy-modal';
+import { STRATEGIES } from './quick-strategy/config';
+import type { TStrategy } from './quick-strategy/types';
 
 function formatTime() {
   return new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -425,6 +429,12 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
   const [tickHistory, setTickHistory] = useState<number[]>([]);
   const [showTelegram, setShowTelegram] = useState(false);
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showQuickStrategy, setShowQuickStrategy] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<TStrategy | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'options' | 'accumulators' | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   // Strategy tabs
   const [tabs, setTabs] = useState<StrategyTab[]>([{ id: 'default', name: 'Untitled Strategy', xml: '', settings: { ...DEFAULT_SETTINGS } }]);
@@ -689,14 +699,53 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
     workspaceRef.current?.getWorkspace()?.zoomToFit();
   }, []);
 
+  const applyQuickStrategy = useCallback((xml: string, name: string) => {
+    const handle = workspaceRef.current;
+    if (!handle) return;
+    handle.loadXml(xml);
+    setStrategyName(name);
+    setShowQuickStrategy(false);
+    setSelectedStrategy(null);
+    addLog(`Applied "${name}" strategy`);
+  }, [addLog]);
+
+  const sortBlocks = useCallback(() => {
+    const wsInst = workspaceRef.current?.getWorkspace();
+    if (!wsInst) return;
+    const topBlocks = wsInst.getTopBlocks(false);
+    let x = 20, y = 20;
+    topBlocks.forEach(b => {
+      b.moveBy(x - (b.getRelativeToSurfaceXY()?.x ?? 0), y - (b.getRelativeToSurfaceXY()?.y ?? 0));
+      y += b.getHeightWidth().height + 30;
+    });
+    addLog('Blocks sorted');
+  }, [addLog]);
+
   const resetWorkspace = useCallback(() => {
+    setShowResetConfirm(true);
+  }, []);
+
+  const confirmReset = useCallback(() => {
     const handle = workspaceRef.current;
     if (!handle) return;
     const wsInst = handle.getWorkspace();
     wsInst?.clear();
     handle.loadXml(handle.getDefaultXml());
+    setShowResetConfirm(false);
     addLog('Workspace reset');
   }, [addLog]);
+
+  // Track undo stack changes
+  useEffect(() => {
+    const wsInst = workspaceRef.current?.getWorkspace();
+    if (!wsInst) return;
+    const update = () => {
+      setCanUndo(wsInst.undoStack_.length > 0);
+      setCanRedo(wsInst.redoStack_.length > 0);
+    };
+    wsInst.addChangeListener(Blockly.Events.FINALISED, update);
+    return () => wsInst.removeChangeListener(Blockly.Events.FINALISED, update);
+  }, []);
 
   const wins = trades.filter(t => t.status === 'won').length;
   const losses = trades.filter(t => t.status === 'lost').length;
@@ -714,31 +763,20 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
             ⚡ InvestPal Bot
           </span>
           {/* Undo / Redo */}
-          <button onClick={undoAction} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Undo">↩</button>
-          <button onClick={redoAction} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Redo">↪</button>
+          <button onClick={undoAction} disabled={!canUndo} className="px-2 py-1 rounded text-[11px] transition-all" style={{ background: '#2a2a2a', color: canUndo ? '#a1a1aa' : '#3f3f46', cursor: canUndo ? 'pointer' : 'not-allowed' }} title="Undo">↩</button>
+          <button onClick={redoAction} disabled={!canRedo} className="px-2 py-1 rounded text-[11px] transition-all" style={{ background: '#2a2a2a', color: canRedo ? '#a1a1aa' : '#3f3f46', cursor: canRedo ? 'pointer' : 'not-allowed' }} title="Redo">↪</button>
           <div className="w-px h-4 bg-zinc-700"/>
           {/* Zoom */}
           <button onClick={zoomIn} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Zoom in">🔍+</button>
           <button onClick={zoomOut} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Zoom out">🔍−</button>
           <button onClick={zoomToFit} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Fit to screen">⊞</button>
           <button onClick={resetWorkspace} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-red-400 transition-all" style={{ background: '#2a2a2a' }} title="Reset workspace">⟳</button>
+          <button onClick={sortBlocks} className="px-2 py-1 rounded text-[11px] text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }} title="Sort blocks">⋮⋰</button>
           <div className="w-px h-4 bg-zinc-700"/>
-          {/* Quick Strategy presets */}
-          <div className="relative group">
-            <button className="px-2 py-1 rounded text-[10px] font-bold text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }}>
-              📋 Quick Strategy ▾
-            </button>
-            <div className="absolute top-full left-0 mt-1 w-40 rounded border z-20 hidden group-hover:block"
-              style={{ background: '#151717', borderColor: '#2a2a2a' }}>
-              {Object.keys(PRESETS).map(name => (
-                <button key={name}
-                  className="block w-full text-left px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
-                  onMouseDown={() => applyPreset(name)}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Quick Strategy */}
+          <button onClick={() => setShowQuickStrategy(true)} className="px-2 py-1 rounded text-[10px] font-bold text-zinc-400 hover:text-white transition-all" style={{ background: '#2a2a2a' }}>
+            📋 Quick Strategy
+          </button>
         </div>
 
         {/* Right: Strategy controls + Run/Stop */}
@@ -942,10 +980,12 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
         <div className="flex-1 flex overflow-hidden">
         {/* Blockly workspace */}
         <div className="flex-1 relative">
+          <SearchableToolbox workspace={workspaceRef.current?.getWorkspace() ?? null} toolboxConfig={null}>
           <BlocklyWorkspace
             ref={workspaceRef}
             onWorkspaceChange={setGeneratedCode}
           />
+          </SearchableToolbox>
           {/* Error banner */}
           {error && (
             <div className="absolute top-0 left-0 right-0 z-30 px-4 py-2 text-xs font-mono"
@@ -1093,6 +1133,92 @@ export function BotBuilderView({ auth }: { auth: UseAuthReturn }) {
           open={true}
           onClose={() => setShowTelegram(false)}
         />
+      )}
+      {/* Quick Strategy Modal */}
+      {showQuickStrategy && selectedStrategy && (
+        <QuickStrategyModal
+          strategy={selectedStrategy}
+          onClose={() => { setShowQuickStrategy(false); setSelectedStrategy(null); setSelectedCategory(null); }}
+          onApply={applyQuickStrategy}
+        />
+      )}
+      {/* Quick Strategy Category / Strategy Picker */}
+      {showQuickStrategy && !selectedStrategy && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        }} onClick={() => { setShowQuickStrategy(false); setSelectedCategory(null); }}>
+          <div style={{
+            background: '#1e1e2e', borderRadius: 12, width: 480, maxHeight: '80vh', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', border: '1px solid #333',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '20px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 600 }}>
+                {selectedCategory ? `Select ${selectedCategory} Strategy` : 'Quick Strategy'}
+              </h2>
+              <button onClick={() => { setShowQuickStrategy(false); setSelectedCategory(null); }} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 22 }}>×</button>
+            </div>
+            {!selectedCategory ? (
+              <>
+                <div style={{ display: 'flex', gap: 12, padding: '16px 24px', borderBottom: '1px solid #2a2a3e' }}>
+                  {(['options', 'accumulators'] as const).map(cat => (
+                    <button key={cat} onClick={() => setSelectedCategory(cat)}
+                      style={{
+                        flex: 1, padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
+                        background: '#2a2a3e', border: '1px solid #333', color: '#ddd',
+                        fontSize: 14, fontWeight: 500, textTransform: 'capitalize',
+                      }}>
+                      {cat === 'options' ? '📈' : '📊'} {cat}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ padding: '16px 24px', overflow: 'auto', flex: 1 }}>
+                  <p style={{ color: '#888', fontSize: 13, margin: 0 }}>Select a category above to choose a strategy.</p>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: '12px', overflow: 'auto', flex: 1 }}>
+                {Object.values(STRATEGIES()).filter(s => s.category === selectedCategory).map(s => (
+                  <button key={s.name} onClick={() => setSelectedStrategy(s)}
+                    style={{
+                      display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px',
+                      borderRadius: 8, border: 'none', cursor: 'pointer', marginBottom: 6,
+                      background: '#2a2a3e', color: '#ddd', fontSize: 13,
+                    }}>
+                    <strong style={{ color: '#fff' }}>{s.label}</strong>
+                    <p style={{ margin: '2px 0 0', color: '#888', fontSize: 11 }}>{s.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Reset Confirmation */}
+      {showResetConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        }} onClick={() => setShowResetConfirm(false)}>
+          <div style={{
+            background: '#1e1e2e', borderRadius: 12, padding: 24, width: 360,
+            border: '1px solid #333', boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 8px', color: '#fff', fontSize: 16 }}>Reset Workspace?</h3>
+            <p style={{ color: '#888', fontSize: 13, margin: '0 0 16px' }}>This will clear all blocks. This action cannot be undone.</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setShowResetConfirm(false)} style={{
+                padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: '#2a2a3e', color: '#ccc', fontSize: 13,
+              }}>Cancel</button>
+              <button onClick={confirmReset} style={{
+                padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: '#ef4444', color: '#fff', fontSize: 13,
+              }}>Reset</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
