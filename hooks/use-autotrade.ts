@@ -185,6 +185,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitStake2Ref = useRef(0);
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
+  const executeDigitBurstRef = useRef<((...args: any[]) => Promise<void>) | null>(null);
 
   // Sync refs with state
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
@@ -562,7 +563,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     // Burst mode: trade ALL selected digits simultaneously
     const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
     if (isDigitType && Array.isArray(config.selectedDigit) && config.selectedDigit.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives) {
-      return executeDigitBurstFn(legKey, contractType, roundedStake, config.selectedDigit, config, nextLegToExecute, setLegState, isLeg1);
+      const burstFn = executeDigitBurstRef.current;
+      if (burstFn) return burstFn(legKey, contractType, roundedStake, config.selectedDigit, config, nextLegToExecute, setLegState, isLeg1);
     }
 
     try {
@@ -972,7 +974,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   );
 
   // ── Helper: execute digit burst (all selected digits at once) ──────────────────────
-  const executeDigitBurstFn = async (
+  executeDigitBurstRef.current = async (
     legKey: 'leg1' | 'leg2',
     contractType: string,
     stake: number,
@@ -987,7 +989,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     addLog(`[${legLabel}] ⚡ Burst mode: opening ${digits.length} contracts (digits: ${digits.join(',')})`, 'info');
 
-    // Phase 1: Get proposals for all digits in parallel
     const proposals = await Promise.allSettled(
       digits.map(d => placeProposal(contractType, stake, config, d))
     );
@@ -1005,7 +1006,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       return;
     }
 
-    // Phase 2: Buy all contracts in parallel
     const buys = await Promise.allSettled(
       validProposals.map(p => buyContract(p.proposalId, stake))
     );
@@ -1025,12 +1025,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     addLog(`[${legLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
 
-    // Phase 3: Wait for all contracts to settle in parallel
     const outcomes = await Promise.allSettled(
       contracts.map(c => waitForResult(c.contractId))
     );
 
-    // Phase 4: Aggregate results
     let wins = 0, losses = 0, totalPnl = 0;
     const detail: string[] = [];
     outcomes.forEach((res, i) => {
@@ -1048,7 +1046,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     addLog(`[${legLabel}] ⚡ Burst results: ${wins}W/${losses}L — P&L: $${totalPnl.toFixed(2)} [${detail.join(', ')}]`, totalPnl >= 0 ? 'success' : 'error');
 
-    // Phase 5: Update stats
     const isWinRound = wins >= losses;
     setStats((prev) => ({
       ...prev,
@@ -1058,7 +1055,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       totalTrades: prev.totalTrades + contracts.length,
     }));
 
-    // Phase 6: Calculate next stake (martingale recovery on aggregate)
     let finalRecovery = config.recoveryMethod || 'martingale';
     const nextStake = calculateNextStake(legKey, isWinRound, stake, config.baseStake, config.martingaleMultiplier, finalRecovery);
 
@@ -1071,7 +1067,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       currentStake: nextStake,
     }));
 
-    // Phase 7: Schedule next trade
     setTimeout(() => {
       if (isRunningRef.current) executeTrade(nextLegToExecute);
     }, 1000);
