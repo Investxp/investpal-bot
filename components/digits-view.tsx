@@ -11,6 +11,7 @@ import { TradeTypeChips } from '@/components/custom/trade-type-chips';
 import { SymbolSelector } from '@/components/custom/symbol-selector';
 import { ThemeToggle } from '@/components/custom/theme-toggle';
 import { HedgePanel } from '@/components/custom/hedge-panel';
+import { DigitsScalpingPanel } from './digits-scalping-panel';
 import type {
   AuthState,
   DerivAccount,
@@ -251,6 +252,15 @@ export function DigitsView({
                 mainStake={stake}
                 mainDuration={duration}
                 mainDigit={selectedDigit}
+              />
+              <DigitsScalpingPanel
+                ws={ws}
+                isConnected={isConnected}
+                symbol={activeSymbol?.underlying_symbol || ''}
+                stake={stake}
+                duration={duration}
+                durationLimits={durationLimits}
+                contractType={contractMode}
               />
           </>
         )}
