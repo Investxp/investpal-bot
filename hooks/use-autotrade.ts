@@ -559,6 +559,12 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const setLegState = isLeg1 ? setLeg1 : setLeg2;
     setLegState((prev) => ({ ...prev, isTrading: true }));
 
+    // Burst mode: trade ALL selected digits simultaneously
+    const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
+    if (isDigitType && Array.isArray(config.selectedDigit) && config.selectedDigit.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives) {
+      return executeDigitBurstFn(legKey, contractType, roundedStake, config.selectedDigit, config, nextLegToExecute, setLegState, isLeg1);
+    }
+
     try {
       const proposalPayload: Record<string, unknown> = {
         proposal: 1,
@@ -964,6 +970,112 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     },
     [ws]
   );
+
+  // ── Helper: execute digit burst (all selected digits at once) ──────────────────────
+  const executeDigitBurstFn = async (
+    legKey: 'leg1' | 'leg2',
+    contractType: string,
+    stake: number,
+    digits: number[],
+    config: AutoTradeConfig,
+    nextLegToExecute: 'leg1' | 'leg2',
+    setLegStateFn: React.Dispatch<React.SetStateAction<RunnerState>>,
+    isLeg1: boolean,
+  ) => {
+    if (!ws || !isRunningRef.current) return;
+    const legLabel = isLeg1 ? 'Leg 1' : 'Leg 2';
+
+    addLog(`[${legLabel}] ⚡ Burst mode: opening ${digits.length} contracts (digits: ${digits.join(',')})`, 'info');
+
+    // Phase 1: Get proposals for all digits in parallel
+    const proposals = await Promise.allSettled(
+      digits.map(d => placeProposal(contractType, stake, config, d))
+    );
+
+    const validProposals: { digit: number; proposalId: string }[] = [];
+    proposals.forEach((res, i) => {
+      if (res.status === 'fulfilled') validProposals.push({ digit: digits[i], proposalId: res.value });
+      else addLog(`[${legLabel}] Proposal failed for digit ${digits[i]}: ${res.reason}`, 'error');
+    });
+
+    if (validProposals.length === 0) {
+      addLog(`[${legLabel}] All proposals failed in burst mode. Retrying...`, 'error');
+      setLegStateFn((prev) => ({ ...prev, isTrading: false }));
+      setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 2000);
+      return;
+    }
+
+    // Phase 2: Buy all contracts in parallel
+    const buys = await Promise.allSettled(
+      validProposals.map(p => buyContract(p.proposalId, stake))
+    );
+
+    const contracts: { digit: number; contractId: number }[] = [];
+    buys.forEach((res, i) => {
+      if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId });
+      else addLog(`[${legLabel}] Buy failed for digit ${validProposals[i].digit}: ${res.reason}`, 'error');
+    });
+
+    if (contracts.length === 0) {
+      addLog(`[${legLabel}] All buys failed in burst mode. Retrying...`, 'error');
+      setLegStateFn((prev) => ({ ...prev, isTrading: false }));
+      setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 2000);
+      return;
+    }
+
+    addLog(`[${legLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
+
+    // Phase 3: Wait for all contracts to settle in parallel
+    const outcomes = await Promise.allSettled(
+      contracts.map(c => waitForResult(c.contractId))
+    );
+
+    // Phase 4: Aggregate results
+    let wins = 0, losses = 0, totalPnl = 0;
+    const detail: string[] = [];
+    outcomes.forEach((res, i) => {
+      const digit = contracts[i].digit;
+      if (res.status === 'fulfilled') {
+        if (res.value.won) wins++;
+        else losses++;
+        totalPnl += res.value.profit;
+        detail.push(`#${digit}: ${res.value.won ? 'WIN' : 'LOSS'} ($${res.value.profit.toFixed(2)})`);
+      } else {
+        losses++;
+        detail.push(`#${digit}: ERROR`);
+      }
+    });
+
+    addLog(`[${legLabel}] ⚡ Burst results: ${wins}W/${losses}L — P&L: $${totalPnl.toFixed(2)} [${detail.join(', ')}]`, totalPnl >= 0 ? 'success' : 'error');
+
+    // Phase 5: Update stats
+    const isWinRound = wins >= losses;
+    setStats((prev) => ({
+      ...prev,
+      wins: prev.wins + wins,
+      losses: prev.losses + losses,
+      totalProfit: prev.totalProfit + totalPnl,
+      totalTrades: prev.totalTrades + contracts.length,
+    }));
+
+    // Phase 6: Calculate next stake (martingale recovery on aggregate)
+    let finalRecovery = config.recoveryMethod || 'martingale';
+    const nextStake = calculateNextStake(legKey, isWinRound, stake, config.baseStake, config.martingaleMultiplier, finalRecovery);
+
+    setLegStateFn((prev) => ({
+      ...prev,
+      isTrading: false,
+      activeContractId: null,
+      lastResult: isWinRound ? 'win' : 'loss',
+      profit: prev.profit + totalPnl,
+      currentStake: nextStake,
+    }));
+
+    // Phase 7: Schedule next trade
+    setTimeout(() => {
+      if (isRunningRef.current) executeTrade(nextLegToExecute);
+    }, 1000);
+  };
 
   // ── Unified Simultaneous Hedge/Triple Loop ───────────────────────────────────────
   const executeHedgeRound = useCallback(async () => {
