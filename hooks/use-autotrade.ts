@@ -1045,9 +1045,12 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     addLog(`[${legLabel}] ⚡ Burst mode: opening ${digits.length} contracts (digits: ${digits.join(',')})`, 'info');
 
-    // Distribute trades across WS pool for parallel execution
+    // Distribute trades across WS pool for parallel execution (fallback to main ws if pool not ready)
     const pool = wsPoolRef.current;
-    const getPoolWs = (idx: number) => (pool.length > 0 ? pool[idx % pool.length] : ws);
+    const getPoolWs = (idx: number) => {
+      const pws = pool.length > 0 ? pool[idx % pool.length] : null;
+      return (pws && pws.isConnected) ? pws : ws;
+    };
 
     const proposals = await Promise.allSettled(
       digits.map((d, i) => placeProposal(contractType, stake, config, d, getPoolWs(i)))
