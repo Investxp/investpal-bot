@@ -16,7 +16,8 @@ interface DashboardViewProps {
 export function DashboardView({ auth }: DashboardViewProps) {
   const { authState, accounts, activeAccount, loginWithPat, logout, error } = auth;
   const [patToken, setPatToken] = useState('');
-  const [appId, setAppId] = useState(process.env.NEXT_PUBLIC_DERIV_APP_ID || '');
+  const hardcodedAppId = process.env.NEXT_PUBLIC_DERIV_APP_ID || '33O6s5sRWxywmFZAGbjBf';
+  const [appId, setAppId] = useState(hardcodedAppId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Copy state
@@ -24,7 +25,7 @@ export function DashboardView({ auth }: DashboardViewProps) {
 
   const handleAutofillTest = () => {
     setPatToken('pat_dd44ae004e277664032db1f97f36afaf9ef337633ac35074e41569a49ef6295b');
-    setAppId(process.env.NEXT_PUBLIC_DERIV_APP_ID || '');
+    setAppId(hardcodedAppId);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -137,15 +138,15 @@ export function DashboardView({ auth }: DashboardViewProps) {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="appId" className="text-xs font-semibold text-zinc-300">App ID</Label>
-                  <Input
-                    id="appId"
-                    placeholder="33JI7..."
-                    type="text"
-                    value={appId}
-                    onChange={(e) => setAppId(e.target.value)}
-                    className="bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-red-500 font-mono"
-                    required
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="appId"
+                      value={appId || process.env.NEXT_PUBLIC_DERIV_APP_ID || '33O6s5sRWxywmFZAGbjBf'}
+                      readOnly
+                      className="bg-zinc-900/40 border-zinc-700/60 text-zinc-400 font-mono text-sm cursor-not-allowed"
+                    />
+                    <span className="text-[10px] text-zinc-500 whitespace-nowrap">(hardcoded)</span>
+                  </div>
                 </div>
 
                 {error && (

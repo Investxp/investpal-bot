@@ -428,9 +428,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     // Dynamic Digit / Operator Objectives Parser
     let selectedDigit: number;
-    if (Array.isArray(config.selectedDigit) && config.selectedDigit.length > 0) {
-      selectedDigit = config.selectedDigit[digitIndex1Ref.current % config.selectedDigit.length];
-      digitIndex1Ref.current++;
+    const legDigitArray = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
+    const digitIndexRef = isLeg1 ? digitIndex1Ref : digitIndex2Ref;
+    if (Array.isArray(legDigitArray) && legDigitArray.length > 0) {
+      selectedDigit = legDigitArray[digitIndexRef.current % legDigitArray.length];
+      digitIndexRef.current++;
     } else {
       selectedDigit = 5;
     }
@@ -562,9 +564,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     // Burst mode: trade ALL selected digits simultaneously
     const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
-    if (isDigitType && Array.isArray(config.selectedDigit) && config.selectedDigit.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives) {
+    const burstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
+    if (isDigitType && Array.isArray(burstDigits) && burstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives) {
       const burstFn = executeDigitBurstRef.current;
-      if (burstFn) return burstFn(legKey, contractType, roundedStake, config.selectedDigit, config, nextLegToExecute, setLegState, isLeg1);
+      if (burstFn) return burstFn(legKey, contractType, roundedStake, burstDigits, config, nextLegToExecute, setLegState, isLeg1);
     }
 
     try {
