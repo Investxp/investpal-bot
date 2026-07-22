@@ -186,7 +186,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
   const executeDigitBurstRef = useRef<((...args: any[]) => Promise<void>) | null>(null);
- 
+  const wsPoolRef = useRef<DerivWS[]>([]);
+  const WS_POOL_SIZE = 5; 
   // Sync refs with state
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
   useEffect(() => { leg2Ref.current = leg2; }, [leg2]);
@@ -215,7 +216,29 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     };
   }, [isConnected, cleanupSubscriptions]);
 
-
+  // Initialize WS pool for parallel burst trading
+  useEffect(() => {
+    if (!ws) return;
+    // Disconnect any stale pool first
+    for (const pws of wsPoolRef.current) {
+      try { pws.disconnect(); } catch {}
+    }
+    wsPoolRef.current = [];
+    // Create and connect pool connections
+    const pool: DerivWS[] = [];
+    for (let i = 0; i < WS_POOL_SIZE; i++) {
+      const clone = ws.clone();
+      clone.connect().catch(() => {});
+      pool.push(clone);
+    }
+    wsPoolRef.current = pool;
+    return () => {
+      for (const pws of wsPoolRef.current) {
+        try { pws.disconnect(); } catch {}
+      }
+      wsPoolRef.current = [];
+    };
+  }, [ws]);
 
   const addLog = useCallback((message: string, type: AutoTradeLog['type'] = 'info') => {
     const newLog: AutoTradeLog = {
@@ -869,8 +892,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
   // ── Helper: place proposal ───────────────────────────────────────────────
   const placeProposal = useCallback(
-    async (contractType: string, stakeAmount: number, config: AutoTradeConfig, dynamicDigit?: number): Promise<string> => {
-      if (!ws) throw new Error('No WebSocket connection');
+    async (contractType: string, stakeAmount: number, config: AutoTradeConfig, dynamicDigit?: number, useWs?: DerivWS): Promise<string> => {
+      const activeWs = useWs || ws;
+      if (!activeWs) throw new Error('No WebSocket connection');
 
       const proposalPayload: Record<string, unknown> = {
         proposal: 1,
@@ -908,7 +932,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       }
 
       try {
-        const resp = await ws.send<any>(proposalPayload);
+        const resp = await activeWs.send<any>(proposalPayload);
         if (resp.error) {
           addLog(`[System] Proposal failed for type '${contractType}'. Payload: ${JSON.stringify(proposalPayload)}. Error: ${resp.error.message}`, 'error');
           throw new Error(resp.error.message ?? 'Proposal failed');
@@ -926,10 +950,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
   // ── Helper: buy contract ──────────────────────────────────────────────────
   const buyContract = useCallback(
-    async (proposalId: string, stakeAmount: number): Promise<{ contractId: number }> => {
-      if (!ws) throw new Error('No WebSocket connection');
+    async (proposalId: string, stakeAmount: number, useWs?: DerivWS): Promise<{ contractId: number }> => {
+      const activeWs = useWs || ws;
+      if (!activeWs) throw new Error('No WebSocket connection');
 
-      const buyResp = await ws.send<any>({
+      const buyResp = await activeWs.send<any>({
         buy: proposalId,
         price: stakeAmount,
       });
@@ -946,9 +971,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
   // ── Helper: wait for result ───────────────────────────────────────────────
   const waitForResult = useCallback(
-    (contractId: number): Promise<{ won: boolean; profit: number }> => {
+    (contractId: number, useWs?: DerivWS): Promise<{ won: boolean; profit: number }> => {
+      const activeWs = useWs || ws;
       return new Promise((resolve, reject) => {
-        if (!ws) return reject(new Error('No WebSocket'));
+        if (!activeWs) return reject(new Error('No WebSocket'));
 
         let unsubscribe: (() => void) | null = null;
         let resolved = false;
@@ -975,9 +1001,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           }
         };
 
-        const globalUnsub = ws.onMessage(handleContractUpdate);
+        const globalUnsub = activeWs.onMessage(handleContractUpdate);
 
-        ws.subscribe(
+        activeWs.subscribe(
           { proposal_open_contract: 1, contract_id: contractId, subscribe: 1 },
           handleContractUpdate
         ).then((sub) => {
@@ -1019,13 +1045,17 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     addLog(`[${legLabel}] ⚡ Burst mode: opening ${digits.length} contracts (digits: ${digits.join(',')})`, 'info');
 
+    // Distribute trades across WS pool for parallel execution
+    const pool = wsPoolRef.current;
+    const getPoolWs = (idx: number) => (pool.length > 0 ? pool[idx % pool.length] : ws);
+
     const proposals = await Promise.allSettled(
-      digits.map(d => placeProposal(contractType, stake, config, d))
+      digits.map((d, i) => placeProposal(contractType, stake, config, d, getPoolWs(i)))
     );
 
-    const validProposals: { digit: number; proposalId: string }[] = [];
+    const validProposals: { digit: number; proposalId: string; wsIdx: number }[] = [];
     proposals.forEach((res, i) => {
-      if (res.status === 'fulfilled') validProposals.push({ digit: digits[i], proposalId: res.value });
+      if (res.status === 'fulfilled') validProposals.push({ digit: digits[i], proposalId: res.value, wsIdx: i % (pool.length || 1) });
       else addLog(`[${legLabel}] Proposal failed for digit ${digits[i]}: ${res.reason}`, 'error');
     });
 
@@ -1037,12 +1067,12 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     }
 
     const buys = await Promise.allSettled(
-      validProposals.map(p => buyContract(p.proposalId, stake))
+      validProposals.map(p => buyContract(p.proposalId, stake, getPoolWs(p.wsIdx)))
     );
 
-    const contracts: { digit: number; contractId: number }[] = [];
+    const contracts: { digit: number; contractId: number; wsIdx: number }[] = [];
     buys.forEach((res, i) => {
-      if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId });
+      if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId, wsIdx: validProposals[i].wsIdx });
       else addLog(`[${legLabel}] Buy failed for digit ${validProposals[i].digit}: ${res.reason}`, 'error');
     });
 
@@ -1056,7 +1086,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     addLog(`[${legLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
 
     const outcomes = await Promise.allSettled(
-      contracts.map(c => waitForResult(c.contractId))
+      contracts.map(c => waitForResult(c.contractId, getPoolWs(c.wsIdx)))
     );
 
     let wins = 0, losses = 0, totalPnl = 0;
@@ -2016,7 +2046,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     // Trigger initial trades
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
-        executeHedgeRound();
+        // Use executeTrade for hedge mode — it detects digit burst and fires both legs simultaneously
+        addLog('[System] Hedge mode starting via executeTrade for burst-compatible execution.', 'info');
+        executeTrade('leg1');
       } else {
         executeTrade('leg1');
       }

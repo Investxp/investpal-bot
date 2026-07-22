@@ -33,6 +33,15 @@ export class DerivWS {
     this.url = url ?? getPublicWsUrl();
   }
 
+  getUrl(): string {
+    return this.url;
+  }
+
+  clone(): DerivWS {
+    const instance = new DerivWS(this.url);
+    return instance;
+  }
+
   /**
    * Register a listener for connection state changes.
    * Called with `true` on connect and `false` on disconnect.
