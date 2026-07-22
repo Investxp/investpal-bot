@@ -559,16 +559,43 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       return;
     }
 
-    const setLegState = isLeg1 ? setLeg1 : setLeg2;
-    setLegState((prev) => ({ ...prev, isTrading: true }));
-
-    // Burst mode: trade ALL selected digits simultaneously
+    // Burst mode: trade ALL selected digits simultaneously (supports dual-leg in hedge mode)
     const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
     const burstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
     if (isDigitType && Array.isArray(burstDigits) && burstDigits.length > 0 && !config.aiDigitsMode && !config.multiDigitObjectives) {
       const burstFn = executeDigitBurstRef.current;
-      if (burstFn) return burstFn(legKey, contractType, roundedStake, burstDigits, config, nextLegToExecute, setLegState, isLeg1);
+      if (!burstFn) return;
+
+      if (config.isHedgeMode) {
+        // Fire burst for both legs simultaneously
+        const otherLegKey = isLeg1 ? 'leg2' : 'leg1';
+        const otherIsLeg1 = !isLeg1;
+        const otherDigits = otherIsLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
+        const otherSetLegState = otherIsLeg1 ? setLeg1 : setLeg2;
+        const otherContractType = otherIsLeg1 ? leg1Ref.current.contractType : leg2Ref.current.contractType;
+        const otherStake = Math.round(((otherIsLeg1 ? config.baseStake : (config.baseStake2 || config.baseStake)) * 100)) / 100;
+
+        // Set both legs as trading
+        setLegState((prev) => ({ ...prev, isTrading: true }));
+        otherSetLegState((prev) => ({ ...prev, isTrading: true }));
+
+        addLog(`[System] ⚡ Hedge Burst: L1 (${burstDigits.length} digits) + L2 (${otherDigits.length} digits) simultaneously`, 'info');
+
+        return Promise.all([
+          burstFn(legKey, contractType, roundedStake, burstDigits, config, legKey, setLegState, isLeg1),
+          burstFn(otherLegKey, otherContractType, otherStake, otherDigits, config, otherLegKey, otherSetLegState, otherIsLeg1),
+        ]).then(() => {
+          setTimeout(() => {
+            if (isRunningRef.current) executeTrade(legKey);
+          }, 1000);
+        });
+      } else {
+        setLegState((prev) => ({ ...prev, isTrading: true }));
+        return burstFn(legKey, contractType, roundedStake, burstDigits, config, nextLegToExecute, setLegState, isLeg1);
+      }
     }
+
+    setLegState((prev) => ({ ...prev, isTrading: true }));
 
     try {
       const proposalPayload: Record<string, unknown> = {
