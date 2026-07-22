@@ -16,7 +16,7 @@ interface DashboardViewProps {
 export function DashboardView({ auth }: DashboardViewProps) {
   const { authState, accounts, activeAccount, loginWithPat, logout, error } = auth;
   const [patToken, setPatToken] = useState('');
-  const [appId, setAppId] = useState('33JI7WNQwNkmZtLUWQvR0'); // Default test App ID
+  const [appId, setAppId] = useState(process.env.NEXT_PUBLIC_DERIV_APP_ID || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Copy state
@@ -24,7 +24,7 @@ export function DashboardView({ auth }: DashboardViewProps) {
 
   const handleAutofillTest = () => {
     setPatToken('pat_dd44ae004e277664032db1f97f36afaf9ef337633ac35074e41569a49ef6295b');
-    setAppId('33JI7WNQwNkmZtLUWQvR0');
+    setAppId(process.env.NEXT_PUBLIC_DERIV_APP_ID || '');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
