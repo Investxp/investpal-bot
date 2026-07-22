@@ -51,8 +51,12 @@ export function useDerivWS(options?: UseDerivWSOptions): UseDerivWSReturn {
 
   // Full reconnect key: changes when auth type changes OR when the account switches.
   // Stays stable when only the OTP URL string is refreshed for the same account.
+  // retrySeed cycles on exhaustion to force a fresh DerivWS instance.
+  const [retrySeed, setRetrySeed] = useState(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isAuthenticated = url !== undefined;
-  const reconnectKey = isAuthenticated ? `auth:${accountId ?? 'unknown'}` : 'public';
+  const reconnectKey = isAuthenticated ? `auth:${accountId ?? 'unknown'}:${retrySeed}` : `public:${retrySeed}`;
 
   useEffect(() => {
     let disposed = false;
@@ -69,7 +73,16 @@ export function useDerivWS(options?: UseDerivWSOptions): UseDerivWSReturn {
     });
 
     const unsubscribeExhausted = instance.onReconnectExhausted(() => {
-      if (!disposed) setIsExhausted(true);
+      if (!disposed) {
+        setIsExhausted(true);
+        // Auto-reconnect after 15s cool-down
+        retryTimerRef.current = setTimeout(() => {
+          if (!disposed) {
+            setRetrySeed((s) => s + 1);
+            setIsExhausted(false);
+          }
+        }, 15000);
+      }
     });
 
     instance.connect().catch((err) => {
@@ -88,6 +101,10 @@ export function useDerivWS(options?: UseDerivWSOptions): UseDerivWSReturn {
       instance.disconnect();
       wsRef.current = null;
       listeners.forEach((l) => l());
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reconnectKey]);
