@@ -2053,6 +2053,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       if (modifiedConfig.isHedgeMode) {
         addLog('[System] Hedge mode: both legs fire simultaneously.', 'info');
         executeTrade('leg1');
+        executeTrade('leg2');
       } else {
         executeTrade('leg1');
       }
