@@ -75,7 +75,7 @@ export interface AutoTradeConfig {
   coolOffConsecutiveLosses?: number;
   coolOffConsecutiveWins?: number;
   coolOffDuration?: number;
-  burstMode?: 'ws_pool' | 'parallel_retry' | 'sequential';
+  burstMode?: 'parallel' | 'sequential';
   burstSize?: number;
 }
 
@@ -187,10 +187,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitStake2Ref = useRef(0);
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
-
-  // WS Pool for burst mode
-  const wsPoolRef = useRef<DerivWS[]>([]);
-  const cleanupPoolRef = useRef<(() => void) | null>(null);
 
   // Sync refs with state
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
@@ -367,11 +363,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     setLeg1((prev) => ({ ...prev, isTrading: false, activeContractId: null }));
     setLeg2((prev) => ({ ...prev, isTrading: false, activeContractId: null }));
     addLog(`Autotrade stopped: ${reason}`, 'warn');
-    // Cleanup WS pool
-    if (wsPoolRef.current.length > 0) {
-      wsPoolRef.current.forEach(p => p.disconnect());
-      wsPoolRef.current = [];
-    }
   }, [cleanupSubscriptions, addLog]);
 
   // Main purchase trigger for a specific leg
@@ -576,31 +567,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const shouldBurst = activeBurstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives;
 
     if (shouldBurst) {
-      // ── WS pool helper ────────────────────────────────────────────────────
-      const getPoolWs = (idx: number): DerivWS | undefined => {
-        const pool = wsPoolRef.current;
-        const pws = pool.length > 0 ? pool[idx % pool.length] : null;
-        return (pws && pws.isConnected) ? pws : undefined;
-      };
-
-      // ── Shared burst logic: proposals → buys → wait → results ────────────
-      const processBatch = async <T, R>(
-        items: T[],
-        fn: (item: T, idx: number) => Promise<R>,
-        batchSize: number,
-        delayMs: number
-      ): Promise<PromiseSettledResult<R>[]> => {
-        const results: PromiseSettledResult<R>[] = [];
-        for (let i = 0; i < items.length; i += batchSize) {
-          const batch = items.slice(i, i + batchSize);
-          const batchResults = await Promise.allSettled(batch.map((item, j) => fn(item, i + j)));
-          results.push(...batchResults);
-          const remaining = items.length - (i + batchSize);
-          if (remaining > 0) await new Promise(r => setTimeout(r, delayMs));
-        }
-        return results;
-      };
-
       const executeDigitBurst = async (
         bLegKey: 'leg1' | 'leg2',
         bContractType: string,
@@ -611,7 +577,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       ) => {
         if (!ws || !isRunningRef.current) return;
         const bLegLabel = bIsLeg1 ? 'Leg 1' : 'Leg 2';
-        addLog(`[${bLegLabel}] ⚡ Burst (${burstMode}): ${bDigits.length} contracts (digits: ${bDigits.join(',')})`, 'info');
+        addLog(`[${bLegLabel}] ⚡ Burst (${burstMode}): ${bDigits.length} contracts`, 'info');
 
         const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
           Promise.race([
@@ -619,38 +585,37 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms))
           ]);
 
+        const processItems = async <T,>(
+          items: T[], processFn: (item: T, idx: number) => Promise<string | { contractId: number }>,
+          mode: string
+        ): Promise<PromiseSettledResult<string | { contractId: number }>[]> => {
+          if (mode === 'sequential') {
+            const results: PromiseSettledResult<string | { contractId: number }>[] = [];
+            for (let i = 0; i < items.length; i++) {
+              const r = await Promise.allSettled([withTimeout(processFn(items[i], i), 8000, `Item ${i}`)]);
+              results.push(r[0]);
+              if (i < items.length - 1) await new Promise(r => setTimeout(r, 800));
+            }
+            return results;
+          }
+          // Parallel mode: stagger with 600ms gap to stay under rate limit
+          return Promise.allSettled(
+            items.map((item, i) =>
+              new Promise<string | { contractId: number }>(resolve => setTimeout(resolve, i * 600))
+                .then(() => withTimeout(processFn(item, i) as Promise<string | { contractId: number }>, 8000, `Item ${i}`))
+            )
+          );
+        };
+
         // ── Proposals ───────────────────────────────────────────────────────
-        let proposalResults: PromiseSettledResult<string>[];
-        if (burstMode === 'sequential') {
-          // 1 at a time with delay to avoid rate limits on single connection
-          proposalResults = [];
-          for (const d of bDigits) {
-            const r = await Promise.allSettled([withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)]);
-            proposalResults.push(r[0]);
-            await new Promise(r => setTimeout(r, 800));
-          }
-        } else if (burstMode === 'parallel_retry') {
-          // All at once with 1-tick stagger between each to spread across time
-          proposalResults = await Promise.allSettled(
-            bDigits.map((d, i) => new Promise<string>((resolve) => setTimeout(resolve, i * 200)).then(() => withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)))
-          );
-          const failed: number[] = [];
-          proposalResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
-          if (failed.length > 0) {
-            await new Promise(r => setTimeout(r, 600));
-            const retryResults = await Promise.allSettled(failed.map(i => withTimeout(placeProposal(bContractType, bStake, config, bDigits[i]), 8000, `Retry digit ${bDigits[i]}`)));
-            let ri = 0;
-            proposalResults = proposalResults.map((r, i) => failed.includes(i) ? retryResults[ri++] : r);
-          }
-        } else {
-          const pool = wsPoolRef.current;
-          proposalResults = await Promise.allSettled(
-            bDigits.map((d, i) => withTimeout(placeProposal(bContractType, bStake, config, d, pool.length > 0 ? getPoolWs(i) : undefined), 8000, `Proposal digit ${d}`))
-          );
-        }
+        const rawProposals = await processItems(
+          bDigits,
+          (d) => placeProposal(bContractType, bStake, config, d as number),
+          burstMode
+        );
         const validProposals: { digit: number; proposalId: string }[] = [];
-        proposals.forEach((res, i) => {
-          if (res.status === 'fulfilled') validProposals.push({ digit: bDigits[i], proposalId: res.value });
+        rawProposals.forEach((res, i) => {
+          if (res.status === 'fulfilled') validProposals.push({ digit: bDigits[i] as number, proposalId: res.value as string });
           else addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${res.reason}`, 'error');
         });
         if (validProposals.length === 0) {
@@ -661,35 +626,14 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         }
 
         // ── Buys ────────────────────────────────────────────────────────────
-        let buyResults: PromiseSettledResult<{ contractId: number }>[];
-        if (burstMode === 'sequential') {
-          buyResults = [];
-          for (const p of validProposals) {
-            const r = await Promise.allSettled([withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)]);
-            buyResults.push(r[0]);
-            await new Promise(r => setTimeout(r, 800));
-          }
-        } else if (burstMode === 'parallel_retry') {
-          buyResults = await Promise.allSettled(
-            validProposals.map((p, i) => new Promise<{ contractId: number }>((resolve) => setTimeout(resolve, i * 200)).then(() => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)))
-          );
-          const failed: number[] = [];
-          buyResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
-          if (failed.length > 0) {
-            await new Promise(r => setTimeout(r, 600));
-            const retryResults = await Promise.allSettled(failed.map(i => withTimeout(buyContract(validProposals[i].proposalId, bStake), 8000, `Retry buy ${validProposals[i].digit}`)));
-            let ri = 0;
-            buyResults = buyResults.map((r, i) => failed.includes(i) ? retryResults[ri++] : r);
-          }
-        } else {
-          const pool = wsPoolRef.current;
-          buyResults = await Promise.allSettled(
-            validProposals.map((p, i) => withTimeout(buyContract(p.proposalId, bStake, pool.length > 0 ? getPoolWs(i) : undefined), 8000, `Buy ${p.digit}`))
-          );
-        }
+        const rawBuys = await processItems(
+          validProposals,
+          (p) => buyContract((p as { digit: number; proposalId: string }).proposalId, bStake),
+          burstMode
+        );
         const contracts: { digit: number; contractId: number }[] = [];
-        buys.forEach((res, i) => {
-          if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId });
+        rawBuys.forEach((res, i) => {
+          if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: (res.value as { contractId: number }).contractId });
           else addLog(`[${bLegLabel}] Buy failed for digit ${validProposals[i].digit}: ${res.reason}`, 'error');
         });
         if (contracts.length === 0) {
@@ -701,7 +645,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
         addLog(`[${bLegLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
 
-        // ── Settlement ──────────────────────────────────────────────────────
+        // ── Settlement (always parallel) ─────────────────────────────────────
         const outcomes = await Promise.allSettled(contracts.map(c => waitForResult(c.contractId)));
         let wins = 0, losses = 0, totalPnl = 0;
         const detail: string[] = [];
@@ -720,7 +664,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         let finalRecovery = config.recoveryMethod || 'martingale';
         const nextStake = calculateNextStake(bLegKey, isWinRound, bStake, config.baseStake, config.martingaleMultiplier, finalRecovery);
         bSetLegState((prev) => ({ ...prev, isTrading: false, activeContractId: null, lastResult: isWinRound ? 'win' : 'loss', profit: prev.profit + totalPnl, currentStake: nextStake }));
-
         setTimeout(() => { if (isRunningRef.current) executeTrade(bLegKey); }, 1000);
       };
 
@@ -736,7 +679,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
         setLegState((prev) => ({ ...prev, isTrading: true }));
         otherSetLegState((prev) => ({ ...prev, isTrading: true }));
-        addLog(`[System] ⚡ Hedge Burst (${burstMode}): L1 ${activeBurstDigits.length} + L2 ${otherDigits.length} digits`, 'info');
+        addLog(`[System] ⚡ Hedge Burst (${burstMode}): L1 ${activeBurstDigits.length} + L2 ${otherDigits.length}`, 'info');
 
         return Promise.all([
           executeDigitBurst(legKey, contractType, roundedStake, activeBurstDigits, setLegState, isLeg1),
@@ -2072,25 +2015,6 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       addLog('Single execution active. Trading Leg 1 only.', 'info');
     }
 
-    // Create WS pool if burst mode is 'ws_pool'
-    let startDelay = 100;
-    if (modifiedConfig.burstMode === 'ws_pool' && ws) {
-      const poolSize = Math.min(modifiedConfig.burstSize || 10, 10);
-      const newPool: DerivWS[] = [];
-      const cloneUrl = ws.getUrl();
-      for (let i = 0; i < poolSize; i++) {
-        const pws = new DerivWS(cloneUrl);
-        pws.connect().catch(() => {});
-        newPool.push(pws);
-      }
-      wsPoolRef.current = newPool;
-      startDelay = 3000;
-      setTimeout(() => {
-        const ready = newPool.filter(p => p.isConnected).length;
-        addLog(`[System] WS Pool: ${ready}/${poolSize} connections ready.`, ready > 0 ? 'success' : 'warn');
-      }, 2500);
-    }
-
     // Trigger initial trades
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
@@ -2099,7 +2023,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       } else {
         executeTrade('leg1');
       }
-    }, startDelay);
+    }, 100);
   }, [ws, isConnected, executeTrade, executeHedgeRound, cleanupSubscriptions, addLog]);
 
   // Register window.placeAutoTrade for AI signal auto-execution

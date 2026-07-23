@@ -202,7 +202,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [aiTrailingLockMode, setAiTrailingLockMode] = useState(false);
   const [aiDigitsMode, setAiDigitsMode] = useState(false);
   const [martingaleSplitMode, setMartingaleSplitMode] = useState<'optional' | 'full'>('full');
-  const [burstMode, setBurstMode] = useState<'ws_pool' | 'parallel_retry' | 'sequential'>('sequential');
+  const [burstMode, setBurstMode] = useState<'parallel' | 'sequential'>('sequential');
   const [burstSize, setBurstSize] = useState('10');
 
   // Dynamically filter options based on symbol category and trade type requirements
@@ -744,14 +744,13 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
               {/* Burst Execution Mode */}
               <div className="space-y-1.5 border-t border-zinc-800/50 pt-3">
                 <Label className="text-[11px] text-zinc-400">Burst Execution Mode</Label>
-                <Select value={burstMode} onValueChange={(val: 'ws_pool' | 'parallel_retry' | 'sequential') => setBurstMode(val)} disabled={isRunning}>
+                <Select value={burstMode} onValueChange={(val: 'parallel' | 'sequential') => setBurstMode(val)} disabled={isRunning}>
                   <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs">
                     <SelectValue placeholder="Select burst mode" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                    <SelectItem value="sequential">Sequential (1 connection, 1-at-a-time with delay)</SelectItem>
-                    <SelectItem value="ws_pool">WS Pool (multi-connection parallel)</SelectItem>
-                    <SelectItem value="parallel_retry">Parallel + Retry (all at once, retry rate-limited)</SelectItem>
+                    <SelectItem value="sequential">Sequential (1 at a time, safe & reliable)</SelectItem>
+                    <SelectItem value="parallel">Parallel (staggered, faster with retry)</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="mt-2">
