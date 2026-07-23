@@ -572,7 +572,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const burstMode = config.burstMode || 'sequential';
     const burstSize = Math.min(config.burstSize || (Array.isArray(allBurstDigits) ? allBurstDigits.length : 1), 10);
     const activeBurstDigits = Array.isArray(allBurstDigits) ? allBurstDigits.slice(0, burstSize) : [];
-    const shouldBurst = activeBurstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives;
+    const isEvenOddMode = contractType === 'DIGITEVEN' || contractType === 'DIGITODD';
+    const shouldBurst = (activeBurstDigits.length > 1 || (isEvenOddMode && activeBurstDigits.length > 0)) && !config.aiDigitsMode && !config.multiDigitObjectives;
 
     if (shouldBurst) {
       const executeDigitBurst = async (
@@ -594,43 +595,57 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms))
           ]);
 
-        const doRounds = async (): Promise<{ digit: number; contractId: number }[]> => {
+        // Build the list of contract placements
+        // For even/odd modes, each digit generates BOTH a DIGITEVEN and DIGITODD placement
+        const isEvenOddCt = (ct: string) => ct === 'DIGITEVEN' || ct === 'DIGITODD';
+        type Placement = { contractType: string; label: string; digitIdx: number };
+        const placements: Placement[] = [];
+        for (let i = 0; i < bDigits.length; i++) {
+          if (isEvenOddCt(bContractType)) {
+            placements.push({ contractType: 'DIGITEVEN', label: `Even #${i+1}`, digitIdx: i });
+            placements.push({ contractType: 'DIGITODD', label: `Odd #${i+1}`, digitIdx: i });
+          } else {
+            placements.push({ contractType: bContractType, label: `#${bDigits[i]}`, digitIdx: i });
+          }
+        }
+
+        const doRounds = async (): Promise<{ contractType: string; contractId: number }[]> => {
           if (burstMode === 'sequential') {
-            const contracts: { digit: number; contractId: number }[] = [];
-            for (let i = 0; i < bDigits.length; i++) {
+            const contracts: { contractType: string; contractId: number }[] = [];
+            for (const p of placements) {
               try {
-                const proposalId = await withTimeout(placeProposal(bContractType, bStake, config, bDigits[i] as number, useWs), 8000, `Proposal digit ${bDigits[i]}`);
+                const proposalId = await withTimeout(placeProposal(p.contractType, bStake, config, bDigits[p.digitIdx] as number, useWs), 8000, `Proposal ${p.label}`);
                 if (!proposalId) throw new Error('No proposal ID');
-                const buyResult = await withTimeout(buyContract(proposalId, bStake, useWs), 10000, `Buy ${bDigits[i]}`);
-                contracts.push({ digit: bDigits[i] as number, contractId: buyResult.contractId });
-                addLog(`[${bLegLabel}] Bought digit ${bDigits[i]} (contract ${buyResult.contractId})`, 'success');
+                const buyResult = await withTimeout(buyContract(proposalId, bStake, useWs), 10000, `Buy ${p.label}`);
+                contracts.push({ contractType: p.contractType, contractId: buyResult.contractId });
+                addLog(`[${bLegLabel}] Bought ${p.label} (contract ${buyResult.contractId})`, 'success');
               } catch (e) {
-                addLog(`[${bLegLabel}] Failed digit ${bDigits[i]}: ${e}`, 'error');
+                addLog(`[${bLegLabel}] Failed ${p.label}: ${e}`, 'error');
               }
-              if (i < bDigits.length - 1) await new Promise(r => setTimeout(r, 1000));
+              if (contracts.length < placements.length) await new Promise(r => setTimeout(r, 1000));
             }
             return contracts;
           }
           // Parallel: fetch all proposals (staggered), then fire all buys immediately
           const proposalResults = await Promise.allSettled(
-            bDigits.map((d, i) =>
+            placements.map((p, i) =>
               new Promise<string>(resolve => setTimeout(resolve, i * 1000))
-                .then(() => withTimeout(placeProposal(bContractType, bStake, config, d as number, useWs), 8000, `Proposal digit ${d}`))
+                .then(() => withTimeout(placeProposal(p.contractType, bStake, config, bDigits[p.digitIdx] as number, useWs), 8000, `Proposal ${p.label}`))
             )
           );
-          const valid: { digit: number; proposalId: string }[] = [];
+          const valid: { contractType: string; proposalId: string }[] = [];
           proposalResults.forEach((res, i) => {
-            if (res.status === 'fulfilled') valid.push({ digit: bDigits[i] as number, proposalId: res.value });
-            else addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${res.reason}`, 'error');
+            if (res.status === 'fulfilled') valid.push({ contractType: placements[i].contractType, proposalId: res.value });
+            else addLog(`[${bLegLabel}] Proposal failed for ${placements[i].label}: ${res.reason}`, 'error');
           });
           if (valid.length === 0) return [];
           const buyResults = await Promise.allSettled(
-            valid.map(p => withTimeout(buyContract(p.proposalId, bStake, useWs), 10000, `Buy ${p.digit}`))
+            valid.map(p => withTimeout(buyContract(p.proposalId, bStake, useWs), 10000, `Buy ${p.contractType}`))
           );
-          const contracts: { digit: number; contractId: number }[] = [];
+          const contracts: { contractType: string; contractId: number }[] = [];
           buyResults.forEach((res, i) => {
-            if (res.status === 'fulfilled') contracts.push({ digit: valid[i].digit, contractId: res.value.contractId });
-            else addLog(`[${bLegLabel}] Buy failed for digit ${valid[i].digit}: ${res.reason}`, 'error');
+            if (res.status === 'fulfilled') contracts.push({ contractType: valid[i].contractType, contractId: res.value.contractId });
+            else addLog(`[${bLegLabel}] Buy failed for ${valid[i].contractType}: ${res.reason}`, 'error');
           });
           return contracts;
         };
@@ -650,12 +665,12 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         let wins = 0, losses = 0, totalPnl = 0;
         const detail: string[] = [];
         outcomes.forEach((res, i) => {
-          const digit = contracts[i].digit;
+          const label = contracts[i].contractType;
           if (res.status === 'fulfilled') {
             if (res.value.won) wins++; else losses++;
             totalPnl += res.value.profit;
-            detail.push(`#${digit}: ${res.value.won ? 'WIN' : 'LOSS'} ($${res.value.profit.toFixed(2)})`);
-          } else { losses++; detail.push(`#${digit}: ERROR`); }
+            detail.push(`${label}: ${res.value.won ? 'WIN' : 'LOSS'} ($${res.value.profit.toFixed(2)})`);
+          } else { losses++; detail.push(`${label}: ERROR`); }
         });
         addLog(`[${bLegLabel}] ⚡ Burst results: ${wins}W/${losses}L — P&L: $${totalPnl.toFixed(2)} [${detail.join(', ')}]`, totalPnl >= 0 ? 'success' : 'error');
 
