@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { useAutoTrade, AutoTradeMode, AutoTradeConfig } from '@/hooks/use-autotrade';
 import type { UseAuthReturn } from '@/hooks/use-auth';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
+import { useTicks } from '@deriv/core';
+import { computeDigitStats } from '@/lib/digit-stats';
 import { Play, Square, Terminal, TrendingUp, ShieldAlert, Award, Hash, Zap, Sparkles, BarChart2, ShieldCheck } from 'lucide-react';
 import { AISignalsWidget } from './ai-signals-widget';
 import { CopyTradingBridge } from './copy-trading-bridge';
@@ -153,6 +156,10 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
     leg2,
     leg3,
   } = useAutoTrade(ws, isConnected);
+
+  // Digit stats for hot/cold bitmap display
+  const { prices, pipSize } = useTicks(ws, isConnected, symbol);
+  const digitStats = useMemo(() => computeDigitStats(prices, pipSize), [prices, pipSize]);
 
   // Form State
   const [mode, setMode] = useState<AutoTradeMode>('digits-even-odd');
@@ -583,17 +590,29 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                     {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
                       const s = d.toString();
                       const selected = selectedDigit.includes(s);
+                      const bitmap = digitStats.bitmap[d] ?? [];
+                      const pct = digitStats.percentages[d] ?? 0;
+                      const barColor = pct >= 13 ? 'bg-green-500' : pct >= 9 ? 'bg-green-700' : pct >= 7 ? 'bg-red-700' : 'bg-red-500';
                       return (
-                        <button key={d} onClick={() => {
-                          if (selected) setSelectedDigit(selectedDigit.filter(x => x !== s));
-                          else setSelectedDigit([...selectedDigit, s]);
-                        }} disabled={isRunning || aiDigitsMode}
-                          style={{
-                            width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 13,
-                            background: selected ? '#7c3aed' : '#2a2a3e', color: selected ? '#fff' : '#aaa',
-                            border: selected ? '1px solid #7c3aed' : '1px solid #3a3a4e',
-                            opacity: (isRunning || aiDigitsMode) ? 0.4 : 1,
-                          }}>{d}</button>
+                        <div key={d} className="flex flex-col items-center gap-0.5">
+                          <button onClick={() => {
+                            if (selected) setSelectedDigit(selectedDigit.filter(x => x !== s));
+                            else setSelectedDigit([...selectedDigit, s]);
+                          }} disabled={isRunning || aiDigitsMode}
+                            style={{
+                              width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                              background: selected ? '#7c3aed' : '#2a2a3e', color: selected ? '#fff' : '#aaa',
+                              border: selected ? '1px solid #7c3aed' : '1px solid #3a3a4e',
+                              opacity: (isRunning || aiDigitsMode) ? 0.4 : 1,
+                            }}>{d}</button>
+                          {bitmap.length > 0 && (
+                            <div className="flex gap-px">
+                              {bitmap.slice(-10).map((hit, i) => (
+                                <div key={i} className={cn('w-1 h-2 rounded-sm', hit ? barColor : 'bg-zinc-800')} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -617,17 +636,29 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                       {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => {
                         const s = d.toString();
                         const selected = selectedDigit2.includes(s);
+                        const bitmap = digitStats.bitmap[d] ?? [];
+                        const pct = digitStats.percentages[d] ?? 0;
+                        const barColor = pct >= 13 ? 'bg-green-500' : pct >= 9 ? 'bg-green-700' : pct >= 7 ? 'bg-red-700' : 'bg-red-500';
                         return (
-                          <button key={d} onClick={() => {
-                            if (selected) setSelectedDigit2(selectedDigit2.filter(x => x !== s));
-                            else setSelectedDigit2([...selectedDigit2, s]);
-                          }} disabled={isRunning || aiDigitsMode}
-                            style={{
-                              width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 13,
-                              background: selected ? '#7c3aed' : '#2a2a3e', color: selected ? '#fff' : '#aaa',
-                              border: selected ? '1px solid #7c3aed' : '1px solid #3a3a4e',
-                              opacity: (isRunning || aiDigitsMode) ? 0.4 : 1,
-                            }}>{d}</button>
+                          <div key={d} className="flex flex-col items-center gap-0.5">
+                            <button onClick={() => {
+                              if (selected) setSelectedDigit2(selectedDigit2.filter(x => x !== s));
+                              else setSelectedDigit2([...selectedDigit2, s]);
+                            }} disabled={isRunning || aiDigitsMode}
+                              style={{
+                                width: 32, height: 32, borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                                background: selected ? '#7c3aed' : '#2a2a3e', color: selected ? '#fff' : '#aaa',
+                                border: selected ? '1px solid #7c3aed' : '1px solid #3a3a4e',
+                                opacity: (isRunning || aiDigitsMode) ? 0.4 : 1,
+                              }}>{d}</button>
+                            {bitmap.length > 0 && (
+                              <div className="flex gap-px">
+                                {bitmap.slice(-10).map((hit, i) => (
+                                  <div key={i} className={cn('w-1 h-2 rounded-sm', hit ? barColor : 'bg-zinc-800')} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
