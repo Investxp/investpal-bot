@@ -189,6 +189,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitStake3Ref = useRef(0);
 
   // Sync refs with state
+  const wsLeg2Ref = useRef<DerivWS | null>(null);
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
   useEffect(() => { leg2Ref.current = leg2; }, [leg2]);
   useEffect(() => { leg3Ref.current = leg3; }, [leg3]);
@@ -363,6 +364,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     setLeg1((prev) => ({ ...prev, isTrading: false, activeContractId: null }));
     setLeg2((prev) => ({ ...prev, isTrading: false, activeContractId: null }));
     addLog(`Autotrade stopped: ${reason}`, 'warn');
+    if (wsLeg2Ref.current) {
+      try { wsLeg2Ref.current.disconnect(); } catch {}
+      wsLeg2Ref.current = null;
+    }
   }, [cleanupSubscriptions, addLog]);
 
   // Main purchase trigger for a specific leg
@@ -574,6 +579,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         bDigits: number[],
         bSetLegState: React.Dispatch<React.SetStateAction<RunnerState>>,
         bIsLeg1: boolean,
+        useWs?: DerivWS,
       ) => {
         if (!ws || !isRunningRef.current) return;
         const bLegLabel = bIsLeg1 ? 'Leg 1' : 'Leg 2';
@@ -590,7 +596,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             const results: { digit: number; proposalId: string }[] = [];
             for (let i = 0; i < bDigits.length; i++) {
               try {
-                const id = await withTimeout(placeProposal(bContractType, bStake, config, bDigits[i] as number), 8000, `Proposal digit ${bDigits[i]}`);
+                const id = await withTimeout(placeProposal(bContractType, bStake, config, bDigits[i] as number, useWs), 8000, `Proposal digit ${bDigits[i]}`);
                 results.push({ digit: bDigits[i] as number, proposalId: id });
               } catch (e) {
                 addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${e}`, 'error');
@@ -603,7 +609,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           const raw = await Promise.allSettled(
             bDigits.map((d, i) =>
               new Promise<string>(resolve => setTimeout(resolve, i * 1000))
-                .then(() => withTimeout(placeProposal(bContractType, bStake, config, d as number), 8000, `Proposal digit ${d}`))
+                .then(() => withTimeout(placeProposal(bContractType, bStake, config, d as number, useWs), 8000, `Proposal digit ${d}`))
             )
           );
           const results: { digit: number; proposalId: string }[] = [];
@@ -628,13 +634,13 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           ? await (async () => {
               const r: PromiseSettledResult<{ contractId: number }>[] = [];
               for (const p of validProposals) {
-                r.push(...await Promise.allSettled([withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)]));
+                r.push(...await Promise.allSettled([withTimeout(buyContract(p.proposalId, bStake, useWs), 8000, `Buy ${p.digit}`)]));
                 if (r.length < validProposals.length) await new Promise(r => setTimeout(r, 1000));
               }
               return r;
             })()
           : await Promise.allSettled(
-              validProposals.map(p => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`))
+              validProposals.map(p => withTimeout(buyContract(p.proposalId, bStake, useWs), 8000, `Buy ${p.digit}`))
             );
         const contracts: { digit: number; contractId: number }[] = [];
         rawBuys.forEach((res, i) => {
@@ -651,7 +657,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         addLog(`[${bLegLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
 
         // ── Settlement (always parallel) ─────────────────────────────────────
-        const outcomes = await Promise.allSettled(contracts.map(c => waitForResult(c.contractId)));
+        const outcomes = await Promise.allSettled(contracts.map(c => waitForResult(c.contractId, useWs)));
         let wins = 0, losses = 0, totalPnl = 0;
         const detail: string[] = [];
         outcomes.forEach((res, i) => {
@@ -686,15 +692,18 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         otherSetLegState((prev) => ({ ...prev, isTrading: true }));
         addLog(`[System] ⚡ Hedge Burst (${burstMode}): L1 ${activeBurstDigits.length} + L2 ${otherDigits.length}`, 'info');
 
+        const l2ws = wsLeg2Ref.current?.isConnected ? wsLeg2Ref.current : undefined;
+        if (l2ws) addLog('[System] L2 using dedicated WS — double rate limit headroom', 'info');
+
         return Promise.all([
-          executeDigitBurst(legKey, contractType, roundedStake, activeBurstDigits, setLegState, isLeg1),
-          executeDigitBurst(otherLegKey, otherContractType, otherStake, otherDigits, otherSetLegState, otherIsLeg1),
+          executeDigitBurst(legKey, contractType, roundedStake, activeBurstDigits, setLegState, isLeg1, undefined),
+          executeDigitBurst(otherLegKey, otherContractType, otherStake, otherDigits, otherSetLegState, otherIsLeg1, l2ws),
         ]).then(() => {
           setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 1000);
         });
       } else {
         setLegState((prev) => ({ ...prev, isTrading: true }));
-        return executeDigitBurst(legKey, contractType, roundedStake, activeBurstDigits, setLegState, isLeg1);
+        return executeDigitBurst(legKey, contractType, roundedStake, activeBurstDigits, setLegState, isLeg1, undefined);
       }
     }
 
@@ -2011,6 +2020,25 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     setLogs([]);
     setIsRunning(true);
     addLog(`Starting autotrade in ${modifiedConfig.mode.toUpperCase()} on ${modifiedConfig.symbol}...`, 'info');
+
+    // Check rate limits via website_status
+    if (ws) {
+      ws.send<any>({ website_status: 1 }).then((resp) => {
+        const limits = resp.website_status?.api_call_limits;
+        if (limits) {
+          addLog(`[System] API limits — proposal_sub: ${limits.max_proposal_subscription ?? '?'}, general: ${limits.max_requests_general ?? '?'}, pricing: ${limits.max_requests_pricing ?? '?'}, outcome: ${limits.max_requests_outcome ?? '?'}`, 'info');
+        }
+      }).catch(() => {});
+      // Create a second WS connection for Leg 2 to double rate limit headroom
+      const ws2 = new DerivWS(ws.getUrl());
+      ws2.connect().then(() => {
+        wsLeg2Ref.current = ws2;
+        addLog('[System] Leg 2 WS connected — dedicated connection for L2 rate limits', 'success');
+      }).catch(() => {
+        addLog('[System] Leg 2 WS failed — both legs will share main WS', 'warn');
+        ws2.disconnect();
+      });
+    }
 
     if (modifiedConfig.isHedgeMode) {
       addLog('Hedge Mode enabled. Executing both legs simultaneously.', 'info');
