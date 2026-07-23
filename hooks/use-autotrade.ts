@@ -1495,27 +1495,27 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         const isEq2 = targetsList[1]?.startsWith('=') || contractType2 === 'DIGITMATCH';
         const isEq3 = targetsList[2]?.startsWith('=') || contractType3 === 'DIGITMATCH';
 
-        // 3. Apply Equal Digit Loss Splitting
+        // 3. Apply Equal Digit Loss Splitting (lost stake divided between other two legs, no martingale)
         if (isEq1 && !w1) {
-          const splitRecovery = Math.round((roundedStake1 / 2) * config.martingaleMultiplier * 100) / 100;
-          stdNext1 = config.baseStake; // Equal leg resets
+          const splitRecovery = Math.round((roundedStake1 / 2) * 100) / 100;
+          stdNext1 = config.baseStake; // Equal leg resets to base
           stdNext2 += splitRecovery;
           stdNext3 += splitRecovery;
-          addLog(`[System] [Equal Digit Loss] Leg 1 lost. Split recovery of $${splitRecovery.toFixed(2)} added to Leg 2 and Leg 3.`, 'warn');
+          addLog(`[System] [Equal Digit Loss] Leg 1 lost. Split $${roundedStake1.toFixed(2)} equally: +$${splitRecovery.toFixed(2)} to Leg 2 and Leg 3.`, 'warn');
         }
         if (isEq2 && !w2) {
-          const splitRecovery = Math.round((roundedStake2 / 2) * config.martingaleMultiplier * 100) / 100;
-          stdNext2 = config.baseStake; // Equal leg resets
+          const splitRecovery = Math.round((roundedStake2 / 2) * 100) / 100;
+          stdNext2 = config.baseStake;
           stdNext1 += splitRecovery;
           stdNext3 += splitRecovery;
-          addLog(`[System] [Equal Digit Loss] Leg 2 lost. Split recovery of $${splitRecovery.toFixed(2)} added to Leg 1 and Leg 3.`, 'warn');
+          addLog(`[System] [Equal Digit Loss] Leg 2 lost. Split $${roundedStake2.toFixed(2)} equally: +$${splitRecovery.toFixed(2)} to Leg 1 and Leg 3.`, 'warn');
         }
         if (isEq3 && !w3) {
-          const splitRecovery = Math.round((roundedStake3 / 2) * config.martingaleMultiplier * 100) / 100;
-          stdNext3 = config.baseStake; // Equal leg resets
+          const splitRecovery = Math.round((roundedStake3 / 2) * 100) / 100;
+          stdNext3 = config.baseStake;
           stdNext1 += splitRecovery;
           stdNext2 += splitRecovery;
-          addLog(`[System] [Equal Digit Loss] Leg 3 lost. Split recovery of $${splitRecovery.toFixed(2)} added to Leg 1 and Leg 2.`, 'warn');
+          addLog(`[System] [Equal Digit Loss] Leg 3 lost. Split $${roundedStake3.toFixed(2)} equally: +$${splitRecovery.toFixed(2)} to Leg 1 and Leg 2.`, 'warn');
         }
 
         // 4. Apply Intertrade Switch Routing if enabled
