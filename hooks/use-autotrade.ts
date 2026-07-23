@@ -2095,9 +2095,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     // Trigger initial trades
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
-        addLog('[System] Hedge mode: both legs fire simultaneously.', 'info');
-        executeTrade('leg1');
-        executeTrade('leg2');
+        addLog('[System] Hedge mode via executeHedgeRound (intertrade switch + combined recovery).', 'info');
+        executeHedgeRound();
       } else {
         executeTrade('leg1');
       }
