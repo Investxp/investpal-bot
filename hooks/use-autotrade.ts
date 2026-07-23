@@ -568,13 +568,12 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       return;
     }
 
-    // Burst mode: trade multiple digits (configurable mode + batch size)
-    const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
+    // Burst mode: trade configurable number of simultaneous pairs (all market types)
     const allBurstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
     const burstMode = config.burstMode || 'sequential';
     const burstSize = Math.min(config.burstSize || (Array.isArray(allBurstDigits) ? allBurstDigits.length : 1), 10);
     const activeBurstDigits = Array.isArray(allBurstDigits) ? allBurstDigits.slice(0, burstSize) : [];
-    const shouldBurst = isDigitType && activeBurstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives;
+    const shouldBurst = activeBurstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives;
 
     if (shouldBurst) {
       // ── WS pool helper ────────────────────────────────────────────────────
@@ -631,7 +630,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             await new Promise(r => setTimeout(r, 800));
           }
         } else if (burstMode === 'parallel_retry') {
-          proposalResults = await Promise.allSettled(bDigits.map(d => withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)));
+          // All at once with 1-tick stagger between each to spread across time
+          proposalResults = await Promise.allSettled(
+            bDigits.map((d, i) => new Promise<string>((resolve) => setTimeout(resolve, i * 200)).then(() => withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)))
+          );
           const failed: number[] = [];
           proposalResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
           if (failed.length > 0) {
@@ -668,7 +670,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             await new Promise(r => setTimeout(r, 800));
           }
         } else if (burstMode === 'parallel_retry') {
-          buyResults = await Promise.allSettled(validProposals.map(p => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)));
+          buyResults = await Promise.allSettled(
+            validProposals.map((p, i) => new Promise<{ contractId: number }>((resolve) => setTimeout(resolve, i * 200)).then(() => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)))
+          );
           const failed: number[] = [];
           buyResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
           if (failed.length > 0) {
@@ -2069,27 +2073,25 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     }
 
     // Create WS pool if burst mode is 'ws_pool'
+    let startDelay = 100;
     if (modifiedConfig.burstMode === 'ws_pool' && ws) {
-      const poolSize = Math.min(modifiedConfig.burstSize || 5, 5);
+      const poolSize = Math.min(modifiedConfig.burstSize || 10, 10);
       const newPool: DerivWS[] = [];
-      const connectPromises: Promise<void>[] = [];
+      const cloneUrl = ws.getUrl();
       for (let i = 0; i < poolSize; i++) {
-        const cloneUrl = ws.getUrl();
         const pws = new DerivWS(cloneUrl);
-        connectPromises.push(pws.connect());
+        pws.connect().catch(() => {});
         newPool.push(pws);
       }
-      Promise.allSettled(connectPromises).then(() => {
+      wsPoolRef.current = newPool;
+      startDelay = 3000;
+      setTimeout(() => {
         const ready = newPool.filter(p => p.isConnected).length;
-        addLog(`[System] WS Pool: ${ready}/${poolSize} connections ready.`, ready === poolSize ? 'success' : 'warn');
-        wsPoolRef.current = newPool;
-      }).catch(() => {
-        wsPoolRef.current = newPool;
-      });
+        addLog(`[System] WS Pool: ${ready}/${poolSize} connections ready.`, ready > 0 ? 'success' : 'warn');
+      }, 2500);
     }
 
-    // Trigger initial trades (longer delay for WS pool to establish connections)
-    const initialDelay = modifiedConfig.burstMode === 'ws_pool' ? 2500 : 100;
+    // Trigger initial trades
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
         addLog('[System] Hedge mode: both legs fire simultaneously.', 'info');
@@ -2097,7 +2099,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       } else {
         executeTrade('leg1');
       }
-    }, initialDelay);
+    }, startDelay);
   }, [ws, isConnected, executeTrade, executeHedgeRound, cleanupSubscriptions, addLog]);
 
   // Register window.placeAutoTrade for AI signal auto-execution
