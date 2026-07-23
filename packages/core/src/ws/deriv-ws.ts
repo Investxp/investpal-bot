@@ -125,8 +125,9 @@ export class DerivWS {
 
   /**
    * Send a one-shot request and wait for the response matched by req_id.
+   * If the server doesn't respond within `timeoutMs`, the promise rejects.
    */
-  send<T = Record<string, unknown>>(payload: Record<string, unknown>): Promise<T> {
+  send<T = Record<string, unknown>>(payload: Record<string, unknown>, timeoutMs = 15000): Promise<T> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         reject(new Error('WebSocket is not connected'));
@@ -136,9 +137,20 @@ export class DerivWS {
       const reqId = ++this.reqIdCounter;
       const message = { ...payload, req_id: reqId };
 
+      const timer = setTimeout(() => {
+        this.pendingRequests.delete(reqId);
+        reject(new Error(`Request timeout after ${timeoutMs}ms (req_id ${reqId})`));
+      }, timeoutMs);
+
       this.pendingRequests.set(reqId, {
-        resolve: resolve as (data: Record<string, unknown>) => void,
-        reject,
+        resolve: (data) => {
+          clearTimeout(timer);
+          resolve(data as T);
+        },
+        reject: (err) => {
+          clearTimeout(timer);
+          reject(err);
+        },
       });
 
       this.ws.send(JSON.stringify(message));
