@@ -614,22 +614,28 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         const bLegLabel = bIsLeg1 ? 'Leg 1' : 'Leg 2';
         addLog(`[${bLegLabel}] ⚡ Burst (${burstMode}): ${bDigits.length} contracts (digits: ${bDigits.join(',')})`, 'info');
 
+        const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+          Promise.race([
+            promise,
+            new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms))
+          ]);
+
         // ── Proposals ───────────────────────────────────────────────────────
         let proposalResults: PromiseSettledResult<string>[];
         if (burstMode === 'parallel_retry') {
-          proposalResults = await Promise.allSettled(bDigits.map(d => placeProposal(bContractType, bStake, config, d)));
+          proposalResults = await Promise.allSettled(bDigits.map(d => withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)));
           const failed: number[] = [];
           proposalResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
           if (failed.length > 0) {
             await new Promise(r => setTimeout(r, 600));
-            const retryResults = await Promise.allSettled(failed.map(i => placeProposal(bContractType, bStake, config, bDigits[i])));
+            const retryResults = await Promise.allSettled(failed.map(i => withTimeout(placeProposal(bContractType, bStake, config, bDigits[i]), 8000, `Retry digit ${bDigits[i]}`)));
             let ri = 0;
             proposalResults = proposalResults.map((r, i) => failed.includes(i) ? retryResults[ri++] : r);
           }
         } else {
           const pool = wsPoolRef.current;
           proposalResults = await Promise.allSettled(
-            bDigits.map((d, i) => placeProposal(bContractType, bStake, config, d, pool.length > 0 ? getPoolWs(i) : undefined))
+            bDigits.map((d, i) => withTimeout(placeProposal(bContractType, bStake, config, d, pool.length > 0 ? getPoolWs(i) : undefined), 8000, `Proposal digit ${d}`))
           );
         }
         const validProposals: { digit: number; proposalId: string }[] = [];
@@ -647,19 +653,19 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         // ── Buys ────────────────────────────────────────────────────────────
         let buyResults: PromiseSettledResult<{ contractId: number }>[];
         if (burstMode === 'parallel_retry') {
-          buyResults = await Promise.allSettled(validProposals.map(p => buyContract(p.proposalId, bStake)));
+          buyResults = await Promise.allSettled(validProposals.map(p => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)));
           const failed: number[] = [];
           buyResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
           if (failed.length > 0) {
             await new Promise(r => setTimeout(r, 600));
-            const retryResults = await Promise.allSettled(failed.map(i => buyContract(validProposals[i].proposalId, bStake)));
+            const retryResults = await Promise.allSettled(failed.map(i => withTimeout(buyContract(validProposals[i].proposalId, bStake), 8000, `Retry buy ${validProposals[i].digit}`)));
             let ri = 0;
             buyResults = buyResults.map((r, i) => failed.includes(i) ? retryResults[ri++] : r);
           }
         } else {
           const pool = wsPoolRef.current;
           buyResults = await Promise.allSettled(
-            validProposals.map((p, i) => buyContract(p.proposalId, bStake, pool.length > 0 ? getPoolWs(i) : undefined))
+            validProposals.map((p, i) => withTimeout(buyContract(p.proposalId, bStake, pool.length > 0 ? getPoolWs(i) : undefined), 8000, `Buy ${p.digit}`))
           );
         }
         const contracts: { digit: number; contractId: number }[] = [];
