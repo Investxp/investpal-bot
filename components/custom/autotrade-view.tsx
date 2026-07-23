@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { useAutoTrade, AutoTradeMode, AutoTradeConfig } from '@/hooks/use-autotrade';
 import type { UseAuthReturn } from '@/hooks/use-auth';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
-import { computeDigitStats, getLastDigit } from '@/lib/digit-stats';
+import { computeDigitStats } from '@/lib/digit-stats';
 import { Play, Square, Terminal, TrendingUp, ShieldAlert, Award, Hash, Zap, Sparkles, BarChart2, ShieldCheck } from 'lucide-react';
 import { AISignalsWidget } from './ai-signals-widget';
 import { CopyTradingBridge } from './copy-trading-bridge';
@@ -179,7 +179,11 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
     };
   }, [ws, isConnected, symbol]);
   const digitStats = useMemo(() => {
-    const pipSize = tickPrices.length > 0 ? 2 : 2;
+    if (tickPrices.length === 0) return { counts: [], percentages: [], totalTicks: 0, bitmap: [] };
+    const sample = tickPrices[tickPrices.length - 1];
+    const sampleStr = sample.toString();
+    const dotIdx = sampleStr.indexOf('.');
+    const pipSize = dotIdx === -1 ? 0 : sampleStr.length - dotIdx - 1;
     return computeDigitStats(tickPrices, pipSize);
   }, [tickPrices]);
 
