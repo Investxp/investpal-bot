@@ -754,7 +754,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                   </SelectContent>
                 </Select>
                 <div className="mt-2">
-                  <Label className="text-[11px] text-zinc-400">Simultaneous Pairs (1-10)</Label>
+                  <Label className="text-[11px] text-zinc-400">Number of Trades (1-10)</Label>
                   <Input type="number" min={1} max={10} value={burstSize} onChange={(e) => setBurstSize(e.target.value)} disabled={isRunning} className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs mt-1" />
                 </div>
               </div>
