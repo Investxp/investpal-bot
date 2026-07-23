@@ -70,13 +70,11 @@ export { getAuthBaseUrl, getApiBaseUrl, getPublicWsUrl } from './config';
 export { pickDefaultSymbol } from './utils/pick-default-symbol';
 
 // WebSocket
-export { DerivWS } from './ws';
+export { DerivWS } from './ws/deriv-ws';
 
-// React Hooks
-export {
-  useDerivWS,
-  useActiveSymbols,
-  useTicks,
-  useProposal,
-  useBuy,
-} from './react';
+// React Hooks — directly from source files (avoid barrel to prevent circular-dep TDZ)
+export { useDerivWS } from './react/useDerivWS';
+export { useActiveSymbols } from './react/useActiveSymbols';
+export { useTicks } from './react/useTicks';
+export { useProposal } from './react/useProposal';
+export { useBuy } from './react/useBuy';

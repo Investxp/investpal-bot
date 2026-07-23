@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
-import { DerivWS } from '../ws';
+import { DerivWS } from '../ws/deriv-ws';
 
 export interface UseDerivWSOptions {
   /**
