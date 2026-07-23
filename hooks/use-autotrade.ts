@@ -578,10 +578,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
     if (shouldBurst) {
       // ── WS pool helper ────────────────────────────────────────────────────
-      const getPoolWs = (idx: number): DerivWS => {
+      const getPoolWs = (idx: number): DerivWS | undefined => {
         const pool = wsPoolRef.current;
         const pws = pool.length > 0 ? pool[idx % pool.length] : null;
-        return (pws && pws.isConnected) ? pws : (ws as DerivWS);
+        return (pws && pws.isConnected) ? pws : undefined;
       };
 
       // ── Shared burst logic: proposals → buys → wait → results ────────────
@@ -2067,16 +2067,16 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       });
     }
 
-    // Trigger initial trades
+    // Trigger initial trades (longer delay for WS pool to establish connections)
+    const initialDelay = modifiedConfig.burstMode === 'ws_pool' ? 2500 : 100;
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
-        // Use executeTrade for hedge mode — it detects digit burst and fires both legs simultaneously
         addLog('[System] Hedge mode starting via executeTrade for burst-compatible execution.', 'info');
         executeTrade('leg1');
       } else {
         executeTrade('leg1');
       }
-    }, 100);
+    }, initialDelay);
   }, [ws, isConnected, executeTrade, executeHedgeRound, cleanupSubscriptions, addLog]);
 
   // Register window.placeAutoTrade for AI signal auto-execution
