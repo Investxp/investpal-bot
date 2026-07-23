@@ -190,6 +190,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
   // Hedge mode synchronization — tracks which legs are actively trading
   const hedgeSyncRef = useRef<{ leg1: boolean; leg2: boolean }>({ leg1: false, leg2: false });
+  // Hedge combined settlement — accumulates both legs' P&L for single recovery decision
+  const hedgeSettleRef = useRef<{ leg1?: number; leg2?: number }>({});
 
   // Sync refs with state
   const wsLeg2Ref = useRef<DerivWS | null>(null);
@@ -669,7 +671,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         });
         addLog(`[${bLegLabel}] ⚡ Burst results: ${wins}W/${losses}L — P&L: $${totalPnl.toFixed(2)} [${detail.join(', ')}]`, totalPnl >= 0 ? 'success' : 'error');
 
-        const isWinRound = wins >= losses;
+        const isWinRound = totalPnl >= 0;
         setStats((prev) => ({ ...prev, wins: prev.wins + wins, losses: prev.losses + losses, totalProfit: prev.totalProfit + totalPnl, totalTrades: prev.totalTrades + contracts.length }));
         let finalRecovery = config.recoveryMethod || 'martingale';
         const nextStake = calculateNextStake(bLegKey, isWinRound, bStake, config.baseStake, config.martingaleMultiplier, finalRecovery);
@@ -867,13 +869,34 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           }
 
           if (config.isHedgeMode) {
-            setLegState((prevLeg) => ({
-              ...prevLeg,
-              activeContractId: null,
-              lastResult: isWin ? 'win' : 'loss',
-              profit: prevLeg.profit + profitLoss,
-              currentStake: nextStake,
-            }));
+            // Hedge mode: combine both legs' P&L before applying recovery
+            hedgeSettleRef.current[isLeg1 ? 'leg1' : 'leg2'] = profitLoss;
+
+            const p1 = hedgeSettleRef.current.leg1;
+            const p2 = hedgeSettleRef.current.leg2;
+
+            if (p1 !== undefined && p2 !== undefined) {
+              hedgeSettleRef.current = {};
+              const roundNet = p1 + p2;
+              const isCombinedWin = roundNet >= 0;
+
+              const hedgeRecovery = config.recoveryMethod || 'martingale';
+              const hedgeNextStake = calculateNextStake(
+                'leg1',
+                isCombinedWin,
+                config.baseStake,
+                config.baseStake,
+                config.martingaleMultiplier,
+                hedgeRecovery
+              );
+
+              setLeg1((prev) => ({ ...prev, currentStake: hedgeNextStake, activeContractId: null, lastResult: isCombinedWin ? 'win' : 'loss', profit: prev.profit + p1 }));
+              setLeg2((prev) => ({ ...prev, currentStake: hedgeNextStake, activeContractId: null, lastResult: isCombinedWin ? 'win' : 'loss', profit: prev.profit + p2 }));
+
+              addLog(`[System] Hedge combined: $${p1.toFixed(2)} + $${p2.toFixed(2)} = $${roundNet.toFixed(2)} (${isCombinedWin ? 'WIN' : 'LOSS'}) → next stake: $${hedgeNextStake.toFixed(2)}`, isCombinedWin ? 'success' : 'error');
+            } else {
+              setLegState((prev) => ({ ...prev, activeContractId: null, profit: prev.profit + profitLoss }));
+            }
           } else {
             activeStakeRef.current = nextStake;
             setLegState((prevLeg) => ({
