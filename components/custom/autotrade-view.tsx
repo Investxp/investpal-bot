@@ -204,6 +204,9 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [isAlternateMode, setIsAlternateMode] = useState(true);
   const [alternateFrequency, setAlternateFrequency] = useState('1');
 
+  // Sync L2 stake to L1 when L1 changes
+  useEffect(() => { setBaseStake2(baseStake); }, [baseStake]);
+
   // Advanced Feature States
   const [recoveryMethod, setRecoveryMethod] = useState<'martingale' | 'reverse_martingale' | 'dalembert' | 'fibonacci' | 'oscars_grind' | 'ai_auto'>('martingale');
   const [ghostLossThreshold, setGhostLossThreshold] = useState('0');

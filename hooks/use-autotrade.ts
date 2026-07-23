@@ -1584,7 +1584,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           nextStake3 = stdNext3;
         }
       }
-      if (config.mode === 'digits-match-differ') {
+      if (!isTripleMode && config.mode === 'digits-match-differ') {
         // Active split recovery? Adjust debt from this round's Differ result
         const splitCount = config.recoverySplitCount || 1;
         if (recoveryDebtRef.current > 0) {
@@ -1650,7 +1650,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             nextStake2 = baseStake2;
           }
         }
-      } else if (config.isAlternateMode) {
+      } else if (!isTripleMode && config.isAlternateMode) {
         // Intertrade Switch Recovery:
         if (!w1 && w2) {
           nextStake1 = config.baseStake;
@@ -1664,7 +1664,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           nextStake1 = calculateNextStake('leg1', w1, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
           nextStake2 = calculateNextStake('leg2', w2, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
         }
-      } else {
+      } else if (!isTripleMode) {
         // Standard Independent Recovery
         nextStake1 = calculateNextStake('leg1', w1, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
         nextStake2 = calculateNextStake('leg2', w2, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
