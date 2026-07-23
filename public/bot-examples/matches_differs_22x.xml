@@ -1,0 +1,301 @@
+<xml xmlns="http://www.w3.org/1999/xhtml" collection="false">
+  <block type="trade" id="cOM,2GKP0wJC7H#}7bP," x="0" y="0">
+    <statement name="SUBMARKET">
+      <block type="variables_set" id="Q!uS@z0|V|.HkLG`g!l0">
+        <field name="VAR">contract_type</field>
+        <value name="VALUE">
+          <block type="text" id="F3+)3*S4t0]Kb9fM)Rg0">
+            <field name="TEXT">Matches</field>
+          </block>
+        </value>
+        <next>
+          <block type="variables_set" id="LROT3!`zC0D%*9Sm18]g">
+            <field name="VAR">stake</field>
+            <value name="VALUE">
+              <block type="math_number" id="h,o|Jtq5|@6-nXzNTv|b">
+                <field name="NUM">1</field>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set" id="oB/@G2m-^6aO5){hE%FG">
+                <field name="VAR">base_stake</field>
+                <value name="VALUE">
+                  <block type="math_number" id="XW~XQ5Heh0^]Rk?F~49V">
+                    <field name="NUM">1</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="variables_set" id="rrhhOe`?n`5||1k^%hCZ">
+                    <field name="VAR">digit</field>
+                    <value name="VALUE">
+                      <block type="math_number" id="?0]EaA.PF6L|)eW5#rJ7">
+                        <field name="NUM">5</field>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="market" id="~I%~R98R|%0F[?k}GYzV">
+                        <field name="MARKET_LIST">volidx</field>
+                        <field name="SUBMARKET_LIST">random_index</field>
+                        <field name="SYMBOL_LIST">R_100</field>
+                        <field name="TRADETYPECAT_LIST">digits</field>
+                        <field name="TRADETYPE_LIST">matchesdiffers</field>
+                        <field name="TYPE_LIST">both</field>
+                        <field name="CANDLEINTERVAL_LIST">60</field>
+                        <field name="DURATIONTYPE_LIST">t</field>
+                        <field name="PAYOUTTYPE_LIST">stake</field>
+                        <field name="CURRENCY_LIST">USD</field>
+                        <field name="RESTARTONERROR">FALSE</field>
+                        <value name="DURATION">
+                          <block type="math_number" id="f5&t_*5O0FQq|:pVYb3X">
+                            <field name="NUM">5</field>
+                          </block>
+                        </value>
+                        <value name="AMOUNT">
+                          <block type="variables_get" id="y_Sh8e[tU%v$_j9Y:5WB">
+                            <field name="VAR">stake</field>
+                          </block>
+                        </value>
+                        <value name="PREDICTION">
+                          <block type="variables_get" id="6oUyV4(2F$|}XW$u^$mA">
+                            <field name="VAR">digit</field>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+  <block type="before_purchase" id="W8TdCX6v@R4R^U4v6a8{" x="0" y="350">
+    <statement name="BEFOREPURCHASE_STACK">
+      <block type="controls_if" id="st39CWLXq|7wjY(5g~m4">
+        <mutation else="1"></mutation>
+        <value name="IF0">
+          <block type="logic_compare" id="n8[2#Blr]tO=,Yz|P%+c">
+            <field name="OP">EQ</field>
+            <value name="A">
+              <block type="variables_get" id="PqN6zVPI78l=0g+{)?Ev">
+                <field name="VAR">contract_type</field>
+              </block>
+            </value>
+            <value name="B">
+              <block type="text" id=",.i,46_NSyGH7l1[60Ej">
+                <field name="TEXT">Matches</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="purchase" id=":zN6a=Q7y=@OkA0aV`%N">
+            <field name="PURCHASE_LIST">DIGITMATCH</field>
+          </block>
+        </statement>
+        <statement name="ELSE">
+          <block type="purchase" id="7aH,7yV1NQ8$l0|c+4)u">
+            <field name="PURCHASE_LIST">DIGITDIFF</field>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+  <block type="after_purchase" id="[+b]u}Ew9P71En,J1p5n" x="0" y="550">
+    <statement name="AFTERPURCHASE_STACK">
+      <block type="controls_if" id="P#;9jM1Z1jRjo.2~9Lh/">
+        <mutation else="1"></mutation>
+        <value name="IF0">
+          <block type="contract_check_result" id="TZ51FZOU`p$4:5Avx4j#">
+            <field name="CHECK_RESULT">win</field>
+          </block>
+        </value>
+        <statement name="DO0">
+          <block type="notify" id="s:e?4?P5y*E$E+bc{TCc">
+            <field name="NOTIFICATION_TYPE">success</field>
+            <value name="MESSAGE">
+              <block type="text_join" id="qF+6|[`N-uEMb%5Elm2,">
+                <mutation items="4"></mutation>
+                <value name="ADD0">
+                  <block type="text" id="wL9tPWu2d?C|^5S9l{Bj">
+                    <field name="TEXT">WIN </field>
+                  </block>
+                </value>
+                <value name="ADD1">
+                  <block type="variables_get" id="hLQA7fqUXfPJ}4oEfQa(">
+                    <field name="VAR">contract_type</field>
+                  </block>
+                </value>
+                <value name="ADD2">
+                  <block type="text" id="XI.]G$Q$2F}8un_`d+PO">
+                    <field name="TEXT"> | Stake reset to $</field>
+                  </block>
+                </value>
+                <value name="ADD3">
+                  <block type="variables_get" id="e;V$!+,@:FuY7*KB;@N8">
+                    <field name="VAR">base_stake</field>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set" id="IPh0hSj)YxQ)hWms/15W">
+                <field name="VAR">stake</field>
+                <value name="VALUE">
+                  <block type="variables_get" id="8#MksKpX8|mBkWX)h5p%">
+                    <field name="VAR">base_stake</field>
+                  </block>
+                </value>
+                <next>
+                  <block type="controls_if" id="j@P0$Ne5IS@qQ8/T9O]s">
+                    <mutation else="1"></mutation>
+                    <value name="IF0">
+                      <block type="logic_compare" id="(Q@D4}24d2@+|:+I0XGH">
+                        <field name="OP">EQ</field>
+                        <value name="A">
+                          <block type="variables_get" id="OHz5@D~xU%#o8rB[nMcl">
+                            <field name="VAR">contract_type</field>
+                          </block>
+                        </value>
+                        <value name="B">
+                          <block type="text" id="w[Yj@v`xxA.#hA6y2:g0">
+                            <field name="TEXT">Matches</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO0">
+                      <block type="variables_set" id="mY3t1rD{6C5cV{LyRX0S">
+                        <field name="VAR">contract_type</field>
+                        <value name="VALUE">
+                          <block type="text" id="8lGno4%9hAt$Mbx7,[BZ">
+                            <field name="TEXT">Differs</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                    <statement name="ELSE">
+                      <block type="variables_set" id="XDh=w!*9jGgU#{cW0s,z">
+                        <field name="VAR">contract_type</field>
+                        <value name="VALUE">
+                          <block type="text" id="di4pD%LG}6B`DgH?nLpZ">
+                            <field name="TEXT">Matches</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <statement name="ELSE">
+          <block type="notify" id="PCWnszG5qkWG(7I(T]Vz">
+            <field name="NOTIFICATION_TYPE">warn</field>
+            <value name="MESSAGE">
+              <block type="text_join" id="I?RG,lS9E0B=5O4KcT9,">
+                <mutation items="4"></mutation>
+                <value name="ADD0">
+                  <block type="text" id="hxTQy8z5EGB$6!X|nD^8">
+                    <field name="TEXT">LOSS </field>
+                  </block>
+                </value>
+                <value name="ADD1">
+                  <block type="variables_get" id="c*1tyeQ0B1_y9?}o4Zsu">
+                    <field name="VAR">contract_type</field>
+                  </block>
+                </value>
+                <value name="ADD2">
+                  <block type="text" id="#V%5jU^4jI|6W-6?h.d2">
+                    <field name="TEXT"> | Stake x22 → $</field>
+                  </block>
+                </value>
+                <value name="ADD3">
+                  <block type="math_arithmetic" id="|Xc#7e9k6,1n@^Db~VR^">
+                    <field name="OP">MULTIPLY</field>
+                    <value name="A">
+                      <block type="variables_get" id="W@gr%yBhNnw0PjA9tOkd">
+                        <field name="VAR">stake</field>
+                      </block>
+                    </value>
+                    <value name="B">
+                      <block type="math_number" id="{sL7G^mxpKjM%3iT5-bX">
+                        <field name="NUM">22</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+              </block>
+            </value>
+            <next>
+              <block type="variables_set" id="VBM93z9v$0$^aX}J9Gj|">
+                <field name="VAR">stake</field>
+                <value name="VALUE">
+                  <block type="math_arithmetic" id="Z/Zs,X1vQi]F!8k4DwjJ">
+                    <field name="OP">MULTIPLY</field>
+                    <value name="A">
+                      <block type="variables_get" id="zVPPw4r@B?82lJqE=uhE">
+                        <field name="VAR">stake</field>
+                      </block>
+                    </value>
+                    <value name="B">
+                      <block type="math_number" id="I,xWAd`*lwWr`AbzKBO-">
+                        <field name="NUM">22</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="controls_if" id="hjh85}$M`Z6nx@%?vEbx">
+                    <mutation else="1"></mutation>
+                    <value name="IF0">
+                      <block type="logic_compare" id=")V8B.~E`0$]iJ=2|X4D/">
+                        <field name="OP">EQ</field>
+                        <value name="A">
+                          <block type="variables_get" id="~?gMMVq5@0uY8}1!4x2c">
+                            <field name="VAR">contract_type</field>
+                          </block>
+                        </value>
+                        <value name="B">
+                          <block type="text" id="?*R7U/fQe_kXGh0r#5jR">
+                            <field name="TEXT">Matches</field>
+                          </block>
+                        </value>
+                      </block>
+                    </value>
+                    <statement name="DO0">
+                      <block type="variables_set" id="!QtV-~v3TXoeu+{xXQKB">
+                        <field name="VAR">contract_type</field>
+                        <value name="VALUE">
+                          <block type="text" id="N=5AQ-3|e8T~?D]~{Kp+">
+                            <field name="TEXT">Differs</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                    <statement name="ELSE">
+                      <block type="variables_set" id="`=Y@,4`a:9]V;fV)s*@Q">
+                        <field name="VAR">contract_type</field>
+                        <value name="VALUE">
+                          <block type="text" id=")`y?3T1,=rVH6V|CeI{W">
+                            <field name="TEXT">Matches</field>
+                          </block>
+                        </value>
+                      </block>
+                    </statement>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+        <next>
+          <block type="trade_again" id="e6V=7~r0V]DL|T_+nHl4"></block>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>
