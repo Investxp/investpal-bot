@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAutoTrade, AutoTradeMode, AutoTradeConfig } from '@/hooks/use-autotrade';
+import { useRemoteAutoTrade } from '@/hooks/use-remote-autotrade';
 import type { UseAuthReturn } from '@/hooks/use-auth';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
 import { computeDigitStats } from '@/lib/digit-stats';
-import { Play, Square, Terminal, TrendingUp, ShieldAlert, Award, Hash, Zap, Sparkles, BarChart2, ShieldCheck } from 'lucide-react';
+import { Play, Square, Terminal, TrendingUp, ShieldAlert, Award, Hash, Zap, Sparkles, BarChart2, ShieldCheck, Globe, Server } from 'lucide-react';
 import { AISignalsWidget } from './ai-signals-widget';
 import { CopyTradingBridge } from './copy-trading-bridge';
 
@@ -145,16 +146,11 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const { ws, isConnected } = useDerivWSContext();
   const { authState } = auth;
   
-  const {
-    isRunning,
-    startAutoTrade,
-    stopAutoTrade,
-    logs,
-    stats,
-    leg1,
-    leg2,
-    leg3,
-  } = useAutoTrade(ws, isConnected);
+  const localTrade = useAutoTrade(ws, isConnected);
+  const remoteTrade = useRemoteAutoTrade();
+  const [useBackend, setUseBackend] = useState(false);
+  const active = useBackend ? remoteTrade : localTrade;
+  const { isRunning, startAutoTrade, stopAutoTrade, logs, stats, leg1, leg2, leg3 } = active;
 
   // Form State (declared before the tick-effect that depends on symbol, to avoid TDZ)
   const [symbol, setSymbol] = useState('1HZ10V');
@@ -401,6 +397,16 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
           <Badge variant={isRunning ? 'secondary' : 'outline'} className={`h-6 font-semibold uppercase tracking-wider ${isRunning ? 'bg-green-600/20 text-green-400 border-green-800/40' : 'border-zinc-800 text-zinc-400'}`}>
             {stats.status}
           </Badge>
+          <button onClick={() => setUseBackend(!useBackend)} disabled={isRunning}
+            className={`flex items-center gap-1 h-6 px-2 rounded text-[10px] font-bold uppercase tracking-wider border transition-all ${
+              useBackend
+                ? 'bg-cyan-950/30 border-cyan-600/40 text-cyan-400'
+                : 'border-zinc-800 text-zinc-500 hover:border-zinc-600'
+            }`}
+          >
+            <Server className="w-3 h-3" />
+            {useBackend ? 'Server' : 'Local'}
+          </button>
         </div>
       </div>
 
