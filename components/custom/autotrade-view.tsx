@@ -156,7 +156,8 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
     leg3,
   } = useAutoTrade(ws, isConnected);
 
-  // Manual tick subscription for digit bitmap (avoids SSR issues with useTicks)
+  // Form State (declared before the tick-effect that depends on symbol, to avoid TDZ)
+  const [symbol, setSymbol] = useState('1HZ10V');
   const [tickPrices, setTickPrices] = useState<number[]>([]);
   const tickSubRef = useRef<(() => void) | null>(null);
   useEffect(() => {
@@ -189,7 +190,6 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
 
   // Form State
   const [mode, setMode] = useState<AutoTradeMode>('digits-even-odd');
-  const [symbol, setSymbol] = useState('1HZ10V');
   const [baseStake, setBaseStake] = useState('0.35');
   const [baseStake2, setBaseStake2] = useState('0.35');
   const [duration, setDuration] = useState('1');
