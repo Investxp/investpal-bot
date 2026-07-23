@@ -1564,22 +1564,22 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         }
       }
       if (config.mode === 'digits-match-differ') {
-        // Differ never recovers — always at base stake. Only Match recovers.
+        // Differ is always the recovery leg. Match always resets.
         if (!w1 && w2) {
-          // Match lost, Differ won → Match recovers (Differ resets)
-          nextStake1 = calculateNextStake('leg1', false, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
-          nextStake2 = baseStake2;
-          addLog(`[System] Match-Differ: Match lost ($${p1.toFixed(2)}), Differ won ($${p2.toFixed(2)}). Match recovery: $${nextStake1.toFixed(2)}, Differ reset.`, 'info');
-        } else if (w1 && !w2) {
-          // Match won, Differ lost → both reset
+          // Match lost, Differ won → Differ recovers Match's loss (Match resets)
           nextStake1 = config.baseStake;
-          nextStake2 = baseStake2;
-          addLog(`[System] Match-Differ: Match won ($${p1.toFixed(2)}), Differ lost ($${p2.toFixed(2)}). Both reset.`, 'info');
+          nextStake2 = calculateNextStake('leg2', false, roundedStake1, baseStake2, config.martingaleMultiplier, finalRecovery);
+          addLog(`[System] Match-Differ: Match lost ($${p1.toFixed(2)}), Differ won ($${p2.toFixed(2)}). Differ recovery: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
+        } else if (w1 && !w2) {
+          // Match won, Differ lost → Differ recovers its own loss
+          nextStake1 = config.baseStake;
+          nextStake2 = calculateNextStake('leg2', false, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
+          addLog(`[System] Match-Differ: Match won ($${p1.toFixed(2)}), Differ lost ($${p2.toFixed(2)}). Differ recovery: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
         } else if (!w1 && !w2) {
-          // Both lost → Match recovers
-          nextStake1 = calculateNextStake('leg1', false, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
-          nextStake2 = baseStake2;
-          addLog(`[System] Match-Differ: Both lost ($${roundNet.toFixed(2)}). Match recovery: $${nextStake1.toFixed(2)}, Differ reset.`, 'info');
+          // Both lost → Differ recovers combined loss
+          nextStake1 = config.baseStake;
+          nextStake2 = calculateNextStake('leg2', false, roundedStake1 + roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
+          addLog(`[System] Match-Differ: Both lost ($${roundNet.toFixed(2)}). Differ recovers combined: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
         } else {
           // Both won
           nextStake1 = config.baseStake;
