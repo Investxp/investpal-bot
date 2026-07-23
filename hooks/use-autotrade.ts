@@ -2071,8 +2071,13 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const initialDelay = modifiedConfig.burstMode === 'ws_pool' ? 2500 : 100;
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
-        addLog('[System] Hedge mode starting via executeTrade for burst-compatible execution.', 'info');
-        executeTrade('leg1');
+        if (modifiedConfig.burstMode === 'single') {
+          addLog('[System] Hedge mode starting via executeHedgeRound (original 2-leg simultaneous).', 'info');
+          executeHedgeRound();
+        } else {
+          addLog('[System] Hedge mode starting via executeTrade for burst-compatible execution.', 'info');
+          executeTrade('leg1');
+        }
       } else {
         executeTrade('leg1');
       }

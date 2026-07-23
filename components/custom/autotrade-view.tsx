@@ -749,9 +749,9 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                     <SelectValue placeholder="Select burst mode" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                    <SelectItem value="single">Single (Original — 1 trade at a time)</SelectItem>
-                    <SelectItem value="ws_pool">WS Pool (Multi-connection parallel)</SelectItem>
-                    <SelectItem value="parallel_retry">Parallel + Retry (All at once, retry rate-limited)</SelectItem>
+                    <SelectItem value="single">Single (Original Hedge — 1 pair at a time)</SelectItem>
+                    <SelectItem value="ws_pool">WS Pool (N pairs simultaneous via multi-connection)</SelectItem>
+                    <SelectItem value="parallel_retry">Parallel + Retry (N pairs at once, retry rate-limited)</SelectItem>
                   </SelectContent>
                 </Select>
                 {burstMode !== 'single' && (
