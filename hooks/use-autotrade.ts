@@ -629,27 +629,30 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             }
             return contracts;
           }
-          // Parallel: fetch all proposals (staggered), then fire all buys immediately
-          const proposalResults = await Promise.allSettled(
-            placements.map((p, i) =>
-              new Promise<string>(resolve => setTimeout(resolve, i * 1000))
-                .then(() => withTimeout(placeProposal(p.contractType, bStake, config, bDigits[p.digitIdx] as number, useWs), 8000, `Proposal ${p.label}`))
-            )
-          );
-          const valid: { contractType: string; proposalId: string }[] = [];
-          proposalResults.forEach((res, i) => {
-            if (res.status === 'fulfilled') valid.push({ contractType: placements[i].contractType, proposalId: res.value });
-            else addLog(`[${bLegLabel}] Proposal failed for ${placements[i].label}: ${res.reason}`, 'error');
-          });
-          if (valid.length === 0) return [];
-          const buyResults = await Promise.allSettled(
-            valid.map(p => withTimeout(buyContract(p.proposalId, bStake, useWs), 10000, `Buy ${p.contractType}`))
-          );
+          // Parallel: process in batches of 2 to stay under ~3/sec rate limit
+          // Random stagger desyncs legs in hedge mode so they don't fire at the same instant
+          if (placements.length > 1) await new Promise(r => setTimeout(r, Math.random() * 500));
+          const batchSize = 2;
           const contracts: { contractType: string; contractId: number }[] = [];
-          buyResults.forEach((res, i) => {
-            if (res.status === 'fulfilled') contracts.push({ contractType: valid[i].contractType, contractId: res.value.contractId });
-            else addLog(`[${bLegLabel}] Buy failed for ${valid[i].contractType}: ${res.reason}`, 'error');
-          });
+          for (let i = 0; i < placements.length; i += batchSize) {
+            const batch = placements.slice(i, i + batchSize);
+            const results = await Promise.allSettled(
+              batch.map(p =>
+                withTimeout(placeProposal(p.contractType, bStake, config, bDigits[p.digitIdx] as number, useWs), 8000, `Proposal ${p.label}`)
+                  .then(async (proposalId) => {
+                    if (!proposalId) throw new Error('No proposal ID');
+                    const buyResult = await withTimeout(buyContract(proposalId, bStake, useWs), 10000, `Buy ${p.label}`);
+                    addLog(`[${bLegLabel}] Bought ${p.label} (contract ${buyResult.contractId})`, 'success');
+                    return { contractType: p.contractType, contractId: buyResult.contractId };
+                  })
+              )
+            );
+            for (const r of results) {
+              if (r.status === 'fulfilled') contracts.push(r.value);
+              else addLog(`[${bLegLabel}] Failed: ${r.reason}`, 'error');
+            }
+            if (i + batchSize < placements.length) await new Promise(r => setTimeout(r, 1000));
+          }
           return contracts;
         };
 
