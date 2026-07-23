@@ -188,6 +188,9 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
 
+  // Hedge mode synchronization — tracks which legs are actively trading
+  const hedgeSyncRef = useRef<{ leg1: boolean; leg2: boolean }>({ leg1: false, leg2: false });
+
   // Sync refs with state
   const wsLeg2Ref = useRef<DerivWS | null>(null);
   useEffect(() => { leg1Ref.current = leg1; }, [leg1]);
@@ -695,11 +698,16 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         const l2ws = wsLeg2Ref.current?.isConnected ? wsLeg2Ref.current : undefined;
         if (l2ws) addLog('[System] L2 using dedicated WS — double rate limit headroom', 'info');
 
+        hedgeSyncRef.current.leg1 = true;
+        hedgeSyncRef.current.leg2 = true;
+
         return Promise.all([
           executeDigitBurst(legKey, contractType, roundedStake, activeBurstDigits, setLegState, isLeg1, undefined),
           executeDigitBurst(otherLegKey, otherContractType, otherStake, otherDigits, otherSetLegState, otherIsLeg1, l2ws),
         ]).then(() => {
-          setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 1000);
+          hedgeSyncRef.current.leg1 = false;
+          hedgeSyncRef.current.leg2 = false;
+          setTimeout(() => { if (isRunningRef.current) { executeTrade('leg1'); executeTrade('leg2'); } }, 1000);
         });
       } else {
         setLegState((prev) => ({ ...prev, isTrading: true }));
@@ -708,6 +716,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     }
 
     setLegState((prev) => ({ ...prev, isTrading: true }));
+    if (config.isHedgeMode) hedgeSyncRef.current[legKey] = true;
 
     try {
       const proposalPayload: Record<string, unknown> = {
@@ -933,7 +942,15 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
           setTimeout(() => {
             if (isRunningRef.current) {
-              executeTrade(nextLegToExecute);
+              if (config.isHedgeMode) {
+                hedgeSyncRef.current[legKey] = false;
+                if (!hedgeSyncRef.current.leg1 && !hedgeSyncRef.current.leg2) {
+                  executeTrade('leg1');
+                  executeTrade('leg2');
+                }
+              } else {
+                executeTrade(nextLegToExecute);
+              }
             }
           }, delay);
         }
@@ -973,7 +990,15 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
       setTimeout(() => {
         if (isRunningRef.current) {
-          executeTrade(legKey);
+          if (config.isHedgeMode) {
+            hedgeSyncRef.current[legKey] = false;
+            if (!hedgeSyncRef.current.leg1 && !hedgeSyncRef.current.leg2) {
+              executeTrade('leg1');
+              executeTrade('leg2');
+            }
+          } else {
+            executeTrade(legKey);
+          }
         }
       }, 5000);
     }
