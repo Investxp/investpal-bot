@@ -75,7 +75,7 @@ export interface AutoTradeConfig {
   coolOffConsecutiveLosses?: number;
   coolOffConsecutiveWins?: number;
   coolOffDuration?: number;
-  burstMode?: 'ws_pool' | 'parallel_retry' | 'single';
+  burstMode?: 'ws_pool' | 'parallel_retry' | 'sequential';
   burstSize?: number;
 }
 
@@ -571,10 +571,10 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     // Burst mode: trade multiple digits (configurable mode + batch size)
     const isDigitType = ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER'].includes(contractType);
     const allBurstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
-    const burstMode = config.burstMode || 'single';
+    const burstMode = config.burstMode || 'sequential';
     const burstSize = Math.min(config.burstSize || (Array.isArray(allBurstDigits) ? allBurstDigits.length : 1), 10);
     const activeBurstDigits = Array.isArray(allBurstDigits) ? allBurstDigits.slice(0, burstSize) : [];
-    const shouldBurst = isDigitType && activeBurstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives && burstMode !== 'single';
+    const shouldBurst = isDigitType && activeBurstDigits.length > 1 && !config.aiDigitsMode && !config.multiDigitObjectives;
 
     if (shouldBurst) {
       // ── WS pool helper ────────────────────────────────────────────────────
@@ -622,7 +622,15 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
         // ── Proposals ───────────────────────────────────────────────────────
         let proposalResults: PromiseSettledResult<string>[];
-        if (burstMode === 'parallel_retry') {
+        if (burstMode === 'sequential') {
+          // 1 at a time with delay to avoid rate limits on single connection
+          proposalResults = [];
+          for (const d of bDigits) {
+            const r = await Promise.allSettled([withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)]);
+            proposalResults.push(r[0]);
+            await new Promise(r => setTimeout(r, 800));
+          }
+        } else if (burstMode === 'parallel_retry') {
           proposalResults = await Promise.allSettled(bDigits.map(d => withTimeout(placeProposal(bContractType, bStake, config, d), 8000, `Proposal digit ${d}`)));
           const failed: number[] = [];
           proposalResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
@@ -652,7 +660,14 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
         // ── Buys ────────────────────────────────────────────────────────────
         let buyResults: PromiseSettledResult<{ contractId: number }>[];
-        if (burstMode === 'parallel_retry') {
+        if (burstMode === 'sequential') {
+          buyResults = [];
+          for (const p of validProposals) {
+            const r = await Promise.allSettled([withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)]);
+            buyResults.push(r[0]);
+            await new Promise(r => setTimeout(r, 800));
+          }
+        } else if (burstMode === 'parallel_retry') {
           buyResults = await Promise.allSettled(validProposals.map(p => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)));
           const failed: number[] = [];
           buyResults.forEach((r, i) => { if (r.status === 'rejected') failed.push(i); });
@@ -2077,13 +2092,8 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const initialDelay = modifiedConfig.burstMode === 'ws_pool' ? 2500 : 100;
     setTimeout(() => {
       if (modifiedConfig.isHedgeMode) {
-        if (modifiedConfig.burstMode === 'single') {
-          addLog('[System] Hedge mode starting via executeHedgeRound (original 2-leg simultaneous).', 'info');
-          executeHedgeRound();
-        } else {
-          addLog('[System] Hedge mode starting via executeTrade for burst-compatible execution.', 'info');
-          executeTrade('leg1');
-        }
+        addLog('[System] Hedge mode: both legs fire simultaneously.', 'info');
+        executeTrade('leg1');
       } else {
         executeTrade('leg1');
       }

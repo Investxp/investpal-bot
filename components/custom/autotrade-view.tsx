@@ -168,7 +168,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [selectedDigit2, setSelectedDigit2] = useState<string[]>(['5']);
   const [growthRate, setGrowthRate] = useState('0.01');
   const [isHedgeMode, setIsHedgeMode] = useState(true);
-  const [isAlternateMode, setIsAlternateMode] = useState(false);
+  const [isAlternateMode, setIsAlternateMode] = useState(true);
   const [alternateFrequency, setAlternateFrequency] = useState('1');
 
   // Advanced Feature States
@@ -202,7 +202,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [aiTrailingLockMode, setAiTrailingLockMode] = useState(false);
   const [aiDigitsMode, setAiDigitsMode] = useState(false);
   const [martingaleSplitMode, setMartingaleSplitMode] = useState<'optional' | 'full'>('full');
-  const [burstMode, setBurstMode] = useState<'ws_pool' | 'parallel_retry' | 'single'>('single');
+  const [burstMode, setBurstMode] = useState<'ws_pool' | 'parallel_retry' | 'sequential'>('sequential');
   const [burstSize, setBurstSize] = useState('10');
 
   // Dynamically filter options based on symbol category and trade type requirements
@@ -744,22 +744,20 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
               {/* Burst Execution Mode */}
               <div className="space-y-1.5 border-t border-zinc-800/50 pt-3">
                 <Label className="text-[11px] text-zinc-400">Burst Execution Mode</Label>
-                <Select value={burstMode} onValueChange={(val: 'ws_pool' | 'parallel_retry' | 'single') => setBurstMode(val)} disabled={isRunning}>
+                <Select value={burstMode} onValueChange={(val: 'ws_pool' | 'parallel_retry' | 'sequential') => setBurstMode(val)} disabled={isRunning}>
                   <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs">
                     <SelectValue placeholder="Select burst mode" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
-                    <SelectItem value="single">Single (Original Hedge — 1 pair at a time)</SelectItem>
-                    <SelectItem value="ws_pool">WS Pool (N pairs simultaneous via multi-connection)</SelectItem>
-                    <SelectItem value="parallel_retry">Parallel + Retry (N pairs at once, retry rate-limited)</SelectItem>
+                    <SelectItem value="sequential">Sequential (1 connection, 1-at-a-time with delay)</SelectItem>
+                    <SelectItem value="ws_pool">WS Pool (multi-connection parallel)</SelectItem>
+                    <SelectItem value="parallel_retry">Parallel + Retry (all at once, retry rate-limited)</SelectItem>
                   </SelectContent>
                 </Select>
-                {burstMode !== 'single' && (
-                  <div className="mt-2">
-                    <Label className="text-[11px] text-zinc-400">Burst Size (1-10)</Label>
-                    <Input type="number" min={1} max={10} value={burstSize} onChange={(e) => setBurstSize(e.target.value)} disabled={isRunning} className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs mt-1" />
-                  </div>
-                )}
+                <div className="mt-2">
+                  <Label className="text-[11px] text-zinc-400">Simultaneous Pairs (1-10)</Label>
+                  <Input type="number" min={1} max={10} value={burstSize} onChange={(e) => setBurstSize(e.target.value)} disabled={isRunning} className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs mt-1" />
+                </div>
               </div>
 
               {/* Martingale Splitter dropdown */}
