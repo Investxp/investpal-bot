@@ -77,6 +77,7 @@ export interface AutoTradeConfig {
   coolOffDuration?: number;
   burstMode?: 'parallel' | 'sequential';
   burstSize?: number;
+  recoverySplitCount?: number; // split Differ recovery across N trades (1 = no split)
 }
 
 export interface RunnerState {
@@ -188,6 +189,13 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
   const splitCount3Ref = useRef(0);
   const splitStake3Ref = useRef(0);
 
+  // Match-Differ feature refs
+  const matchDifferFirstRoundRef = useRef(true);
+  const recoveryDebtRef = useRef(0);
+  const recoverySplitsRef = useRef(0);
+  const lastTickDigitRef = useRef(5);
+  const tickUnsubRef = useRef<(() => void) | null>(null);
+
   // Hedge mode synchronization — tracks which legs are actively trading
   const hedgeSyncRef = useRef<{ leg1: boolean; leg2: boolean }>({ leg1: false, leg2: false });
   // Hedge combined settlement — accumulates both legs' P&L for single recovery decision
@@ -211,6 +219,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
       }
     });
     activeUnsubsRef.current = [];
+    if (tickUnsubRef.current) { tickUnsubRef.current(); tickUnsubRef.current = null; }
   }, []);
 
   useEffect(() => {
@@ -1254,6 +1263,13 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     let digit2 = dig2;
     let digit3 = dig3;
 
+    // Match-Differ: use last tick digit as prediction (Differ bets it won't repeat)
+    if (config.mode === 'digits-match-differ') {
+      digit1 = lastTickDigitRef.current;
+      digit2 = lastTickDigitRef.current;
+      selectedDigit = lastTickDigitRef.current;
+    }
+
     if (isTripleMode) {
       const p1 = parseTarget(targetsList[0]);
       contractType1 = p1.type;
@@ -1354,6 +1370,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const roundedStake1 = Math.round(currentStake1 * 100) / 100;
 
     let currentStake2 = leg2Ref.current.currentStake;
+    if (config.mode === 'digits-match-differ' && matchDifferFirstRoundRef.current) {
+      const b2 = config.baseStake2 !== undefined ? config.baseStake2 : config.baseStake;
+      currentStake2 = Math.round((b2 * config.martingaleMultiplier) * 100) / 100;
+      matchDifferFirstRoundRef.current = false;
+    }
     if (splitCount2Ref.current > 0) currentStake2 = splitStake2Ref.current;
     const roundedStake2 = Math.round(currentStake2 * 100) / 100;
 
@@ -1564,26 +1585,70 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         }
       }
       if (config.mode === 'digits-match-differ') {
-        // Differ is always the recovery leg. Match always resets.
-        if (!w1 && w2) {
-          // Match lost, Differ won → Differ recovers Match's loss (Match resets)
+        // Active split recovery? Adjust debt from this round's Differ result
+        const splitCount = config.recoverySplitCount || 1;
+        if (recoveryDebtRef.current > 0) {
+          if (w2 && recoverySplitsRef.current > 0) {
+            recoveryDebtRef.current = Math.max(0, recoveryDebtRef.current - p2);
+            recoverySplitsRef.current--;
+            addLog(`[System] Split Recovery: Differ won ($${p2.toFixed(2)} profit). Remaining debt: $${recoveryDebtRef.current.toFixed(2)}, splits left: ${recoverySplitsRef.current}`, 'info');
+          } else if (!w2) {
+            recoveryDebtRef.current += roundedStake2;
+            addLog(`[System] Split Recovery: Differ lost ($${roundedStake2.toFixed(2)}). Debt increased to $${recoveryDebtRef.current.toFixed(2)}`, 'info');
+          }
+        }
+
+        // Compute next stakes using debt if active, else normal Match-Differ recovery
+        if (recoveryDebtRef.current > 0 && recoverySplitsRef.current > 0) {
           nextStake1 = config.baseStake;
-          nextStake2 = calculateNextStake('leg2', false, roundedStake1, baseStake2, config.martingaleMultiplier, finalRecovery);
-          addLog(`[System] Match-Differ: Match lost ($${p1.toFixed(2)}), Differ won ($${p2.toFixed(2)}). Differ recovery: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
-        } else if (w1 && !w2) {
-          // Match won, Differ lost → Differ recovers its own loss
-          nextStake1 = config.baseStake;
-          nextStake2 = calculateNextStake('leg2', false, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
-          addLog(`[System] Match-Differ: Match won ($${p1.toFixed(2)}), Differ lost ($${p2.toFixed(2)}). Differ recovery: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
-        } else if (!w1 && !w2) {
-          // Both lost → Differ recovers combined loss
-          nextStake1 = config.baseStake;
-          nextStake2 = calculateNextStake('leg2', false, roundedStake1 + roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
-          addLog(`[System] Match-Differ: Both lost ($${roundNet.toFixed(2)}). Differ recovers combined: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
+          nextStake2 = Math.round((recoveryDebtRef.current / recoverySplitsRef.current) * 100) / 100;
+          addLog(`[System] Split Recovery: Chunk $${nextStake2.toFixed(2)} (debt: $${recoveryDebtRef.current.toFixed(2)} / ${recoverySplitsRef.current} splits)`, 'info');
         } else {
-          // Both won
-          nextStake1 = config.baseStake;
-          nextStake2 = baseStake2;
+          // Reset debt when exhausted
+          if (recoveryDebtRef.current <= 0) { recoveryDebtRef.current = 0; recoverySplitsRef.current = 0; }
+
+          // Differ is always the recovery leg. Match always resets.
+          if (!w1 && w2) {
+            // Match lost, Differ won → Differ recovers Match's loss
+            nextStake1 = config.baseStake;
+            nextStake2 = calculateNextStake('leg2', false, roundedStake1, baseStake2, config.martingaleMultiplier, finalRecovery);
+            if (splitCount > 1) {
+              recoveryDebtRef.current = nextStake2 * splitCount;
+              recoverySplitsRef.current = splitCount;
+              nextStake2 = Math.round((recoveryDebtRef.current / recoverySplitsRef.current) * 100) / 100;
+              addLog(`[System] Match-Differ: Match lost. Split recovery over ${splitCount} trades. First chunk: $${nextStake2.toFixed(2)}`, 'info');
+            } else {
+              addLog(`[System] Match-Differ: Match lost ($${p1.toFixed(2)}), Differ won ($${p2.toFixed(2)}). Differ recovery: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
+            }
+          } else if (w1 && !w2) {
+            // Match won, Differ lost → Differ recovers its own loss
+            nextStake1 = config.baseStake;
+            nextStake2 = calculateNextStake('leg2', false, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
+            if (splitCount > 1) {
+              recoveryDebtRef.current = nextStake2 * splitCount;
+              recoverySplitsRef.current = splitCount;
+              nextStake2 = Math.round((recoveryDebtRef.current / recoverySplitsRef.current) * 100) / 100;
+              addLog(`[System] Match-Differ: Differ lost. Split recovery over ${splitCount} trades. First chunk: $${nextStake2.toFixed(2)}`, 'info');
+            } else {
+              addLog(`[System] Match-Differ: Match won ($${p1.toFixed(2)}), Differ lost ($${p2.toFixed(2)}). Differ recovery: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
+            }
+          } else if (!w1 && !w2) {
+            // Both lost → Differ recovers combined loss
+            nextStake1 = config.baseStake;
+            nextStake2 = calculateNextStake('leg2', false, roundedStake1 + roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
+            if (splitCount > 1) {
+              recoveryDebtRef.current = nextStake2 * splitCount;
+              recoverySplitsRef.current = splitCount;
+              nextStake2 = Math.round((recoveryDebtRef.current / recoverySplitsRef.current) * 100) / 100;
+              addLog(`[System] Match-Differ: Both lost. Split recovery over ${splitCount} trades. First chunk: $${nextStake2.toFixed(2)}`, 'info');
+            } else {
+              addLog(`[System] Match-Differ: Both lost ($${roundNet.toFixed(2)}). Differ recovers combined: $${nextStake2.toFixed(2)}, Match reset.`, 'info');
+            }
+          } else {
+            // Both won
+            nextStake1 = config.baseStake;
+            nextStake2 = baseStake2;
+          }
         }
       } else if (config.isAlternateMode) {
         // Intertrade Switch Recovery:
@@ -2022,6 +2087,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     splitCount3Ref.current = 0;
     splitStake3Ref.current = 0;
 
+    matchDifferFirstRoundRef.current = true;
+    recoveryDebtRef.current = 0;
+    recoverySplitsRef.current = 0;
+    lastTickDigitRef.current = 5;
+
     setLeg1({
       label: leg1Label,
       contractType: leg1Contract,
@@ -2064,6 +2134,21 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     setLogs([]);
     setIsRunning(true);
     addLog(`Starting autotrade in ${modifiedConfig.mode.toUpperCase()} on ${modifiedConfig.symbol}...`, 'info');
+
+    // Subscribe to ticks for Match-Differ last-digit tracking
+    if (ws && modifiedConfig.mode === 'digits-match-differ') {
+      if (tickUnsubRef.current) { tickUnsubRef.current(); tickUnsubRef.current = null; }
+      ws.subscribe({ ticks: modifiedConfig.symbol }, (data: any) => {
+        const tick = data.tick;
+        if (tick?.quote !== undefined) {
+          const quoteStr = tick.quote.toString();
+          const dotIdx = quoteStr.indexOf('.');
+          const pipSize = dotIdx === -1 ? 0 : quoteStr.length - dotIdx - 1;
+          const lastDigit = pipSize > 0 ? parseInt(quoteStr.slice(-1), 10) : Math.floor(Math.abs(tick.quote) % 10);
+          if (!isNaN(lastDigit)) lastTickDigitRef.current = lastDigit;
+        }
+      }).then((sub) => { tickUnsubRef.current = sub.unsubscribe; }).catch(() => {});
+    }
 
     // Check rate limits via website_status
     if (ws) {

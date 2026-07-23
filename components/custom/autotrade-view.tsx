@@ -237,6 +237,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [martingaleSplitMode, setMartingaleSplitMode] = useState<'optional' | 'full'>('full');
   const [burstMode, setBurstMode] = useState<'parallel' | 'sequential'>('parallel');
   const [burstSize, setBurstSize] = useState('10');
+  const [recoverySplitCount, setRecoverySplitCount] = useState('1');
 
   // Dynamically filter options based on symbol category and trade type requirements
   const selectedSymbol = POPULAR_SYMBOLS.find(s => s.value === symbol);
@@ -369,6 +370,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
       aiRandomCoolOff,
       burstMode,
       burstSize: Math.min(parseInt(burstSize, 10) || 10, 10),
+      recoverySplitCount: parseInt(recoverySplitCount, 10) || 1,
     };
 
     startAutoTrade(config);
@@ -828,6 +830,21 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                     <SelectItem value="full">Full Stake (No Split / Trade Full Martingale)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Recovery Split Count (Match-Differ) */}
+              <div className="space-y-1.5">
+                <Label className="text-[11px] text-zinc-400">Recovery Splits (Match-Differ)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="20"
+                  value={recoverySplitCount}
+                  onChange={(e) => setRecoverySplitCount(e.target.value)}
+                  className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs"
+                  placeholder="1 = no split"
+                  disabled={isRunning}
+                />
               </div>
 
               {/* Grid for Ghost loss and Max Trades */}
