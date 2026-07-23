@@ -1562,42 +1562,42 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           nextStake2 = stdNext2;
           nextStake3 = stdNext3;
         }
+      }
+      if (config.mode === 'digits-match-differ') {
+        // Differ never recovers — always at base stake. Only Match recovers.
+        if (!w1 && w2) {
+          // Match lost, Differ won → Match recovers (Differ resets)
+          nextStake1 = calculateNextStake('leg1', false, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
+          nextStake2 = baseStake2;
+          addLog(`[System] Match-Differ: Match lost ($${p1.toFixed(2)}), Differ won ($${p2.toFixed(2)}). Match recovery: $${nextStake1.toFixed(2)}, Differ reset.`, 'info');
+        } else if (w1 && !w2) {
+          // Match won, Differ lost → both reset
+          nextStake1 = config.baseStake;
+          nextStake2 = baseStake2;
+          addLog(`[System] Match-Differ: Match won ($${p1.toFixed(2)}), Differ lost ($${p2.toFixed(2)}). Both reset.`, 'info');
+        } else if (!w1 && !w2) {
+          // Both lost → Match recovers
+          nextStake1 = calculateNextStake('leg1', false, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
+          nextStake2 = baseStake2;
+          addLog(`[System] Match-Differ: Both lost ($${roundNet.toFixed(2)}). Match recovery: $${nextStake1.toFixed(2)}, Differ reset.`, 'info');
+        } else {
+          // Both won
+          nextStake1 = config.baseStake;
+          nextStake2 = baseStake2;
+        }
       } else if (config.isAlternateMode) {
         // Intertrade Switch Recovery:
-        if (config.mode === 'digits-match-differ') {
-          // Custom Rule: Matches (Leg 1) lost, Differ (Leg 2) won -> recover on Differ.
-          // Differ (Leg 2) lost, Matches (Leg 1) won -> recover on Differ itself (interchange disabled for Matches recovery).
-          if (!w1 && w2) {
-            nextStake1 = config.baseStake;
-            nextStake2 = calculateNextStake('leg2', false, roundedStake1, baseStake2, config.martingaleMultiplier, finalRecovery);
-            addLog(`[System] Intertrade Switch (MD): Leg 1 (Match) Lost / Leg 2 (Differ) Won. Recovery stake $${nextStake2.toFixed(2)} -> Leg 2.`, 'info');
-          } else if (w1 && !w2) {
-            nextStake1 = config.baseStake;
-            nextStake2 = calculateNextStake('leg2', false, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
-            addLog(`[System] Intertrade Switch (MD): Leg 2 (Differ) Lost / Leg 1 (Match) Won. Recovery kept on Leg 2: $${nextStake2.toFixed(2)}.`, 'info');
-          } else if (!w1 && !w2) {
-            nextStake1 = config.baseStake;
-            nextStake2 = calculateNextStake('leg2', false, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
-            addLog(`[System] Intertrade Switch (MD): Both legs lost. Leg 1 reset, recovery on Leg 2: $${nextStake2.toFixed(2)}.`, 'info');
-          } else {
-            // Both won
-            nextStake1 = config.baseStake;
-            nextStake2 = baseStake2;
-          }
+        if (!w1 && w2) {
+          nextStake1 = config.baseStake;
+          nextStake2 = calculateNextStake('leg2', false, roundedStake1, baseStake2, config.martingaleMultiplier, finalRecovery);
+          addLog(`[System] Intertrade Switch: Leg 1 Lost / Leg 2 Won. Recovery stake $${nextStake2.toFixed(2)} -> Leg 2.`, 'info');
+        } else if (w1 && !w2) {
+          nextStake2 = baseStake2;
+          nextStake1 = calculateNextStake('leg1', false, roundedStake2, config.baseStake, config.martingaleMultiplier, finalRecovery);
+          addLog(`[System] Intertrade Switch: Leg 2 Lost / Leg 1 Won. Recovery stake $${nextStake1.toFixed(2)} -> Leg 1.`, 'info');
         } else {
-          // Standard Intertrade Switch:
-          if (!w1 && w2) {
-            nextStake1 = config.baseStake;
-            nextStake2 = calculateNextStake('leg2', false, roundedStake1, baseStake2, config.martingaleMultiplier, finalRecovery);
-            addLog(`[System] Intertrade Switch: Leg 1 Lost / Leg 2 Won. Recovery stake $${nextStake2.toFixed(2)} -> Leg 2.`, 'info');
-          } else if (w1 && !w2) {
-            nextStake2 = baseStake2;
-            nextStake1 = calculateNextStake('leg1', false, roundedStake2, config.baseStake, config.martingaleMultiplier, finalRecovery);
-            addLog(`[System] Intertrade Switch: Leg 2 Lost / Leg 1 Won. Recovery stake $${nextStake1.toFixed(2)} -> Leg 1.`, 'info');
-          } else {
-            nextStake1 = calculateNextStake('leg1', w1, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
-            nextStake2 = calculateNextStake('leg2', w2, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
-          }
+          nextStake1 = calculateNextStake('leg1', w1, roundedStake1, config.baseStake, config.martingaleMultiplier, finalRecovery);
+          nextStake2 = calculateNextStake('leg2', w2, roundedStake2, baseStake2, config.martingaleMultiplier, finalRecovery);
         }
       } else {
         // Standard Independent Recovery
