@@ -585,39 +585,37 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
             new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms))
           ]);
 
-        const processItems = async <T,>(
-          items: T[], processFn: (item: T, idx: number) => Promise<string | { contractId: number }>,
-          mode: string
-        ): Promise<PromiseSettledResult<string | { contractId: number }>[]> => {
-          if (mode === 'sequential') {
-            const results: PromiseSettledResult<string | { contractId: number }>[] = [];
-            for (let i = 0; i < items.length; i++) {
-              const r = await Promise.allSettled([withTimeout(processFn(items[i], i), 8000, `Item ${i}`)]);
-              results.push(r[0]);
-              if (i < items.length - 1) await new Promise(r => setTimeout(r, 800));
+        const doProposals = async (): Promise<{ digit: number; proposalId: string }[]> => {
+          if (burstMode === 'sequential') {
+            const results: { digit: number; proposalId: string }[] = [];
+            for (let i = 0; i < bDigits.length; i++) {
+              try {
+                const id = await withTimeout(placeProposal(bContractType, bStake, config, bDigits[i] as number), 8000, `Proposal digit ${bDigits[i]}`);
+                results.push({ digit: bDigits[i] as number, proposalId: id });
+              } catch (e) {
+                addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${e}`, 'error');
+              }
+              if (i < bDigits.length - 1) await new Promise(r => setTimeout(r, 800));
             }
             return results;
           }
-          // Parallel mode: stagger with 600ms gap to stay under rate limit
-          return Promise.allSettled(
-            items.map((item, i) =>
-              new Promise<string | { contractId: number }>(resolve => setTimeout(resolve, i * 600))
-                .then(() => withTimeout(processFn(item, i) as Promise<string | { contractId: number }>, 8000, `Item ${i}`))
+          // Parallel: stagger proposals 600ms to avoid rate limit
+          const raw = await Promise.allSettled(
+            bDigits.map((d, i) =>
+              new Promise<string>(resolve => setTimeout(resolve, i * 600))
+                .then(() => withTimeout(placeProposal(bContractType, bStake, config, d as number), 8000, `Proposal digit ${d}`))
             )
           );
+          const results: { digit: number; proposalId: string }[] = [];
+          raw.forEach((res, i) => {
+            if (res.status === 'fulfilled') results.push({ digit: bDigits[i] as number, proposalId: res.value });
+            else addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${res.reason}`, 'error');
+          });
+          return results;
         };
 
         // ── Proposals ───────────────────────────────────────────────────────
-        const rawProposals = await processItems(
-          bDigits,
-          (d) => placeProposal(bContractType, bStake, config, d as number),
-          burstMode
-        );
-        const validProposals: { digit: number; proposalId: string }[] = [];
-        rawProposals.forEach((res, i) => {
-          if (res.status === 'fulfilled') validProposals.push({ digit: bDigits[i] as number, proposalId: res.value as string });
-          else addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${res.reason}`, 'error');
-        });
+        const validProposals = await doProposals();
         if (validProposals.length === 0) {
           addLog(`[${bLegLabel}] All proposals failed. Retrying...`, 'error');
           bSetLegState((prev) => ({ ...prev, isTrading: false }));
@@ -625,15 +623,22 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           return;
         }
 
-        // ── Buys ────────────────────────────────────────────────────────────
-        const rawBuys = await processItems(
-          validProposals,
-          (p) => buyContract((p as { digit: number; proposalId: string }).proposalId, bStake),
-          burstMode
-        );
+        // ── Buys (always fire immediately — proposals expire fast) ──────────
+        const rawBuys = burstMode === 'sequential'
+          ? await (async () => {
+              const r: PromiseSettledResult<{ contractId: number }>[] = [];
+              for (const p of validProposals) {
+                r.push(...await Promise.allSettled([withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)]));
+                if (r.length < validProposals.length) await new Promise(r => setTimeout(r, 800));
+              }
+              return r;
+            })()
+          : await Promise.allSettled(
+              validProposals.map(p => withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`))
+            );
         const contracts: { digit: number; contractId: number }[] = [];
         rawBuys.forEach((res, i) => {
-          if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: (res.value as { contractId: number }).contractId });
+          if (res.status === 'fulfilled') contracts.push({ digit: validProposals[i].digit, contractId: res.value.contractId });
           else addLog(`[${bLegLabel}] Buy failed for digit ${validProposals[i].digit}: ${res.reason}`, 'error');
         });
         if (contracts.length === 0) {
