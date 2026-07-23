@@ -235,7 +235,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [aiTrailingLockMode, setAiTrailingLockMode] = useState(false);
   const [aiDigitsMode, setAiDigitsMode] = useState(false);
   const [martingaleSplitMode, setMartingaleSplitMode] = useState<'optional' | 'full'>('full');
-  const [burstMode, setBurstMode] = useState<'parallel' | 'sequential'>('sequential');
+  const [burstMode, setBurstMode] = useState<'parallel' | 'sequential'>('parallel');
   const [burstSize, setBurstSize] = useState('10');
 
   // Dynamically filter options based on symbol category and trade type requirements
@@ -274,7 +274,7 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   useEffect(() => {
     if (mode === 'digits-match-differ') {
       setDuration('2');
-      setMartingale('11');
+      setMartingale('22');
     } else {
       setDuration('1');
       setMartingale('2.5');
