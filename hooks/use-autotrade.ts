@@ -595,14 +595,14 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
               } catch (e) {
                 addLog(`[${bLegLabel}] Proposal failed for digit ${bDigits[i]}: ${e}`, 'error');
               }
-              if (i < bDigits.length - 1) await new Promise(r => setTimeout(r, 800));
+              if (i < bDigits.length - 1) await new Promise(r => setTimeout(r, 1000));
             }
             return results;
           }
-          // Parallel: stagger proposals 600ms to avoid rate limit
+          // Parallel: stagger proposals to avoid rate limit (~3/sec shared across legs)
           const raw = await Promise.allSettled(
             bDigits.map((d, i) =>
-              new Promise<string>(resolve => setTimeout(resolve, i * 600))
+              new Promise<string>(resolve => setTimeout(resolve, i * 1000))
                 .then(() => withTimeout(placeProposal(bContractType, bStake, config, d as number), 8000, `Proposal digit ${d}`))
             )
           );
@@ -629,7 +629,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
               const r: PromiseSettledResult<{ contractId: number }>[] = [];
               for (const p of validProposals) {
                 r.push(...await Promise.allSettled([withTimeout(buyContract(p.proposalId, bStake), 8000, `Buy ${p.digit}`)]));
-                if (r.length < validProposals.length) await new Promise(r => setTimeout(r, 800));
+                if (r.length < validProposals.length) await new Promise(r => setTimeout(r, 1000));
               }
               return r;
             })()
