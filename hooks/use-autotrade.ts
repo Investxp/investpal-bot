@@ -591,11 +591,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         const bLegLabel = bIsLeg1 ? 'Leg 1' : 'Leg 2';
         addLog(`[${bLegLabel}] ⚡ Burst: ${bDigits.length} contracts (digits: ${bDigits.join(',')})`, 'info');
 
-        // Batch proposals to avoid Deriv rate limit (3 at a time, 300ms apart)
+        // Sequential proposals (1 at a time, 1s apart) to avoid Deriv rate limit
         const proposals = await processBatch(
           bDigits,
           (d) => placeProposal(bContractType, bStake, config, d),
-          3, 300
+          1, 1000
         );
         const validProposals: { digit: number; proposalId: string }[] = [];
         proposals.forEach((res, i) => {
@@ -609,11 +609,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           return;
         }
 
-        // Batch buys to avoid Deriv rate limit (3 at a time, 300ms apart)
+        // Sequential buys (1 at a time, 1s apart) to avoid Deriv rate limit
         const buys = await processBatch(
           validProposals.map(p => ({ digit: p.digit, proposalId: p.proposalId })),
           (item) => buyContract(item.proposalId, bStake),
-          3, 300
+          1, 1000
         );
         const contracts: { digit: number; contractId: number }[] = [];
         buys.forEach((res, i) => {
@@ -665,12 +665,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
         setLegState((prev) => ({ ...prev, isTrading: true }));
         otherSetLegState((prev) => ({ ...prev, isTrading: true }));
-        addLog(`[System] ⚡ Hedge Burst: L1 (${burstDigits.length} digits) + L2 (${otherDigits.length} digits) simultaneously`, 'info');
+        addLog(`[System] ⚡ Hedge Burst: L1 (${burstDigits.length} digits) + L2 (${otherDigits.length} digits) sequentially`, 'info');
 
-        return Promise.all([
-          executeDigitBurst(legKey, contractType, roundedStake, burstDigits, setLegState, isLeg1),
-          executeDigitBurst(otherLegKey, otherContractType, otherStake, otherDigits, otherSetLegState, otherIsLeg1),
-        ]).then(() => {
+        return executeDigitBurst(legKey, contractType, roundedStake, burstDigits, setLegState, isLeg1).then(() =>
+          executeDigitBurst(otherLegKey, otherContractType, otherStake, otherDigits, otherSetLegState, otherIsLeg1)
+        ).then(() => {
           setTimeout(() => { if (isRunningRef.current) executeTrade(legKey); }, 1000);
         });
       } else {
