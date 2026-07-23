@@ -10,6 +10,17 @@ interface DigitStatsBarProps {
   onDigitSelect: (digit: number) => void;
 }
 
+function getTempColor(pct: number): string {
+  if (pct <= 0) return 'bg-zinc-800';
+  if (pct >= 16) return 'bg-green-500';
+  if (pct >= 13) return 'bg-green-600';
+  if (pct >= 11) return 'bg-green-700';
+  if (pct >= 9) return 'bg-zinc-600';
+  if (pct >= 7) return 'bg-red-700';
+  if (pct >= 5) return 'bg-red-600';
+  return 'bg-red-500';
+}
+
 export function DigitStatsBar({
   digitStats,
   selectedDigit,
@@ -29,6 +40,7 @@ export function DigitStatsBar({
           const isSelected = digit === selectedDigit;
           const isHighest = digitStats.totalTicks > 0 && pct === maxPct;
           const isLowest = digitStats.totalTicks > 0 && pct === minPct;
+          const bitmap = digitStats.bitmap[digit] ?? [];
 
           return (
             <div key={digit} className="flex flex-col items-center gap-1 sm:gap-1.5">
@@ -52,6 +64,19 @@ export function DigitStatsBar({
               >
                 {pct.toFixed(1)}%
               </span>
+              {bitmap.length > 0 && (
+                <div className="flex gap-px">
+                  {bitmap.map((hit, i) => (
+                    <div
+                      key={i}
+                      className={cn(
+                        'w-1 h-2.5 sm:w-1.5 sm:h-3 rounded-sm',
+                        hit ? getTempColor(pct) : 'bg-zinc-800'
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}

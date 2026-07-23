@@ -24,14 +24,25 @@ export function getLastDigit(price: number, pipSize: number): number {
 }
 
 /**
- * Compute digit statistics (counts and percentages) from an array of prices.
+ * Compute digit statistics (counts, percentages, and bitmap) from an array of prices.
+ * Bitmap shows last 20 ticks: for each digit 0-9, 1 = tick ended in that digit, 0 = not.
  */
 export function computeDigitStats(prices: number[], pipSize: number): DigitStats {
   const counts = new Array(10).fill(0);
+  const bitmap: number[][] = Array.from({ length: 10 }, () => []);
+  const bitmapWindow = Math.min(prices.length, 20);
+  const recentPrices = prices.slice(-bitmapWindow);
 
   for (const price of prices) {
     const digit = getLastDigit(price, pipSize);
     counts[digit]++;
+  }
+
+  for (const price of recentPrices) {
+    const digit = getLastDigit(price, pipSize);
+    for (let d = 0; d < 10; d++) {
+      bitmap[d].push(d === digit ? 1 : 0);
+    }
   }
 
   const totalTicks = prices.length;
@@ -39,7 +50,7 @@ export function computeDigitStats(prices: number[], pipSize: number): DigitStats
     totalTicks > 0 ? (count / totalTicks) * 100 : 0
   );
 
-  return { counts, percentages, totalTicks };
+  return { counts, percentages, totalTicks, bitmap };
 }
 
 /**

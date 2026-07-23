@@ -57,6 +57,8 @@ export interface DigitStats {
   percentages: number[];
   /** Total number of ticks analyzed */
   totalTicks: number;
+  /** Bitmap: for each digit 0-9, array of 1/0 for last 20 ticks (most recent last) */
+  bitmap: number[][];
 }
 
 // Rise/Fall-specific types
