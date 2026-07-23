@@ -562,6 +562,23 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const burstDigits = isLeg1 ? config.selectedDigit : (config.selectedDigit2 || config.selectedDigit);
     if (isDigitType && Array.isArray(burstDigits) && burstDigits.length > 0 && !config.aiDigitsMode && !config.multiDigitObjectives) {
       // Inline burst logic — no refs, no closures, direct execution
+      const processBatch = async <T, R>(
+        items: T[],
+        fn: (item: T, idx: number) => Promise<R>,
+        batchSize: number,
+        delayMs: number
+      ): Promise<PromiseSettledResult<R>[]> => {
+        const results: PromiseSettledResult<R>[] = [];
+        for (let i = 0; i < items.length; i += batchSize) {
+          const batch = items.slice(i, i + batchSize);
+          const batchResults = await Promise.allSettled(batch.map((item, j) => fn(item, i + j)));
+          results.push(...batchResults);
+          const remaining = items.length - (i + batchSize);
+          if (remaining > 0) await new Promise(r => setTimeout(r, delayMs));
+        }
+        return results;
+      };
+
       const executeDigitBurst = async (
         bLegKey: 'leg1' | 'leg2',
         bContractType: string,
@@ -574,8 +591,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
         const bLegLabel = bIsLeg1 ? 'Leg 1' : 'Leg 2';
         addLog(`[${bLegLabel}] ⚡ Burst: ${bDigits.length} contracts (digits: ${bDigits.join(',')})`, 'info');
 
-        const proposals = await Promise.allSettled(
-          bDigits.map(d => placeProposal(bContractType, bStake, config, d))
+        // Batch proposals to avoid Deriv rate limit (3 at a time, 300ms apart)
+        const proposals = await processBatch(
+          bDigits,
+          (d) => placeProposal(bContractType, bStake, config, d),
+          3, 300
         );
         const validProposals: { digit: number; proposalId: string }[] = [];
         proposals.forEach((res, i) => {
@@ -589,8 +609,11 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           return;
         }
 
-        const buys = await Promise.allSettled(
-          validProposals.map(p => buyContract(p.proposalId, bStake))
+        // Batch buys to avoid Deriv rate limit (3 at a time, 300ms apart)
+        const buys = await processBatch(
+          validProposals.map(p => ({ digit: p.digit, proposalId: p.proposalId })),
+          (item) => buyContract(item.proposalId, bStake),
+          3, 300
         );
         const contracts: { digit: number; contractId: number }[] = [];
         buys.forEach((res, i) => {
@@ -606,6 +629,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
 
         addLog(`[${bLegLabel}] ⚡ ${contracts.length} contracts bought. Waiting for settlement...`, 'success');
 
+        // Wait for results — no batching needed (just listening)
         const outcomes = await Promise.allSettled(
           contracts.map(c => waitForResult(c.contractId))
         );
