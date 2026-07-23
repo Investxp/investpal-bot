@@ -202,6 +202,8 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
   const [aiTrailingLockMode, setAiTrailingLockMode] = useState(false);
   const [aiDigitsMode, setAiDigitsMode] = useState(false);
   const [martingaleSplitMode, setMartingaleSplitMode] = useState<'optional' | 'full'>('full');
+  const [burstMode, setBurstMode] = useState<'ws_pool' | 'parallel_retry' | 'single'>('single');
+  const [burstSize, setBurstSize] = useState('10');
 
   // Dynamically filter options based on symbol category and trade type requirements
   const selectedSymbol = POPULAR_SYMBOLS.find(s => s.value === symbol);
@@ -332,6 +334,8 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
       coolOffConsecutiveWins: parseInt(coolOffConsecutiveWins, 10) || 3,
       coolOffDuration: parseInt(coolOffDuration, 10) || 60,
       aiRandomCoolOff,
+      burstMode,
+      burstSize: Math.min(parseInt(burstSize, 10) || 10, 10),
     };
 
     startAutoTrade(config);
@@ -735,6 +739,27 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
                     <SelectItem value="ai_auto">🤖 AI Auto Select Method</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Burst Execution Mode */}
+              <div className="space-y-1.5 border-t border-zinc-800/50 pt-3">
+                <Label className="text-[11px] text-zinc-400">Burst Execution Mode</Label>
+                <Select value={burstMode} onValueChange={(val: 'ws_pool' | 'parallel_retry' | 'single') => setBurstMode(val)} disabled={isRunning}>
+                  <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs">
+                    <SelectValue placeholder="Select burst mode" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-200">
+                    <SelectItem value="single">Single (Original — 1 trade at a time)</SelectItem>
+                    <SelectItem value="ws_pool">WS Pool (Multi-connection parallel)</SelectItem>
+                    <SelectItem value="parallel_retry">Parallel + Retry (All at once, retry rate-limited)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {burstMode !== 'single' && (
+                  <div className="mt-2">
+                    <Label className="text-[11px] text-zinc-400">Burst Size (1-10)</Label>
+                    <Input type="number" min={1} max={10} value={burstSize} onChange={(e) => setBurstSize(e.target.value)} disabled={isRunning} className="bg-zinc-900 border-zinc-800 text-zinc-200 h-8 text-xs mt-1" />
+                  </div>
+                )}
               </div>
 
               {/* Martingale Splitter dropdown */}
