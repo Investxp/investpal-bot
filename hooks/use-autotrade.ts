@@ -370,6 +370,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const config = configRef.current;
     const isLeg1 = legKey === 'leg1';
     const leg = isLeg1 ? leg1Ref.current : leg2Ref.current;
+    const setLegState = isLeg1 ? setLeg1 : setLeg2;
 
     // Prevent concurrent trades on the same leg
     if (leg.isTrading || leg.activeContractId) return;
