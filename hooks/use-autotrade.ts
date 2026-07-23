@@ -573,7 +573,7 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
     const burstSize = Math.min(config.burstSize || (Array.isArray(allBurstDigits) ? allBurstDigits.length : 1), 10);
     const activeBurstDigits = Array.isArray(allBurstDigits) ? allBurstDigits.slice(0, burstSize) : [];
     const isEvenOddMode = contractType === 'DIGITEVEN' || contractType === 'DIGITODD';
-    const shouldBurst = (activeBurstDigits.length > 1 || (isEvenOddMode && activeBurstDigits.length > 0)) && !config.aiDigitsMode && !config.multiDigitObjectives;
+    const shouldBurst = (isEvenOddMode ? (burstSize > 0) : (activeBurstDigits.length > 1)) && !config.aiDigitsMode && !config.multiDigitObjectives;
 
     if (shouldBurst) {
       const executeDigitBurst = async (
@@ -596,15 +596,18 @@ export function useAutoTrade(ws: DerivWS | null, isConnected: boolean) {
           ]);
 
         // Build the list of contract placements
-        // For even/odd modes, each digit generates BOTH a DIGITEVEN and DIGITODD placement
+        // For even/odd modes, place burstSize × DIGITEVEN + burstSize × DIGITODD
         const isEvenOddCt = (ct: string) => ct === 'DIGITEVEN' || ct === 'DIGITODD';
         type Placement = { contractType: string; label: string; digitIdx: number };
         const placements: Placement[] = [];
-        for (let i = 0; i < bDigits.length; i++) {
-          if (isEvenOddCt(bContractType)) {
-            placements.push({ contractType: 'DIGITEVEN', label: `Even #${i+1}`, digitIdx: i });
-            placements.push({ contractType: 'DIGITODD', label: `Odd #${i+1}`, digitIdx: i });
-          } else {
+        if (isEvenOddCt(bContractType)) {
+          const n = Math.min(burstSize, 10);
+          for (let i = 0; i < n; i++) {
+            placements.push({ contractType: 'DIGITEVEN', label: `Even #${i+1}`, digitIdx: 0 });
+            placements.push({ contractType: 'DIGITODD', label: `Odd #${i+1}`, digitIdx: 0 });
+          }
+        } else {
+          for (let i = 0; i < bDigits.length; i++) {
             placements.push({ contractType: bContractType, label: `#${bDigits[i]}`, digitIdx: i });
           }
         }
