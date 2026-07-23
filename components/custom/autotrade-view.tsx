@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -12,8 +12,7 @@ import { cn } from '@/lib/utils';
 import { useAutoTrade, AutoTradeMode, AutoTradeConfig } from '@/hooks/use-autotrade';
 import type { UseAuthReturn } from '@/hooks/use-auth';
 import { useDerivWSContext } from '@/components/custom/deriv-ws-provider';
-import { useTicks } from '@deriv/core';
-import { computeDigitStats } from '@/lib/digit-stats';
+import { computeDigitStats, getLastDigit } from '@/lib/digit-stats';
 import { Play, Square, Terminal, TrendingUp, ShieldAlert, Award, Hash, Zap, Sparkles, BarChart2, ShieldCheck } from 'lucide-react';
 import { AISignalsWidget } from './ai-signals-widget';
 import { CopyTradingBridge } from './copy-trading-bridge';
@@ -157,9 +156,32 @@ export function AutoTradeView({ auth }: AutoTradeViewProps) {
     leg3,
   } = useAutoTrade(ws, isConnected);
 
-  // Digit stats for hot/cold bitmap display
-  const { prices, pipSize } = useTicks(ws, isConnected, symbol);
-  const digitStats = useMemo(() => computeDigitStats(prices, pipSize), [prices, pipSize]);
+  // Manual tick subscription for digit bitmap (avoids SSR issues with useTicks)
+  const [tickPrices, setTickPrices] = useState<number[]>([]);
+  const tickSubRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (!ws || !isConnected || !symbol) return;
+    const unsub = tickSubRef.current;
+    if (unsub) { unsub(); tickSubRef.current = null; }
+    setTickPrices([]);
+    const prices: number[] = [];
+    ws.subscribe({ ticks: symbol }, (data: any) => {
+      const tick = data.tick;
+      if (tick?.quote !== undefined) {
+        prices.push(tick.quote);
+        if (prices.length > 100) prices.shift();
+        setTickPrices([...prices]);
+      }
+    }).then((sub) => { tickSubRef.current = sub.unsubscribe; }).catch(() => {});
+    return () => {
+      if (tickSubRef.current) { tickSubRef.current(); tickSubRef.current = null; }
+      if (ws?.isConnected) ws.send({ forget_all: 'ticks' }).catch(() => {});
+    };
+  }, [ws, isConnected, symbol]);
+  const digitStats = useMemo(() => {
+    const pipSize = tickPrices.length > 0 ? 2 : 2;
+    return computeDigitStats(tickPrices, pipSize);
+  }, [tickPrices]);
 
   // Form State
   const [mode, setMode] = useState<AutoTradeMode>('digits-even-odd');
